@@ -1,0 +1,228 @@
+{
+  "UPSC": {
+    "History": {
+      "Ancient History": [
+        "Prehistoric Period",
+        "Indus Valley Civilization",
+        "Vedic Age",
+        "Mahajanapadas and Rise of Magadha",
+        "Buddhism and Jainism",
+        "Mauryan Empire",
+        "Post-Mauryan Kingdoms",
+        "Gupta Empire",
+        "Harshavardhana and South Indian Dynasties"
+      ],
+      "Medieval History": [
+        "Tripartite Struggle and Rajput Kingdoms",
+        "Delhi Sultanate (Slave, Khilji, Tughlaq, Sayyid, Lodi)",
+        "Vijayanagara and Bahmani Kingdoms",
+        "Mughal Empire",
+        "Maratha Empire and Regional States",
+        "Bhakti and Sufi Movements"
+      ],
+      "Modern History": [
+        "Advent of Europeans and Decline of Mughals",
+        "British Expansion and Administrative Policies",
+        "Peasant and Tribal Uprisings",
+        "Revolt of 1857",
+        "Social and Religious Reform Movements",
+        "Indian National Congress Foundation & Moderate Phase",
+        "Swadeshi Movement & Rise of Extremism",
+        "Revolutionary Activities",
+        "Gandhian Era & Mass Movements (NCM, CDM, Quit India)",
+        "Constitutional Developments & Partition"
+      ],
+      "Art & Culture": [
+        "Indian Architecture & Sculpture (Temple, Caves, Indo-Islamic)",
+        "Classical & Folk Dances of India",
+        "Indian Paintings (Mural, Miniature, Modern)",
+        "Classical Music & Musical Instruments",
+        "Indian Literature & Philosophy Schools",
+        "Puppetry, Theatre, and Festivals"
+      ]
+    },
+    "Geography": {
+      "Physical Geography": [
+        "Geomorphology (Internal Structure, Plate Tectonics, Earthquakes)",
+        "Climatology (Atmospheric Structure, Pressure Belts, Winds, Cyclones)",
+        "Oceanography (Bottom Relief, Salinity, Currents, Tides)",
+        "Biogeography & Soils"
+      ],
+      "Indian Geography": [
+        "Physiographical Divisions of India",
+        "Indian River Systems, Lakes, and Drainage Patterns",
+        "Indian Monsoon, Climate, and Vegetation",
+        "Socio-Economic Geography, Agriculture, and Irrigation",
+        "Mineral & Energy Resources of India",
+        "National Parks, Biosphere Reserves & Wildlife Sanctuaries"
+      ],
+      "World Geography": [
+        "Major Continents, Oceans, and Seas",
+        "Global Climatic Regions",
+        "World Resource Distribution (Forests, Minerals, Industries)",
+        "International Borders and Geopolitical Regions"
+      ],
+      "Maps": [
+        "Mapping of Indian Rivers and Lakes",
+        "Mapping of Mountain Peaks, Ranges, and Passes",
+        "International Straits, Canals, and Sea Routes",
+        "Geographical Locations in Recent News"
+      ]
+    },
+    "Polity": {
+      "Constitutional Framework": [
+        "Historical Background & Making of the Constitution",
+        "Preamble, Union & its Territory, Citizenship",
+        "Fundamental Rights, Directive Principles of State Policy & Fundamental Duties",
+        "Amendment of the Constitution & Basic Structure"
+      ],
+      "System of Government": [
+        "Parliamentary & Federal System",
+        "Centre-State Relations & Emergency Provisions"
+      ],
+      "Central and State Government": [
+        "President, Vice-President, Prime Minister, Union Council of Ministers",
+        "Parliament (Lok Sabha, Rajya Sabha, Lawmaking Procedure)",
+        "Governor, Chief Minister, State Legislature",
+        "Supreme Court, High Courts, and Subordinate Courts"
+      ],
+      "Local Government & Bodies": [
+        "Panchayati Raj and Municipalities",
+        "Constitutional Bodies (Election Commission, UPSC, CAG, Finance Commission)",
+        "Non-Constitutional Bodies (NITI Aayog, NHRC, CIC)"
+      ]
+    },
+    "Economy": {
+      "National Income & Development": [
+        "GDP, GNP, NNP, National Income Accounting",
+        "Economic Growth, Inflation (CPI, WPI) and Business Cycles",
+        "Poverty, Unemployment, and Inclusive Growth"
+      ],
+      "Monetary and Fiscal System": [
+        "Reserve Bank of India (RBI) and Monetary Policy",
+        "Banking Sector Reforms & Financial Markets",
+        "Union Budget, Taxation, and Fiscal Policy"
+      ],
+      "External Sector & Sectoral Growth": [
+        "Balance of Payments, Foreign Exchange Reserves, and Trade Policy",
+        "Agriculture, Industry, and Infrastructure Sectors",
+        "International Organizations (IMF, World Bank, WTO, ADB)"
+      ]
+    },
+    "Science": {
+      "Physics": [
+        "Mechanics, Gravitation, and Laws of Motion",
+        "Work, Energy, Power, and Properties of Matter",
+        "Heat, Thermodynamics, and Sound",
+        "Optics (Reflection, Refraction, Lenses, Mirrors)",
+        "Electricity, Magnetism, and Modern Physics"
+      ],
+      "Chemistry": [
+        "Matter in our Surroundings, Atomic Structure, and Chemical Bonding",
+        "Periodic Classification of Elements",
+        "Acids, Bases, and Salts",
+        "Metals, Non-metals, and Metallurgy",
+        "Carbon and its Compounds (Hydrocarbons, Functional Groups)",
+        "Physical and Chemical Changes, Solutions, and Colloids"
+      ],
+      "Biology": [
+        "Cell Structure, Division, and Tissues",
+        "Classification of Plants and Animals",
+        "Human Anatomy and Physiology (Digestion, Respiration, Circulation)",
+        "Control, Coordination, and Nervous System",
+        "Reproduction, Genetics, and Evolution",
+        "Diseases, Health, Nutrition, and Ecosystems"
+      ]
+    }
+  },
+  "CDS": {
+    "History": {
+      "Ancient History": [
+        "Stone Age & Indus Valley Civilization",
+        "Vedic Civilization & Mahajanapadas",
+        "Mauryan and Gupta Administrations",
+        "Cholas and South Indian Kingdoms"
+      ],
+      "Medieval History": [
+        "Invasions and Establishment of Delhi Sultanate",
+        "Mughal Era Governance, Art, and Land Revenue",
+        "Marathas and Mysore Kingdoms"
+      ],
+      "Modern History": [
+        "Establishment of British Rule & Economic Impact",
+        "Socio-Religious Movements of 19th Century",
+        "Indian Freedom Struggle: 1857 to 1947",
+        "Role of Moderates, Extremists, and Revolutionaries"
+      ],
+      "Art & Culture": [
+        "Temple Architecture Styles",
+        "Literature, Philosophy, and Festivals of Historical Importance"
+      ]
+    },
+    "Geography": {
+      "Physical Geography": [
+        "Solar System and Earth Movements",
+        "Atmosphere: Layers, Winds, and Humidity",
+        "Lithosphere: Rock Types, Volcanoes, and Plate Tectonics",
+        "Hydrosphere: Currents, Tides, and Salinity"
+      ],
+      "Indian Geography": [
+        "Physical Structure and Physiography",
+        "Climate, Monsoon Mechanism, and Vegetation Zones",
+        "River Systems, Multipurpose Projects, and Soils",
+        "Agriculture, Mineral Resources, and Industrial Belts"
+      ],
+      "World Geography": [
+        "Continents, Oceans, Mountains, and Major Deserts",
+        "Important Grasslands, Lakes, and Straits"
+      ]
+    },
+    "Polity": {
+      "Constitution and Citizenship": [
+        "Salient Features, Sources, and Preamble",
+        "Fundamental Rights and Duties",
+        "Directive Principles of State Policy"
+      ],
+      "Union and State Executive": [
+        "Powers of President, Governor, and Cabinets",
+        "Parliamentary Procedures, Committees, and Privileges",
+        "Judiciary Structure: Supreme Court to Subordinate Courts"
+      ],
+      "Administrative setup": [
+        "Panchayati Raj Institutions",
+        "Emergency Provisions & Constitutional Amendments"
+      ]
+    },
+    "Economy": {
+      "Macroeconomics": [
+        "Definitions of GDP, NDP, inflation mechanisms",
+        "Monetary Policy, banking systems, and public finance"
+      ],
+      "Microeconomics & Development": [
+        "Five-Year Plans and NITI Aayog",
+        "Basic concepts of supply, demand, and market structures"
+      ]
+    },
+    "Science": {
+      "Physics": [
+        "Motion, Newton's Laws, and Friction",
+        "Work, Energy, and Power",
+        "Sound Waves, Light, Reflection and Refraction",
+        "Electricity, Resistors, Circuits, and Magnetism"
+      ],
+      "Chemistry": [
+        "Elements, Compounds, and Mixtures",
+        "Chemical Equations and Law of Conservation of Mass",
+        "Acids, Bases, Salts, and pH scale",
+        "Carbon, Coal, Petroleum, and Gases"
+      ],
+      "Biology": [
+        "Plant and Animal Cell Structure",
+        "Plant and Animal Tissues & Functions",
+        "Human Organ Systems (Circulatory, Excretory, Nervous)",
+        "Microorganisms, Infectious Diseases, and Vaccinations",
+        "Photosynthesis, Plant Hormones, and Ecological Pyramids"
+      ]
+    }
+  }
+}

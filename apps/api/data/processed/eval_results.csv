@@ -1,0 +1,3 @@
+subject,faithfulness,extraction_precision,discrepancies
+Indian Polity,0.95,0.7,Mock evaluation applied: no OpenAI key available.
+Geography,0.95,0.9,Mock evaluation applied: no OpenAI key available.

@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+  # Relational Database Service (PostgreSQL with pgvector)
+  database:
+    image: ankane/pgvector:v0.5.0
+    container_name: officers_db
+    restart: always
+    environment:
+      POSTGRES_DB: officers_arena
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: securepassword2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d officers_arena"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis distributed caching & session store
+  redis:
+    image: redis:7-alpine
+    container_name: officers_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Student & Exam Intelligence Backend API
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: officers_api
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://admin:securepassword2026@database:5432/officers_arena
+      - REDIS_URL=redis://redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - RESEARCH_SECRET_KEY=officers_research_secure_2026
+      - HOST=0.0.0.0
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Next.js 14 Frontend Web Portal
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: officers_web
+    restart: always
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  redisdata:
