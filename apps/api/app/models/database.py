@@ -1,6 +1,6 @@
 import uuid
 import json
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, ClassVar
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy.types import TypeDecorator, TEXT, JSON
 
@@ -60,7 +60,7 @@ class SafeJSONB(TypeDecorator):
 
 
 class Syllabus(SQLModel, table=True):
-    __tablename__ = "syllabus"
+    __tablename__: Any = "syllabus"
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -79,7 +79,7 @@ class Syllabus(SQLModel, table=True):
 
 
 class Questions(SQLModel, table=True):
-    __tablename__ = "questions"
+    __tablename__: Any = "questions"
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -101,7 +101,8 @@ class Questions(SQLModel, table=True):
         foreign_key="syllabus.id"
     )
     year: Optional[int] = Field(default=None, index=True)
-    difficulty: Optional[str] = Field(default=None, index=True)  # "Easy", "Medium", "Hard"
+    paper_type: str = Field(default="PYQ", index=True)
+    subject: Optional[str] = Field(default="English", index=True)
     cognitive_level: Optional[str] = Field(default=None, index=True)  # "Remembering", "Understanding", "Applying", "Analyzing", "Evaluating", "Creating"
     exam_type: str = Field(index=True)  # "UPSC" or "CDS"
     is_verified: bool = Field(default=False, index=True)
@@ -123,7 +124,7 @@ class Questions(SQLModel, table=True):
 
 
 class QuestionImages(SQLModel, table=True):
-    __tablename__ = "question_images"
+    __tablename__: Any = "question_images"
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,

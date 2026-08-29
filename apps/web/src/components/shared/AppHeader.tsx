@@ -5,12 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BrainCircuit, Activity, BookOpen, TrendingUp, Sparkles, Moon, Sun, ChevronDown } from "lucide-react";
 import { useArenaStore } from "@/src/store/useArenaStore";
+import { useAuthStore } from "@/src/store/useAuthStore";
 
 export const AppHeader: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const mode = useArenaStore((state) => state.mode);
   const setMode = useArenaStore((state) => state.setMode);
+  const setAuthExamMode = useAuthStore((state) => state.setExamMode);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [showExamDropdown, setShowExamDropdown] = useState(false);
 
@@ -49,6 +51,7 @@ export const AppHeader: React.FC = () => {
 
   const handleSwitchExam = (newMode: "UPSC" | "CDS") => {
     setMode(newMode);
+    setAuthExamMode(newMode);
     setShowExamDropdown(false);
   };
 

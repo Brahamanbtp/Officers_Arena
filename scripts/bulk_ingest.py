@@ -3,53 +3,53 @@ import sys
 import re
 import json
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from tqdm import tqdm
 
-# Ensure apps/api is in the search path
+# Ensure apps/api and scripts are in the search path
 root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir / "apps" / "api"))
+sys.path.append(str(root_dir / "scripts"))
 
 from pipelines.ingestion_pipeline import QuestionExtractor
 
 def parse_filename_metadata(file_path: Path):
     """
     Parses metadata from raw paper filenames.
-    Pattern Example: UPSC_CDS_2023_General_Ability.pdf -> exam_type="CDS", year=2023, subject="General Ability"
+    Pattern Examples: 
+      CDS-I-26-ENGLISH.pdf -> exam_type="CDS", year=2026, subject="English"
+      UPSC_CDS_2023_General_Ability.pdf -> exam_type="CDS", year=2023, subject="General Ability"
     """
     base_name = file_path.stem
     
-    # 1. Extract year (4 consecutive digits starting with 19 or 20)
-    year_match = re.search(r'\b(19\d\d|20\d\d)\b', base_name)
-    year = int(year_match.group(1)) if year_match else None
-    
-    # 2. Extract exam type
-    exam_type = None
-    if "UPSC" in base_name.upper():
-        exam_type = "UPSC"
-    elif "CDS" in base_name.upper():
-        exam_type = "CDS"
+    # 1. Extract year (4-digit like 2026 or 2-digit like -26-)
+    year = None
+    year_match_4 = re.search(r'\b(19\d\d|20\d\d)\b', base_name)
+    if year_match_4:
+        year = int(year_match_4.group(1))
     else:
-        # Fallback to checking parent directories
-        path_lower = str(file_path).lower()
-        if "upsc" in path_lower:
-            exam_type = "UPSC"
-        elif "cds" in path_lower:
-            exam_type = "CDS"
-        else:
-            exam_type = "UPSC" # default fallback
+        year_match_2 = re.search(r'[-_]([0-9]{2})[-_]', base_name)
+        if year_match_2:
+            yr_num = int(year_match_2.group(1))
+            year = 2000 + yr_num if yr_num < 50 else 1900 + yr_num
+
+    if not year:
+        year = 2026 # Default fallback year
+        
+    # 2. Extract exam type
+    exam_type = "CDS" if "CDS" in str(file_path).upper() else "UPSC"
             
-    # 3. Extract subject by filtering out keywords and year
-    parts = base_name.split("_")
-    filtered_parts = [
-        p for p in parts 
-        if p.upper() not in ["UPSC", "CDS"] 
-        and not (year and p == str(year))
-    ]
-    subject = " ".join(filtered_parts).strip()
-    if not subject:
-        subject = "General Studies" # default fallback
+    # 3. Extract subject
+    base_upper = base_name.upper()
+    if "ENGLISH" in base_upper:
+        subject = "English"
+    elif "MATH" in base_upper:
+        subject = "Elementary Mathematics"
+    elif "GK" in base_upper or "GENERAL" in base_upper:
+        subject = "General Knowledge"
+    else:
+        subject = "General Studies"
         
     return exam_type, year, subject
 
@@ -82,9 +82,17 @@ def main():
         
     # OpenAI API Key
     openai_key = os.getenv("OPENAI_API_KEY")
-    if not openai_key:
-        print("OPENAI_API_KEY not found. Using 'mock_key' for testing.")
+    use_mock_openai = False
+    if not openai_key or openai_key == "<your-openai-api-key>" or openai_key == "mock_key":
+        print("OPENAI_API_KEY not set or placeholder. Running ingestion in Mock/Offline mode.")
         openai_key = "mock_key"
+        use_mock_openai = True
+        
+        # Override embedding function for mock mode
+        import pipelines.vectorizer.embedder
+        import pipelines.ingestion_pipeline
+        pipelines.vectorizer.embedder.get_embedding = lambda text, api_key="", model="text-embedding-3-small": [0.01] * 1536
+        pipelines.ingestion_pipeline.get_embedding = lambda text, api_key="", model="text-embedding-3-small": [0.01] * 1536
         
     # Discover PDFs recursively
     pdf_files = list(raw_papers_dir.rglob("*.pdf"))
@@ -123,13 +131,17 @@ def main():
                 subject=subject
             )
             
+            if use_mock_openai:
+                from test_ingestion import MockOpenAIClient
+                extractor.client = MockOpenAIClient()
+            
             # Execute Ingestion
             upserted_ids = extractor.process_pdf(str(pdf_path))
             
             # Update Checkpoint
             checkpoint["files_processed"][relative_path_str] = {
                 "status": "success",
-                "processed_at": datetime.utcnow().isoformat() + "Z",
+                "processed_at": datetime.now(timezone.utc).isoformat(),
                 "upserted_count": len(upserted_ids),
                 "metadata": {
                     "exam_type": exam_type,
@@ -145,7 +157,7 @@ def main():
             print(f"Successfully processed {relative_path_str} (Ingested {len(upserted_ids)} questions).")
             
         except Exception as e:
-            error_msg = f"[{datetime.utcnow().isoformat()}] ERROR processing {relative_path_str}: {str(e)}\n{traceback.format_exc()}\n"
+            error_msg = f"[{datetime.now(timezone.utc).isoformat()}] ERROR processing {relative_path_str}: {str(e)}\n{traceback.format_exc()}\n"
             print(f"Error processing {relative_path_str}. Checked logs/ingestion_errors.log.")
             
             # Log error
@@ -155,7 +167,7 @@ def main():
             # Update Checkpoint with failure status
             checkpoint["files_processed"][relative_path_str] = {
                 "status": "failed",
-                "processed_at": datetime.utcnow().isoformat() + "Z",
+                "processed_at": datetime.now(timezone.utc).isoformat(),
                 "error": str(e)
             }
             with open(checkpoint_file, "w", encoding="utf-8") as f:

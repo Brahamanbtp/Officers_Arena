@@ -31,41 +31,57 @@ def extract_pdf_content(pdf_path: str, output_image_dir: str) -> Tuple[str, List
         page = doc[page_num]
         
         # Get text from page
-        page_text = page.get_text("text")
+        page_text = page.get_text("text").strip()
         
-        # Extract images
+        # Extract embedded images
         image_list = page.get_images(full=True)
         page_placeholders = []
         
-        for img_info in image_list:
-            try:
-                xref = img_info[0]
-                base_image = doc.extract_image(xref)
-                image_bytes = base_image["image"]
-                image_ext = base_image.get("ext", "png")
-                
-                # Generate unique ID for this image
-                img_uuid = str(uuid.uuid4())
-                img_filename = f"{img_uuid}.{image_ext}"
-                img_path = os.path.join(output_image_dir, img_filename)
-                
-                # Write to disk
-                with open(img_path, "wb") as f:
-                    f.write(image_bytes)
+        if image_list:
+            for img_info in image_list:
+                try:
+                    xref = img_info[0]
+                    base_image = doc.extract_image(xref)
+                    image_bytes = base_image["image"]
+                    image_ext = base_image.get("ext", "png")
                     
+                    # Generate unique ID for this image
+                    img_uuid = str(uuid.uuid4())
+                    img_filename = f"{img_uuid}.{image_ext}"
+                    img_path = os.path.join(output_image_dir, img_filename)
+                    
+                    # Write to disk
+                    with open(img_path, "wb") as f:
+                        f.write(image_bytes)
+                        
+                    extracted_images.append({
+                        "uuid": img_uuid,
+                        "file_path": img_path
+                    })
+                    
+                    # Save placeholder to insert
+                    page_placeholders.append(f"\n[IMAGE_REF:{img_uuid}]\n")
+                except Exception as e:
+                    print(f"Error extracting image at page {page_num}: {e}")
+        elif not page_text:
+            # If no embedded images were extracted and text is empty, render the page as a scan image
+            try:
+                pix = page.get_pixmap(dpi=150)
+                img_uuid = str(uuid.uuid4())
+                img_path = os.path.join(output_image_dir, f"scan_page_{page_num+1}_{img_uuid}.png")
+                pix.save(img_path)
+                
                 extracted_images.append({
                     "uuid": img_uuid,
                     "file_path": img_path
                 })
-                
-                # Save placeholder to insert
                 page_placeholders.append(f"\n[IMAGE_REF:{img_uuid}]\n")
             except Exception as e:
-                # Log or handle image extraction failure gracefully
-                print(f"Error extracting image at page {page_num}: {e}")
+                print(f"Error rendering scanned page {page_num}: {e}")
                 
         # Append page text and placeholders
-        full_text_parts.append(page_text)
+        if page_text:
+            full_text_parts.append(page_text)
         if page_placeholders:
             full_text_parts.extend(page_placeholders)
             

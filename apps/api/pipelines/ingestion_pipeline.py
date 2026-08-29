@@ -342,7 +342,6 @@ class QuestionExtractor:
                 embedding=embedding_vector,
                 subtopic_id=subtopic_id,
                 year=question_data.year,
-                difficulty=question_data.difficulty,
                 cognitive_level=question_data.cognitive_level,
                 exam_type=question_data.exam_type,
                 is_verified=False,

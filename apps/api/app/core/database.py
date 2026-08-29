@@ -1,7 +1,6 @@
 import os
 from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlmodel import SQLModel
 
 # Load database URL from environment or fallback
@@ -19,10 +18,14 @@ elif DATABASE_URL.startswith("sqlite:///"):
     DATABASE_URL = DATABASE_URL.replace("sqlite:///", "sqlite+aiosqlite:///")
 
 # Create Async Engine
-# Note: SQLite async engines require different connect args depending on pooling
 connect_args = {}
 if "sqlite" in DATABASE_URL:
     connect_args = {"check_same_thread": False}
+elif "postgresql" in DATABASE_URL:
+    connect_args = {
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0
+    }
 
 async_engine = create_async_engine(
     DATABASE_URL,
@@ -30,10 +33,9 @@ async_engine = create_async_engine(
     connect_args=connect_args
 )
 
-# Async Session Factory
-async_session_maker = sessionmaker(
+# Async Session Factory using SQLAlchemy 2.0 async_sessionmaker
+async_session_maker = async_sessionmaker(
     async_engine,
-    class_=AsyncSession,
     expire_on_commit=False
 )
 
