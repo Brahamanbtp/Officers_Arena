@@ -1,133 +1,188 @@
-# Officers Arena: Metacognitive-Aware Adaptive Intelligence Engine
+# OFFICER'S ARENA: A COMPREHENSIVE PLATFORM FOR COMPETITIVE EXAM PREPARATION
 
-An enterprise-grade, high-fidelity adaptive learning platform designed for high-stakes competitive examinations (UPSC/CDS). By combining **Item Response Theory (IRT)**, **Bayesian Knowledge Tracing (BKT)**, **Spaced Repetition System (SRS)** scheduling, and **Generative AI**, the platform dynamically models student proficiency (Cognitive Digital Twin) and self-optimizes question banks.
+[![Next.js 14](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python)](https://python.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![PostgreSQL & Supabase](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com/)
+[![Gemini Vision AI](https://img.shields.io/badge/Vision%20AI-Gemini%203.6%20Flash-4285F4?style=flat-square&logo=google)](https://ai.google.dev/)
+
+An enterprise-grade, research-backed adaptive examination intelligence platform engineered for high-stakes competitive defense examinations (UPSC CDS, NDA, AFCAT). **Officer's Arena** combines **3-Parameter Logistic (3PL) Item Response Theory (IRT)**, **Bayesian Knowledge Tracing (BKT)**, **Spaced Repetition Systems (SRS)**, and **Multi-Modal Vision AI Document Extraction** into a unified ecosystem.
+
+---
+
+## 🌟 Key Features & Core Capabilities
+
+### 1. 📄 Automated Multi-Modal Vision AI Ingestion Pipeline
+- **Zero-Manual Typing**: Converts non-selectable, scanned physical examination papers (PDFs) into structured, JSON-schema-compliant relational records.
+- **PyMuPDF + Gemini 3.6 Flash**: Renders high-resolution page scans and utilizes vision prompting to extract question stems, multi-choice option sets (A, B, C, D), correct answer keys, and logical explanations.
+- **Unified CLI Tool (`ingest_paper.py`)**: One-line terminal ingestion (`python scripts/ingest_paper.py`) with automatic temporary scan cleanup and SQLModel batch insertion.
+
+### 2. 🎯 Dynamic Item Response Theory (IRT) Engine
+- **3PL & 2PL Logistic Models**: Estimates student latent ability ($\theta \in [-3.0, +3.0]$), item difficulty ($b$), item discrimination ($a$), and pseudo-guessing probability ($c$).
+- **Flow-State Target Matching**: Adaptively selects questions with success probability $P(\theta) \in [0.5, 0.7]$ to optimize cognitive engagement and avoid anxiety/boredom.
+- **Self-Correcting Parameter Calibration**: Background Maximum Likelihood Estimation (MLE) workers auto-recalibrate question difficulty ($b$) based on empirical student response telemetry.
+
+### 3. 🧠 Student Digital Twin & Metacognitive Knowledge Tracing
+- **Real-Time Latent Ability Updates**: Updates $\theta$ instantly following response events via Expected A Posteriori (EAP) Bayesian estimation.
+- **Sub-Topic Mastery Tracking**: Confidence-weighted Bayesian Knowledge Tracing (BKT) adjusts topic mastery based on correctness, response time ($t_{response}$), and self-reported confidence sliders.
+- **Ebbinghaus Memory Stability Decay**: Integrates modified SM-2 spaced repetition algorithms to calculate memory half-life and trigger automated review queues.
+
+### 4. 🤖 Theta-Conditioned AI Tutor (Google Gemini)
+- **Ability-Aware Explanations**: Generates dynamic hints and step-by-step logic tailored to the candidate's proficiency level:
+  - *Beginner ($\theta < -1.0$)*: Core definitions and foundational concepts.
+  - *Intermediate ($-1.0 \le \theta \le 1.0$)*: Logical linkages, reasoning pathways, and distractor traps.
+  - *Advanced ($\theta > 1.0$)*: Deep nuances, subtle edge cases, and time-saving shortcuts.
+
+### 5. 🔬 Research Suite & XAI Priority Matrix Dashboard
+- **Explainable AI (XAI) Decision Popovers**: Visualizes AI decision-making criteria (Mastery Gap, Exam Recency, Learning Curve Weight) for topic prioritization.
+- **Real-Time System Logs & Telemetry Export**: Downloadable formatted PDF research reports via `jsPDF` and raw telemetry data in JSON format.
+- **A/B Testing Framework**: Built-in control (`is_adaptive = False`) vs. experimental (`is_adaptive = True`) toggles to scientifically evaluate CAT efficiency against linear testing.
+
+### 6. 🛡️ Robust Security & Vector Search Fallbacks
+- **Prompt Injection Guardrails**: Pre-processes and sanitizes user input to prevent prompt injection attacks during automated tutoring sessions.
+- **pgvector Embedding Resiliency**: Maintains 1536-dimensional embedding vectors for semantic similarity search with automatic dummy-vector fallback logic during API downtime.
+
+---
+
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Student Interaction Loop
-        A[Next Question Selection] -->|IRT Flow-State Match| B[Student Response & Confidence Slider]
-        B -->|Submit Answer| C[FastAPI Analytics Engine]
+    subgraph Data Ingestion Pipeline
+        A[Raw Scanned Exam PDF] -->|PyMuPDF Rendering| B[High-Res Page Scans]
+        B -->|Gemini 3.6 Flash Vision AI| C[Structured JSON Question Schema]
+        C -->|CLI Tool: ingest_paper.py| D[(Supabase PostgreSQL Database)]
     end
 
-    subgraph Cognitive twin updates
-        C -->|Bayesian EAP| D[Ability Theta Update]
-        C -->|Dynamic BKT| E[Sub-topic Mastery Update]
-        C -->|SM-2 Scheduling| F[Memory Stability & SRS Queue]
+    subgraph FastAPI Cognitive Core
+        D -->|SQLModel Queries| E[Adaptive Arena Service]
+        E -->|3PL/2PL IRT Engine| F[Student Ability Estimation θ]
+        E -->|Confidence BKT| G[Subtopic Mastery Vector]
+        E -->|SM-2 Scheduler| H[Spaced Repetition Priority Queue]
     end
 
-    subgraph Self-Optimizing Feedback Loops
-        C -->|Performance Logs| G[(PostgreSQL db)]
-        G -->|Calibration Worker| H[Maximum Likelihood Estimation MLE]
-        H -->|Auto-adjust b-parameter| A
-    end
-
-    subgraph LLM Tutoring
-        D -->|Conditioned Prompting| I[Gemini 1.5 Flash tutor]
-        I -->|Structured Explanation| B
+    subgraph Student Metacognitive Interface
+        F & G & H -->|Sub-100ms API| I[Next.js 14 Web Command Center]
+        I -->|User Practice & Confidence Rating| E
+        I -->|Theta-Conditioned Tutoring| J[Google Gemini AI Tutor]
     end
 ```
 
 ---
 
-## 1. Core Mathematical Implementations
+## 📐 Mathematical Foundations
 
-### **A. Item Response Theory (IRT): 3-Parameter Logistic Model**
-The selection and assessment engine utilizes a 3PL IRT model to estimate student ability ($\theta$) and question parameters.
+### Item Response Theory (3PL Model)
+$$P_i(\theta) = c_i + \frac{1 - c_i}{1 + e^{-a_i (\theta - b_i)}}$$
 
-* **Probability Function**:
-  $$P(\theta) = c + \frac{1 - c}{1 + e^{-a(\theta - b)}}$$
-  Where:
-  * $\theta \in [-4.0, +4.0]$ represents the student's latent ability.
-  * $a$ represents the question's discrimination factor.
-  * $b$ represents the question's difficulty index.
-  * $c$ represents the guessing pseudo-probability (distractor strength).
+Where:
+- $\theta \in [-3.0, +3.0]$: Student latent trait / ability level.
+- $a_i \in [0.5, 2.5]$: Item discrimination index.
+- $b_i \in [-3.0, +3.0]$: Item difficulty parameter.
+- $c_i \in [0.0, 0.25]$: Pseudo-guessing probability.
 
-* **Ability Estimation (EAP)**:
-  Uses an **Expected A Posteriori (EAP)** Bayesian approach to update $\theta$ after each submission. The posterior distribution is calculated across a quadrature grid of $41$ points with a localized normal prior:
-  $$f(\theta | X) \propto f(X | \theta) \cdot N(\theta_{current}, 1.0)$$
-
-* **Challenge Optimization (Flow State)**:
-  * target window: $P(\theta) \in [0.5, 0.7]$.
-  * **Widening Search**: Falls back to $P(\theta) \in [0.4, 0.8]$ if no questions match.
-  * **Hard Fallback**: Selects the question whose difficulty $b$ is closest to $\theta$.
+### Latent Ability Update Rule (MLE Step)
+$$\theta_{new} = \theta_{old} + \eta \cdot (u_i - P_i(\theta_{old})) \cdot a_i$$
 
 ---
 
-### **B. Confidence-Weighted Bayesian Knowledge Tracing (BKT)**
-Tracks mastery of specific syllabus sub-topics (e.g., *Emergency Provisions*, *River Mapping*) recursively based on student responses, metacognitive confidence rating, and question difficulty.
+## 🛠️ Technology Stack
 
-* **Formula**:
-  $$P(L_n) = P(L_{n-1} | Obs) + (1 - P(L_{n-1} | Obs)) \cdot P(T)$$
-  Where $Obs$ accounts for:
-  * **Lucky Guess**: Correct response with low confidence (gain penalty).
-  * **Confidence-Weighted Slip**: Incorrect response with high confidence (mastery penalty).
-  * **Difficulty Adjustments**: Harder questions weight correct answers more heavily, while easier questions penalize incorrect answers more severely.
-
----
-
-### **C. Spaced Repetition System (SRS)**
-Models memory decay and recall probability using a modified SM-2 scheduling algorithm.
-
-* **Recall Decay Function**:
-  $$P_{recall} = e^{-\ln(2) \cdot \frac{t}{S}}$$
-  $$\text{Urgency Score} = 1.0 - P_{recall}$$
-  Where $t$ is days elapsed since last review and $S$ is memory stability.
-* **Metadata Tracked**:
-  * `stability`: Memory retention half-life multiplier.
-  * `difficulty`: User-specific question weight.
-  * `interval`: Days until the next review session.
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | Next.js 14, React, TypeScript | Modern responsive BENTO-grid UI & exam simulator |
+| **State & Styling** | Zustand, TailwindCSS, Framer Motion | Metacognitive telemetry state & micro-animations |
+| **Backend API** | Python 3.11+, FastAPI, SQLModel | Low-latency REST microservices & IRT engine |
+| **Database** | Supabase PostgreSQL, `pgvector` | Vector embeddings, relational schema, row-level security |
+| **Vision & Extraction** | PyMuPDF (`pymupdf`), Google Gemini Flash | Automated PDF rendering & visual question parsing |
+| **Analytics & Export** | jsPDF, Chart.js, Recharts | Dynamic telemetry rendering & academic report generation |
 
 ---
 
-## 2. Self-Correcting Data Loop (Auto-Calibration)
+## ⚡ Quick Start & Development Setup
 
-Initial question parameters ($a, b, c$) set by authors are often misaligned with real-world performance. To resolve this, a background worker script is included to dynamically recalibrate the database parameters:
+### 1. Prerequisites
+- Python 3.11+
+- Node.js 18+ and `pnpm` / `npm`
+- PostgreSQL / Supabase connection credentials
 
-* **Location**: [scripts/calibrate_questions.py](file:///c:/Users/braha/officers-arena/scripts/calibrate_questions.py)
-* **Optimization Method**:
-  1. Once a question accumulates a critical mass of responses (e.g., $\ge 100$), the script pulls the binary responses and matching student abilities ($\theta$).
-  2. If the observed success rate differs from the predicted success rate by more than $20\%$, the difficulty index ($b$) is adjusted.
-  3. The script solves a Maximum Likelihood Estimation (MLE) optimization using a grid-search search-space over binary cross-entropy:
-     $$\mathcal{L}(b) = - \sum_{i=1}^{N} \left[ y_i \ln P(\theta_i | a, b, c) + (1 - y_i) \ln(1 - P(\theta_i | a, b, c)) \right]$$
-     This guarantees the difficulty parameter converges to the true empirical item metric.
+### 2. Environment Configuration
+Create `apps/api/.env`:
+```env
+DATABASE_URL=postgresql://postgres.xxx:password@aws-0-region.pooler.supabase.com:6543/postgres
+GEMINI_API_KEY=your_google_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key_optional
+```
 
----
+### 3. Backend Setup (FastAPI)
+```powershell
+cd apps/api
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
 
-## 3. Adaptive AI Tutoring Layer
-
-A dynamic explanation engine integrates generative AI directly into the review phase without blocking test execution flow.
-
-* **Location**: [tutor_service.py](file:///c:/Users/braha/officers-arena/apps/api/app/services/tutor_service.py)
-* **LLM Engine**: Powered by Google Gemini 1.5 Flash.
-* **Theta-Conditioned Prompting**:
-  * **Beginner ($\theta < -1.0$)**: Explains basic terms and core definitions with a supportive tone.
-  * **Intermediate ($-1.0 \le \theta \le 1.0$)**: Explains logical linkages, reasoning pathways, and structural correlations.
-  * **Advanced ($\theta > 1.0$)**: Skips fundamentals; analyzes distractors, traps, and subtle nuances.
-* **Tutor Safety Guardrails**:
-  * *"Never give the direct answer immediately. Guide the student to the logic first."*
-  * *"If the question involves a Map (MapViewer), refer to specific coordinates or landmarks."*
-
----
-
-## 4. Research A/B Testing Toggle
-
-To facilitate scientific validation of the adaptive learning algorithms:
-* A `is_adaptive` boolean flag is included in the `StudentState` table.
-* **Control Group (`is_adaptive = False`)**: The selection engine falls back to randomized question selection, disabling IRT scheduling.
-* **Experimental Group (`is_adaptive = True`)**: Receives the fully optimized IRT and BKT flow-state matching.
-* Allows researchers to isolate the efficacy of adaptive cognitive scheduling against standard progression models.
+### 4. Frontend Setup (Next.js 14)
+```powershell
+cd apps/web
+npm install
+npm run dev
+```
+Open `http://localhost:3000` to launch the Officer's Arena web command center.
 
 ---
 
-## 5. Technology Stack & API Endpoints
+## 🚀 Terminal Paper Ingestion CLI Usage
 
-* **Backend**: FastAPI, SQLModel (SQLAlchemy/PostgreSQL), NumPy, Uvicorn.
-* **Frontend**: Next.js 14, Zustand (State Management), Framer Motion (Animations), TailwindCSS.
+To ingest any new physical exam paper PDF into the production database:
 
-### **Core API Router**:
-* `GET /api/v1/arena/next-question?user_id={id}&exam_type={type}`: Returns the next calibration or flow-state optimized question.
-* `POST /api/v1/arena/submit`: Processes student responses and updates IRT, BKT, and SRS parameters.
-* `GET /api/v1/arena/explain/{question_id}?user_id={id}`: Fetches the theta-conditioned AI tutoring explanation.
-* `GET /api/v1/arena/mastery-map?user_id={id}`: Compiles sub-topic percentages for radar chart visualization.
-* `GET /api/v1/arena/session-report?user_id={id}`: Generates progress percentages, mastery level shifts, and simulated score expectations.
-* `GET /api/v1/arena/srs/dashboard?user_id={id}`: Fetches the spaced repetition priority queue.
+1. Place your PDF inside `data/raw_papers/` (e.g. `data/raw_papers/cds/YOUR_PAPER.pdf`).
+2. Run the unified CLI ingestion tool:
+
+```powershell
+apps/api/venv/Scripts/python scripts/ingest_paper.py
+```
+
+*Or target a specific paper file with explicit parameters:*
+```powershell
+apps/api/venv/Scripts/python scripts/ingest_paper.py data/raw_papers/cds/CDS-I-26-ENGLISH.pdf --exam CDS --year 2026 --subject English
+```
+
+---
+
+## 📚 Repository Structure
+
+```
+officers-arena/
+├── apps/
+│   ├── api/                   # FastAPI backend, SQLModel schemas, IRT engine
+│   └── web/                   # Next.js 14 frontend, Bento Dashboard, XAI Matrix
+├── data/
+│   ├── raw_papers/            # Exam PDF storage directory
+│   └── processed/             # Auto-cleaned ingestion working files
+├── docs/
+│   └── officers_arena_research_proposal.md  # Comprehensive 10-section Academic Paper
+├── scripts/
+│   ├── ingest_paper.py        # Unified CLI Multi-Modal Paper Ingestion Tool
+│   ├── calibrate_questions.py # MLE Item Calibration Worker
+│   └── run_validator.py       # Data Integrity Verification Suite
+├── pyrightconfig.json         # Python IDE type-checking configuration
+└── README.md                  # Project Documentation
+```
+
+---
+
+## 📄 License & Citation
+
+This project is licensed under the MIT License. If you use **Officer's Arena** in your academic research, please cite:
+
+```bibtex
+@article{officers_arena_2026,
+  title={Officer's Arena: A Comprehensive Platform for Competitive Exam Preparation},
+  author={Officers Arena Engineering & Research Team},
+  journal={Academic Research Suite & Adaptive Testing Intelligence},
+  year={2026}
+}
+```
