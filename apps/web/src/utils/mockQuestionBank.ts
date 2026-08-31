@@ -83,6 +83,22 @@ export const BASE_CDS_QUESTIONS: Question[] = [
     correct_answer: "C",
     explanation: "Tropic of Cancer passes through 8 states: Gujarat, Rajasthan, MP, Chhattisgarh, Jharkhand, West Bengal, Tripura, Mizoram.",
     metadata: { difficulty: 0.40, subject: "Geography" }
+  },
+  {
+    id: "cds-q-6",
+    text: "Identify the antonym of the word 'EVALUATE' in the context of academic validation.",
+    options: { "A": "Ignore", "B": "Assess", "C": "Measure", "D": "Appraise" },
+    correct_answer: "A",
+    explanation: "'Ignore' is the antonym of 'Evaluate'.",
+    metadata: { difficulty: 0.40, subject: "English" }
+  },
+  {
+    id: "cds-q-7",
+    text: "Fill in the blank with the correct preposition: 'The officer was posted ___ the border command.'",
+    options: { "A": "at", "B": "to", "C": "on", "D": "in" },
+    correct_answer: "B",
+    explanation: "One is posted 'to' a command.",
+    metadata: { difficulty: 0.45, subject: "English" }
   }
 ];
 
@@ -94,9 +110,23 @@ export function generateQuestionBank(
   paper?: string
 ): Question[] {
   const basePool = examType === "CDS" ? BASE_CDS_QUESTIONS : BASE_UPSC_QUESTIONS;
+  
+  const normalizeSubject = (s: string) => {
+    const lower = s.toLowerCase();
+    if (lower.includes("math") || lower.includes("trig")) return "mathematics";
+    if (lower.includes("polity") || lower.includes("history") || lower.includes("geography") || lower.includes("science") || lower.includes("defense") || lower.includes("general knowledge") || lower.includes("gk")) return "general knowledge";
+    if (lower.includes("english")) return "english";
+    return lower;
+  };
+
+  const targetNorm = normalizeSubject(subject);
+
   const filtered = subject === "All" 
     ? basePool 
-    : basePool.filter(q => q.metadata?.subject === subject || subject.includes(q.metadata?.subject || ""));
+    : basePool.filter(q => {
+        const qNorm = normalizeSubject(q.metadata?.subject || "");
+        return qNorm === targetNorm;
+      });
   
   const pool = filtered.length > 0 ? filtered : basePool;
 
@@ -109,9 +139,7 @@ export function generateQuestionBank(
     result.push({
       ...template,
       id: `${examType.toLowerCase()}-${year ? year : "sim"}-q-${i + 1}`,
-      text: i >= pool.length 
-        ? `[${year ? `${examType} ${year}` : "Sim"} Item ${i + 1}] ${template.text}` 
-        : template.text,
+      text: template.text,
       metadata: {
         ...template.metadata,
         difficulty: template.metadata?.difficulty ?? 0.50,

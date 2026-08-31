@@ -23,7 +23,7 @@ interface UrgencyItem {
   lastAttempt: string;
 }
 
-const FALLBACK_URGENCY_DATA: UrgencyItem[] = [
+const UPSC_FALLBACK_URGENCY_DATA: UrgencyItem[] = [
   {
     id: "urg-1",
     topic: "Emergency Provisions (Article 352-360)",
@@ -50,8 +50,43 @@ const FALLBACK_URGENCY_DATA: UrgencyItem[] = [
   },
   {
     id: "urg-4",
-    topic: "Carbon and its Compounds",
-    subject: "Chemistry (CDS)",
+    topic: "Swaraj and Partition of Bengal",
+    subject: "Modern History",
+    halfLifeDays: 6.5,
+    urgencyScore: 0.48,
+    lastAttempt: "8 days ago"
+  }
+];
+
+const CDS_FALLBACK_URGENCY_DATA: UrgencyItem[] = [
+  {
+    id: "urg-1",
+    topic: "Trigonometrical Identities and Inradius Properties",
+    subject: "Mathematics",
+    halfLifeDays: 1.2,
+    urgencyScore: 0.94,
+    lastAttempt: "2 days ago"
+  },
+  {
+    id: "urg-2",
+    topic: "Spotting Errors & Prepositions Usage",
+    subject: "English",
+    halfLifeDays: 2.8,
+    urgencyScore: 0.78,
+    lastAttempt: "4 days ago"
+  },
+  {
+    id: "urg-3",
+    topic: "Indian National Movement (1857-1947)",
+    subject: "General Knowledge",
+    halfLifeDays: 4.1,
+    urgencyScore: 0.65,
+    lastAttempt: "5 days ago"
+  },
+  {
+    id: "urg-4",
+    topic: "Elementary Geometry and Area Calculations",
+    subject: "Mathematics",
     halfLifeDays: 6.5,
     urgencyScore: 0.48,
     lastAttempt: "8 days ago"
@@ -66,7 +101,7 @@ export default function GrowthPage() {
   const thetaDelta = useArenaStore((state) => state.thetaDelta);
   const setMasteryMetrics = useArenaStore((state) => state.setMasteryMetrics);
 
-  const [items, setItems] = useState<UrgencyItem[]>(FALLBACK_URGENCY_DATA);
+  const [items, setItems] = useState<UrgencyItem[]>([]);
   const [hasMounted, setHasMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -82,13 +117,17 @@ export default function GrowthPage() {
           const mappedItems: UrgencyItem[] = srsData.due_questions.map((q: any, idx: number) => ({
             id: q.question_id || `srs-${idx}`,
             topic: q.text?.slice(0, 75) + "..." || "Syllabus Concept",
-            subject: mode === "CDS" ? "CDS Practice" : "UPSC Practice",
+            subject: q.subject || (mode === "CDS" ? "General Knowledge" : "Indian Polity"),
             halfLifeDays: parseFloat((2.0 + (1.0 - q.urgency_score) * 5).toFixed(1)),
             urgencyScore: q.urgency_score,
             lastAttempt: new Date(q.due_date).toLocaleDateString()
           }));
           setItems(mappedItems);
+        } else {
+          setItems(mode === "CDS" ? CDS_FALLBACK_URGENCY_DATA : UPSC_FALLBACK_URGENCY_DATA);
         }
+      } else {
+        setItems(mode === "CDS" ? CDS_FALLBACK_URGENCY_DATA : UPSC_FALLBACK_URGENCY_DATA);
       }
 
       // 2. Fetch BKT Mastery Map
@@ -109,6 +148,7 @@ export default function GrowthPage() {
       }
     } catch (e) {
       console.warn("Failed to connect to ML backend, displaying cached local state:", e);
+      setItems(mode === "CDS" ? CDS_FALLBACK_URGENCY_DATA : UPSC_FALLBACK_URGENCY_DATA);
       if (isManualClick) {
         toast.error("Twin Recalibration failed.", {
           description: "Could not connect to the ML engine. Reverting to cached local state."
@@ -122,6 +162,7 @@ export default function GrowthPage() {
   // Listen to UPSC/CDS track switch in the global header
   useEffect(() => {
     setHasMounted(true);
+    setItems(mode === "CDS" ? CDS_FALLBACK_URGENCY_DATA : UPSC_FALLBACK_URGENCY_DATA);
     fetchSRSData(false);
   }, [mode]);
 
@@ -262,9 +303,11 @@ export default function GrowthPage() {
                         type="button"
                         onClick={() => {
                           const setTestMode = useArenaStore.getState().setTestMode;
+                          const setSelectedSubject = useArenaStore.getState().setSelectedSubject;
                           const setQuestion = useArenaStore.getState().setQuestion;
                           setTestMode("practice");
-                          const srsQuestions = generateQuestionBank(mode, "All", 10);
+                          setSelectedSubject(item.subject);
+                          const srsQuestions = generateQuestionBank(mode, item.subject, 10);
                           setQuestion(srsQuestions[0] || null);
                           toast.success(`Launching SRS Revision for ${item.topic.slice(0, 30)}...`, {
                             description: "Socratic feedback enabled for memory reinforcement."

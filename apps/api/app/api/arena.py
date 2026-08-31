@@ -48,6 +48,7 @@ class SRSDashboardItem(BaseModel):
     text: str
     urgency_score: float
     due_date: str
+    subject: Optional[str] = None
 
 class SRSDashboardResponse(BaseModel):
     due_questions: List[SRSDashboardItem]
@@ -573,7 +574,8 @@ async def srs_dashboard(
                 question_id=q.id,
                 text=q.text,
                 urgency_score=round(urgency, 4),
-                due_date=srs.due_date.isoformat()
+                due_date=srs.due_date.isoformat(),
+                subject=q.subject
             ))
 
         due_items.sort(key=lambda x: x.urgency_score, reverse=True)

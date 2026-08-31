@@ -100,6 +100,22 @@ $$\theta_{new} = \theta_{old} + \eta \cdot (u_i - P_i(\theta_{old})) \cdot a_i$$
 
 ---
 
+## 🔧 Production Resilience & Latency Optimizations
+
+During real-time stress testing, several performance bottlenecks were identified and resolved to ensure high availability:
+
+1. **Async DB Session Conflict Resolution**:
+   - *Problem*: Concurrent session allocation inside FastAPI's async generator streams led to SQLite deadlocks and client-side timeouts.
+   - *Solution*: Refactored backend routes to reuse the original transaction session throughout the streaming pipeline, avoiding redundant DB locks.
+2. **Main-Thread CPU Bottleneck Mitigation**:
+   - *Problem*: Doing global vector search and cosine similarity loops in the `tutor_chat` retriever blocked the main ASGI loop.
+   - *Solution*: Optimized the query path to perform direct $O(1)$ database lookup by `question_id` for targeted explanations, bypassing slow search operations.
+3. **Gemini API Quota & Speed Upgrades**:
+   - *Problem*: `"gemini-flash-latest"` default aliases hit strict free tier limit (20 requests/day) and timed out under load.
+   - *Solution*: Upgraded the entire tutoring pipeline to use `"gemini-3.5-flash-lite"` with a timeout of `8.0` seconds (`request_options={"timeout": 8.0}`). If the API limit is hit or network drops, it immediately falls back to a clean offline strategic tip under a second.
+
+---
+
 ## ⚡ Quick Start & Development Setup
 
 ### 1. Prerequisites

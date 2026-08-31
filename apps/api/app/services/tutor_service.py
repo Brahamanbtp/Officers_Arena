@@ -61,12 +61,12 @@ class TutorService:
             
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-3.5-flash-lite")
             prompt = cls.get_prompt_for_theta(question_text, correct_answer, student_answer, theta)
             
             # Since generating content can be blocking, we run it in an executor or call async if available.
             # google-generativeai supports async calls: generate_content_async
-            response = await model.generate_content_async(prompt)
+            response = await model.generate_content_async(prompt, request_options={"timeout": 8.0})
             return response.text.strip()
         except Exception as e:
             # Fallback on API errors

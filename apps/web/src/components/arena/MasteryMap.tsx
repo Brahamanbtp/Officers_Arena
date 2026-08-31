@@ -1,21 +1,31 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useArenaStore } from "../../store/useArenaStore";
 
 interface MasteryMapProps {
   userId?: string;
 }
 
-const DEFAULT_MASTERY: Record<string, number> = {
+const DEFAULT_UPSC_MASTERY: Record<string, number> = {
   "Indian Polity": 68.5,
   "Modern History": 55.0,
   "Geography": 72.0,
   "General Science": 60.0,
-  "Defense Studies": 75.0
+  "Economy": 65.0
+};
+
+const DEFAULT_CDS_MASTERY: Record<string, number> = {
+  "English": 62.0,
+  "General Knowledge": 58.5,
+  "Mathematics": 70.0
 };
 
 export const MasteryMap: React.FC<MasteryMapProps> = ({ userId = "student_999" }) => {
-  const [data, setData] = useState<Record<string, number>>(DEFAULT_MASTERY);
+  const mode = useArenaStore((state) => state.mode);
+  const [data, setData] = useState<Record<string, number>>(
+    mode === "CDS" ? DEFAULT_CDS_MASTERY : DEFAULT_UPSC_MASTERY
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,17 +36,46 @@ export const MasteryMap: React.FC<MasteryMapProps> = ({ userId = "student_999" }
         if (res.ok) {
           const body = await res.json();
           if (body.mastery_map && Object.keys(body.mastery_map).length > 0) {
-            setData(body.mastery_map);
+            const raw = body.mastery_map;
+            if (mode === "CDS") {
+              const cdsMap = {
+                "English": raw["English"] ?? 62.0,
+                "General Knowledge": Math.round(
+                  ((raw["Defense Studies"] ?? 75.0) +
+                   (raw["Geography"] ?? 72.0) +
+                   (raw["General Science"] ?? 60.0) +
+                   (raw["Indian Polity"] ?? 68.5) +
+                   (raw["Modern History"] ?? 55.0)) / 5
+                ),
+                "Mathematics": Math.round(
+                  ((raw["Elementary Mathematics"] ?? 70.0) +
+                   (raw["Trigonometry"] ?? 65.0)) / 2
+                )
+              };
+              setData(cdsMap);
+            } else {
+              const upscMap = {
+                "Indian Polity": raw["Indian Polity"] ?? 68.5,
+                "Modern History": raw["Modern History"] ?? 55.0,
+                "Geography": raw["Geography"] ?? 72.0,
+                "Economy": raw["Economy"] ?? 65.0,
+                "General Science": raw["General Science"] ?? 60.0
+              };
+              setData(upscMap);
+            }
+            setLoading(false);
+            return;
           }
         }
       } catch (e) {
         console.warn("Using baseline BKT mastery map fallback:", e);
-      } finally {
-        setLoading(false);
       }
+      
+      setData(mode === "CDS" ? DEFAULT_CDS_MASTERY : DEFAULT_UPSC_MASTERY);
+      setLoading(false);
     };
     fetchMastery();
-  }, [userId]);
+  }, [userId, mode]);
 
   if (loading) {
     return (

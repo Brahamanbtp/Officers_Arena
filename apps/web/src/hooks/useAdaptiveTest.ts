@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from "react";
 import { useArenaStore, Question } from "../store/useArenaStore";
+import { generateQuestionBank } from "../utils/mockQuestionBank";
 
 const MOCK_UPSC_QUESTIONS: Question[] = [
   {
@@ -67,6 +68,7 @@ export const useAdaptiveTest = () => {
   const timer = useArenaStore((state) => state.timer);
   const mode = useArenaStore((state) => state.mode);
   
+  const selectedSubject = useArenaStore((state) => state.selectedSubject);
   const setQuestion = useArenaStore((state) => state.setQuestion);
   const setTransitioning = useArenaStore((state) => state.setTransitioning);
   const incrementScore = useArenaStore((state) => state.incrementScore);
@@ -74,49 +76,60 @@ export const useAdaptiveTest = () => {
   const setMasteryMetrics = useArenaStore((state) => state.setMasteryMetrics);
   const setFeedback = useArenaStore((state) => state.setFeedback);
 
-  const getFallbackQuestion = useCallback((examMode: string) => {
-    const list = examMode === "CDS" ? MOCK_CDS_QUESTIONS : MOCK_UPSC_QUESTIONS;
-    const randomIndex = Math.floor(Math.random() * list.length);
-    return list[randomIndex];
+  const getFallbackQuestion = useCallback((examMode: string, sub: string = "All") => {
+    const pool = generateQuestionBank(examMode as any, sub, 1);
+    return pool[0] || MOCK_CDS_QUESTIONS[0];
   }, []);
 
   const startTest = useCallback(async () => {
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
     try {
-      const response = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=student_999&exam_type=${mode}`);
+      const response = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=student_999&exam_type=${mode}&subject=${selectedSubject}`);
       if (response.ok) {
         const qData = await response.json();
         setQuestion(qData);
       } else {
-        setQuestion(getFallbackQuestion(mode));
+        setQuestion(getFallbackQuestion(mode, selectedSubject));
       }
     } catch (e) {
-      setQuestion(getFallbackQuestion(mode));
+      setQuestion(getFallbackQuestion(mode, selectedSubject));
     }
     resetTimer();
-  }, [setQuestion, resetTimer, mode, getFallbackQuestion]);
+  }, [setQuestion, resetTimer, mode, selectedSubject, getFallbackQuestion]);
 
   useEffect(() => {
-    setQuestion(getFallbackQuestion(mode));
-  }, [mode, setQuestion, getFallbackQuestion]);
+    if (!currentQuestion) {
+      setQuestion(getFallbackQuestion(mode, selectedSubject));
+      return;
+    }
+
+    const isCdsQ = currentQuestion.id.toLowerCase().startsWith("cds");
+    const isUpscQ = currentQuestion.id.toLowerCase().startsWith("upsc");
+
+    if (mode === "CDS" && !isCdsQ) {
+      setQuestion(getFallbackQuestion(mode, selectedSubject));
+    } else if (mode === "UPSC" && !isUpscQ) {
+      setQuestion(getFallbackQuestion(mode, selectedSubject));
+    }
+  }, [mode, selectedSubject, setQuestion, getFallbackQuestion, currentQuestion]);
 
   const loadNextQuestion = useCallback(async () => {
     setTransitioning(true);
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
     try {
-      const nextRes = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=student_999&exam_type=${mode}`);
+      const nextRes = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=student_999&exam_type=${mode}&subject=${selectedSubject}`);
       if (nextRes.ok) {
         const nextQ = await nextRes.json();
         setQuestion(nextQ);
       } else {
-        setQuestion(getFallbackQuestion(mode));
+        setQuestion(getFallbackQuestion(mode, selectedSubject));
       }
     } catch (e) {
-      setQuestion(getFallbackQuestion(mode));
+      setQuestion(getFallbackQuestion(mode, selectedSubject));
     }
     resetTimer();
     setTransitioning(false);
-  }, [mode, setQuestion, setTransitioning, resetTimer, getFallbackQuestion]);
+  }, [mode, selectedSubject, setQuestion, setTransitioning, resetTimer, getFallbackQuestion]);
 
   // Telemetry Submission to FastAPI Backend
   const submitResponse = useCallback(async (

@@ -218,9 +218,34 @@ export default function StrategistPage() {
         })
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setChatMessages((prev) => [...prev, { role: "advisor", text: data.reply || data.response }]);
+      if (res.ok && res.body) {
+        // Append an empty message for the advisor that we will stream text into
+        setChatMessages((prev) => [...prev, { role: "advisor", text: "" }]);
+        
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let done = false;
+        let accumText = "";
+        
+        while (!done) {
+          const { value, done: doneReading } = await reader.read();
+          done = doneReading;
+          if (value) {
+            const chunk = decoder.decode(value, { stream: !done });
+            accumText += chunk;
+            // Update the last advisor message in real-time
+            setChatMessages((prev) => {
+              const updated = [...prev];
+              if (updated.length > 0) {
+                updated[updated.length - 1] = {
+                  ...updated[updated.length - 1],
+                  text: accumText
+                };
+              }
+              return updated;
+            });
+          }
+        }
       } else {
         setChatMessages((prev) => [
           ...prev,

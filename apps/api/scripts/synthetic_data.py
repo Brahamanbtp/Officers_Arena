@@ -5,6 +5,7 @@ import random
 import asyncio
 from datetime import datetime, timedelta
 from sqlmodel import select
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Add apps/api/app to Python path
@@ -157,9 +158,12 @@ async def generate_synthetic_population():
                 acc = max(0.05, min(0.95, acc))
                 
                 # Adjust accuracy slightly by question difficulty
-                if q.difficulty == "Hard":
+                is_hard = (q.difficulty_b or 0.0) > 1.0
+                is_easy = (q.difficulty_b or 0.0) < -1.0
+                
+                if is_hard:
                     acc -= 0.10
-                elif q.difficulty == "Easy":
+                elif is_easy:
                     acc += 0.10
                 acc = max(0.05, min(0.95, acc))
                 
@@ -178,7 +182,7 @@ async def generate_synthetic_population():
                     response_time=response_time,
                     confidence_level=confidence,
                     timestamp=timestamp,
-                    difficulty_weight=1.5 if q.difficulty == "Hard" else 1.0,
+                    difficulty_weight=1.5 if is_hard else 1.0,
                     calibration_impact=0.05
                 )
                 db.add(attempt)

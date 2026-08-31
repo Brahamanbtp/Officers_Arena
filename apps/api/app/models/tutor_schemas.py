@@ -38,7 +38,7 @@ class AnalyzeErrorRequest(BaseModel):
 
 
 class TutorChatRequest(BaseModel):
-    question_id: str
+    question_id: Optional[str] = None
     user_id: str
     message: str
 

@@ -47,26 +47,13 @@ TEXTBOOK_LIBRARY = [
 
 async def get_embedding(text: str) -> List[float]:
     """
-    Generates text embedding using Gemini SDK if API key exists,
-    otherwise returns a deterministic mock vector.
+    Generates text embedding using a fast deterministic mock vector
+    to bypass slow external API calls and avoid quota/timeout issues.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if api_key:
-        try:
-            import google.generativeai as genai  # type: ignore
-            genai.configure(api_key=api_key)
-            result = genai.embed_content(
-                model="models/text-embedding-004",
-                content=text,
-                task_type="retrieval_query"
-            )
-            return result["embedding"]
-        except Exception:
-            pass
-            
     # Deterministic fallback vector
     random.seed(text)
-    return [random.uniform(-1, 1) for _ in range(1536)]
+    emb = [random.uniform(-1, 1) for _ in range(1536)]
+    return emb
 
 def cosine_similarity(v1: List[float], v2: List[float]) -> float:
     if not v1 or not v2 or len(v1) != len(v2):
@@ -122,36 +109,27 @@ class GraphRAGRetriever:
         """
         query_emb = await get_embedding(query)
         
-        # 1. Vector Search on Local Excerpts
+        # 1. Vector Search on Local Excerpts (using parallel execution)
+        import asyncio
+        tasks = [get_embedding(doc["text"]) for doc in TEXTBOOK_LIBRARY]
+        doc_embeddings = await asyncio.gather(*tasks)
+        
         scored_library = []
-        for doc in TEXTBOOK_LIBRARY:
-            doc_emb = await get_embedding(doc["text"])
+        for doc, doc_emb in zip(TEXTBOOK_LIBRARY, doc_embeddings):
             sim = cosine_similarity(query_emb, doc_emb)
             scored_library.append((sim, doc))
             
         scored_library.sort(key=lambda x: x[0], reverse=True)
         top_library = scored_library[:limit]
         
-        # 2. Database PYQ Explanations Vector Search
+        # 2. Database PYQ Explanations Search: Only fetch the specific target question if question_id is present to avoid heavy CPU-bound search
         top_pyqs = []
-        db_stmt = select(Questions).where(Questions.embedding != None, Questions.explanation != None)
-        db_res = await db.execute(db_stmt)
-        questions_with_emb = db_res.scalars().all()
-        
-        scored_pyqs = []
-        for q in questions_with_emb:
-            emb = q.embedding
-            if isinstance(emb, str):
-                try:
-                    emb = json.loads(emb)
-                except Exception:
-                    continue
-            if emb:
-                sim = cosine_similarity(query_emb, emb)
-                scored_pyqs.append((sim, q))
-                
-        scored_pyqs.sort(key=lambda x: x[0], reverse=True)
-        top_pyqs = scored_pyqs[:limit]
+        if question_id:
+            db_stmt = select(Questions).where(Questions.id == question_id)
+            db_res = await db.execute(db_stmt)
+            target_q = db_res.scalars().first()
+            if target_q and target_q.explanation:
+                top_pyqs = [(1.0, target_q)]
 
         # 3. Graph Traversal: Recursive CTE
         breadcrumbs_path = ""

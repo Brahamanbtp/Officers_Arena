@@ -2,7 +2,7 @@ import os
 import uuid
 import json
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse
@@ -18,7 +18,7 @@ from app.models.tutor_schemas import (
 )
 from ml.tutor.rag_chain import GraphRAGRetriever, FALLBACK_RESPONSE
 from ml.tutor.error_analyzer import ErrorAnalyzer
-from ml.tutor.prompts import SYSTEM_PROMPT, build_tutor_prompt
+from ml.tutor.prompts import SYSTEM_PROMPT, SYSTEM_PROMPT_CHAT, build_tutor_prompt
 from app.services.rag_service import RAGService
 
 router = APIRouter()
@@ -133,8 +133,8 @@ async def explain_question(
             try:
                 import google.generativeai as genai  # type: ignore
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
-                response = await model.generate_content_async(prompt)
+                model = genai.GenerativeModel("gemini-3.5-flash-lite", system_instruction=SYSTEM_PROMPT)
+                response = await model.generate_content_async(prompt, request_options={"timeout": 8.0})
                 explanation_text = response.text.strip()
             except Exception as e:
                 explanation_text = f"Failed to call AI Tutor API: {str(e)}"
@@ -237,16 +237,41 @@ async def tutor_chat(
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
-        question_id = uuid.UUID(request.question_id)
         user_id = request.user_id
         message = sanitize_chat_message(request.message)
-        
-        # 1. Fetch Question
-        q_stmt = select(Questions).where(Questions.id == question_id)
-        q_res = await db.execute(q_stmt)
-        question = q_res.scalars().first()
-        if not question:
-            raise HTTPException(status_code=404, detail="Question not found.")
+
+        is_general_consultation = not request.question_id
+
+        question_id = None
+        question = None
+        if request.question_id:
+            try:
+                question_id = uuid.UUID(request.question_id)
+            except ValueError:
+                pass
+
+        if not question_id:
+            # Fallback: get first question to satisfy non-null DB constraint
+            q_stmt = select(Questions).limit(1)
+            q_res = await db.execute(q_stmt)
+            question = q_res.scalars().first()
+            if question:
+                question_id = question.id
+            else:
+                question_id = uuid.UUID("00000000-0000-0000-0000-000000000000")
+        else:
+            q_stmt = select(Questions).where(Questions.id == question_id)
+            q_res = await db.execute(q_stmt)
+            question = q_res.scalars().first()
+            if not question:
+                # If question_id does not exist in DB, fallback
+                q_stmt_any = select(Questions).limit(1)
+                q_res_any = await db.execute(q_stmt_any)
+                question = q_res_any.scalars().first()
+                if question:
+                    question_id = question.id
+                else:
+                    question_id = uuid.UUID("00000000-0000-0000-0000-000000000000")
 
         # 2. Fetch or create stateful session
         session_stmt = select(TutorChatSession).where(
@@ -268,8 +293,9 @@ async def tutor_chat(
         messages_history = json.loads(session.messages)
 
         # 3. Retrieve Context based on user's query
+        # For general strategic consultation, we do NOT want context from a random question explanation!
         context_docs, confidence_score = await GraphRAGRetriever.retrieve(
-            db, query=message, question_id=question_id, limit=3
+            db, query=message, question_id=None if is_general_consultation else question_id, limit=3
         )
         context_text = "\n\n".join([f"[{d['source']}]: {d['content']}" for d in context_docs if d["type"] != "hierarchy"])
 
@@ -280,11 +306,12 @@ async def tutor_chat(
             history_context += f"{msg['role'].capitalize()}: {msg['content']}\n"
 
         # 5. Build full tutor query prompt
+        question_stem = "General strategic study advice and preparation coaching. (No specific exam question)" if is_general_consultation else (question.text if question else "")
         tutor_prompt = f"""--- RETRIEVED CONTEXT ---
 {context_text}
 
 --- QUESTION STEM ---
-{question.text}
+{question_stem}
 
 --- CONVERSATION HISTORY (LAST 5 TURNS) ---
 {history_context}
@@ -292,47 +319,75 @@ async def tutor_chat(
 User's New Message: {message}
 """
 
-        api_response = ""
         api_key = os.getenv("GEMINI_API_KEY")
         if api_key:
             try:
                 import google.generativeai as genai  # type: ignore
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
-                response = await model.generate_content_async(tutor_prompt)
-                api_response = response.text.strip()
+                model = genai.GenerativeModel("gemini-3.5-flash-lite", system_instruction=SYSTEM_PROMPT_CHAT)
+                
+                # Asynchronously generate streaming content
+                response_stream = await model.generate_content_async(tutor_prompt, stream=True, request_options={"timeout": 8.0})
+                
+                async def response_streamer():
+                    full_text = ""
+                    try:
+                        async for chunk in response_stream:
+                            if chunk.text:
+                                text_chunk = clean_latex_backslashes(chunk.text)
+                                full_text += text_chunk
+                                yield text_chunk
+                    except Exception as stream_err:
+                        yield f"\n[Error during stream: {str(stream_err)}]"
+                    
+                    # Save turns back to database history using original db session
+                    try:
+                        messages_history.append({"role": "user", "content": message})
+                        messages_history.append({"role": "assistant", "content": full_text})
+                        session.messages = json.dumps(messages_history)
+                        session.last_updated = datetime.now(timezone.utc).replace(tzinfo=None)
+                        db.add(session)
+                        await db.commit()
+                    except Exception as db_err:
+                        import traceback
+                        traceback.print_exc()
+                
+                return StreamingResponse(response_streamer(), media_type="text/plain")
             except Exception as e:
-                api_response = f"Failed to call chat engine: {str(e)}"
-        
+                # If stream initiation fails, fall back to offline response
+                import traceback
+                traceback.print_exc()
+
         # Fallback offline response
-        if not api_response or "Failed to call chat engine" in api_response:
+        if is_general_consultation:
+            api_response = (
+                "Jai Hind, Aspirant! For CDS preparation, prioritize high-yield topics (like Indian Polity, Modern History, and Elementary Mathematics), "
+                "allocate 60% of daily time to active PYQ solving, and 40% to textbook revision. Keep pushing forward!"
+            )
+        else:
             source_names = ", ".join([d["source"] for d in context_docs if d["type"] != "hierarchy"])
             api_response = (
                 f"That is an interesting question. Looking at standard textbook materials ({source_names}), we can infer that: \n"
                 f"> \"{context_docs[0]['content'][:300] if context_docs else 'Please recheck standard definitions.'}...\" \n\n"
                 f"How does this relate to what you asked? Let's connect these concepts back to the option choices."
             )
-
         api_response = clean_latex_backslashes(api_response)
 
-        # Save turns back to database history
-        messages_history.append({"role": "user", "content": message})
-        messages_history.append({"role": "assistant", "content": api_response})
-        
-        session.messages = json.dumps(messages_history)
-        session.last_updated = datetime.utcnow()
-        db.add(session)
-        await db.commit()
+        async def fallback_streamer():
+            yield api_response
+            # Save turns back to database history using original db session
+            try:
+                messages_history.append({"role": "user", "content": message})
+                messages_history.append({"role": "assistant", "content": api_response})
+                session.messages = json.dumps(messages_history)
+                session.last_updated = datetime.now(timezone.utc).replace(tzinfo=None)
+                db.add(session)
+                await db.commit()
+            except Exception as db_err:
+                import traceback
+                traceback.print_exc()
 
-        # Stream generator for real-time typing effects
-        async def response_streamer():
-            # Stream in chunks of words / characters
-            chunk_size = 5
-            for i in range(0, len(api_response), chunk_size):
-                yield api_response[i:i+chunk_size]
-                await asyncio.sleep(0.01)
-
-        return StreamingResponse(response_streamer(), media_type="text/plain")
+        return StreamingResponse(fallback_streamer(), media_type="text/plain")
 
     except HTTPException as he:
         raise he

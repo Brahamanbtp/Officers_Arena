@@ -252,8 +252,8 @@ Rate the following metrics on a scale from 0.0 to 1.0 (with 1.0 being perfect). 
         try:
             import google.generativeai as genai  # type: ignore
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            response = await model.generate_content_async(prompt)
+            model = genai.GenerativeModel("gemini-3.5-flash-lite")
+            response = await model.generate_content_async(prompt, request_options={"timeout": 8.0})
             import json
             import re
             cleaned_text = re.sub(r'```json|```', '', response.text).strip()

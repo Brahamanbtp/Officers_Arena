@@ -6,8 +6,12 @@ from sqlmodel import SQLModel
 # Load database URL from environment or fallback
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    # Use standard local test SQLite database with aiosqlite driver for async operation
-    DATABASE_URL = "sqlite+aiosqlite:///data/test_officers_arena.db"
+    # Resolve to an absolute path pointing to apps/api/data/test_officers_arena.db
+    core_dir = os.path.dirname(os.path.abspath(__file__))
+    apps_api_dir = os.path.dirname(os.path.dirname(core_dir))
+    db_path = os.path.join(apps_api_dir, "data", "test_officers_arena.db")
+    db_path = db_path.replace("\\", "/")
+    DATABASE_URL = f"sqlite+aiosqlite:///{db_path}"
 
 # Translate postgres:// to postgresql+asyncpg:// if needed
 if DATABASE_URL.startswith("postgresql://"):

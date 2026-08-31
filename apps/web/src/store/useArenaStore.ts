@@ -50,6 +50,8 @@ interface ArenaState {
   averageTopicTime: number; // in seconds
   masteryPercentage: number;
   thetaDelta: number;
+  selectedSubject: string;
+  setSelectedSubject: (subject: string) => void;
   
   // Feedback states for Practice Mode
   showFeedback: boolean;
@@ -104,6 +106,8 @@ export const useArenaStore = create<ArenaState>()(
       averageTopicTime: 60,
       masteryPercentage: 50.0,
       thetaDelta: 0.0,
+      selectedSubject: "All",
+      setSelectedSubject: (selectedSubject) => set({ selectedSubject }),
       
       showFeedback: false,
       feedbackExplanation: null,

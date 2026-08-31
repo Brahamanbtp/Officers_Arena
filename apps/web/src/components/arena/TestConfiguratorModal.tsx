@@ -33,6 +33,7 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
   const setTestMode = useArenaStore((state) => state.setTestMode);
   const setMockQuestions = useArenaStore((state) => state.setMockQuestions);
   const setQuestion = useArenaStore((state) => state.setQuestion);
+  const setSelectedSubjectStore = useArenaStore((state) => state.setSelectedSubject);
 
   // 1. Dual-Mode Track: "adaptive" vs "yearwise"
   const [configTrack, setConfigTrack] = useState<ConfiguratorTrack>("adaptive");
@@ -44,26 +45,72 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
 
   // 3. Year-Wise PYQ Controls
   const [selectedYear, setSelectedYear] = useState<number>(2024);
-  const [selectedPaper, setSelectedPaper] = useState<string>(
-    mode === "UPSC" ? "Paper-I (General Studies)" : "Elementary Mathematics & GK"
-  );
+  const [selectedPaperType, setSelectedPaperType] = useState<string>("Whole Paper");
+
+  React.useEffect(() => {
+    setSelectedSubject("All");
+    setSelectedPaperType("Whole Paper");
+  }, [mode]);
 
   const subjects = mode === "UPSC" 
     ? ["All", "Indian Polity", "Modern History", "Geography", "Economy", "General Science"]
-    : ["All", "Elementary Mathematics", "Defense Studies", "Trigonometry", "Geography", "General Science"];
+    : ["All", "English", "General Knowledge", "Mathematics"];
 
   const counts = [10, 25, 50, 100];
 
-  const availableYears = [2024, 2023, 2022, 2021, 2020];
+  const availableYears = [
+    2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009
+  ];
+
+  const paperTypes = mode === "UPSC"
+    ? ["Whole Paper", "Paper-I (General Studies)", "Paper-II (CSAT)"]
+    : ["Whole Paper", "English", "General Knowledge", "Mathematics"];
+
+  const getPaperDetails = () => {
+    if (mode === "CDS") {
+      if (selectedPaperType === "English") {
+        return { questions: 120, duration: 120, marking: "+0.83 / -0.27" };
+      } else if (selectedPaperType === "General Knowledge") {
+        return { questions: 120, duration: 120, marking: "+0.83 / -0.27" };
+      } else if (selectedPaperType === "Mathematics") {
+        return { questions: 100, duration: 120, marking: "+1.0 / -0.33" };
+      } else {
+        return { questions: 100, duration: 120, marking: "+0.83 / -0.27" };
+      }
+    } else {
+      if (selectedPaperType === "Paper-I (General Studies)") {
+        return { questions: 100, duration: 120, marking: "+2.0 / -0.66" };
+      } else if (selectedPaperType === "Paper-II (CSAT)") {
+        return { questions: 80, duration: 120, marking: "+2.5 / -0.83" };
+      } else {
+        return { questions: 100, duration: 120, marking: "+2.0 / -0.66" };
+      }
+    }
+  };
 
   const handleLaunchTest = () => {
     if (configTrack === "yearwise") {
-      // Force Full Mock mode for Year-Wise PYQ test
       setTestMode("mock");
-      const pyqQuestions = generateQuestionBank(mode, "All", 100, selectedYear, selectedPaper);
+      const details = getPaperDetails();
+      
+      let subjectFilter = "All";
+      if (mode === "CDS") {
+        if (selectedPaperType !== "Whole Paper") {
+          subjectFilter = selectedPaperType;
+        }
+      } else {
+        if (selectedPaperType === "Paper-I (General Studies)") {
+          subjectFilter = "Indian Polity";
+        } else if (selectedPaperType === "Paper-II (CSAT)") {
+          subjectFilter = "Elementary Mathematics";
+        }
+      }
+
+      const pyqQuestions = generateQuestionBank(mode, subjectFilter, details.questions, selectedYear, `${selectedPaperType} Paper`);
       setMockQuestions(pyqQuestions);
     } else {
       setTestMode(selectedTestMode);
+      setSelectedSubjectStore(selectedSubject);
       const adaptiveQuestions = generateQuestionBank(mode, selectedSubject, questionCount);
       if (selectedTestMode === "mock") {
         setMockQuestions(adaptiveQuestions);
@@ -142,7 +189,7 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                   }`}
                 >
                   <Calendar className="w-4 h-4" />
-                  Year-Wise PYQ Mock (2020-2024)
+                  Year-Wise PYQ Mock (2009-2026)
                 </button>
               </div>
 
@@ -161,10 +208,29 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                   <div className="p-4 bg-neutral-900/60 border border-neutral-800 rounded-2xl space-y-2">
                     <div className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                       <Award className="w-4 h-4" />
-                      Tactical Nudge
+                      {selectedSubject === "All" ? "Full Syllabus Coverage" : `${selectedSubject} Topics`}
                     </div>
-                    <p className="text-[11px] text-neutral-300 leading-relaxed">
-                      Review your BKT radar vertices above before launching. Selecting subjects where your cognitive estimate is lowest accelerates your overall IRT theta growth.
+                    <p className="text-[11px] text-neutral-300 leading-relaxed font-semibold">
+                      {mode === "CDS" ? (
+                        <>
+                          {selectedSubject === "All" && "Includes all subtopics across Mathematics, General Knowledge, and English."}
+                          {selectedSubject === "Mathematics" && "Includes: Elementary Mathematics, Trigonometry, Geometry, Arithmetic, and Algebra."}
+                          {selectedSubject === "General Knowledge" && "Includes: Indian Polity, Modern History, Geography, Defense Studies, and General Science."}
+                          {selectedSubject === "English" && "Includes: English Grammar, Vocabulary, Antonyms & Synonyms, and Reading Comprehension."}
+                        </>
+                      ) : (
+                        <>
+                          {selectedSubject === "All" && "Includes all syllabus subjects for UPSC CSE Prelims."}
+                          {selectedSubject === "Indian Polity" && "Includes: Indian Constitution, Fundamental Rights, Parliament, and Judiciary."}
+                          {selectedSubject === "Modern History" && "Includes: Modern Indian History, Freedom Struggle, and National Movements."}
+                          {selectedSubject === "Geography" && "Includes: Physical Geography, Indian & World Geography."}
+                          {selectedSubject === "Economy" && "Includes: Macroeconomics, Economic Growth, and Budgeting."}
+                          {selectedSubject === "General Science" && "Includes: Physics, Chemistry, Biology, and Tech Trends."}
+                        </>
+                      )}
+                    </p>
+                    <p className="text-[10px] text-neutral-500 leading-relaxed">
+                      Questions are adaptively selected using Bayesian Knowledge Tracing based on your mastery.
                     </p>
                   </div>
                 </div>
@@ -300,13 +366,13 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                         <label className="text-xs font-black uppercase tracking-widest text-neutral-400 block">
                           1. Select Examination Year
                         </label>
-                        <div className="grid grid-cols-5 gap-2">
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-32 overflow-y-auto pr-1 scrollbar-thin">
                           {availableYears.map((yr) => (
                             <button
                               key={yr}
                               type="button"
                               onClick={() => setSelectedYear(yr)}
-                              className={`py-3 rounded-xl border text-center font-mono text-xs font-black transition-all cursor-pointer ${
+                              className={`py-2 rounded-xl border text-center font-mono text-xs font-black transition-all cursor-pointer ${
                                 selectedYear === yr
                                   ? "bg-amber-500 text-neutral-950 border-amber-400 shadow-lg shadow-amber-500/20"
                                   : "bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-neutral-700"
@@ -318,22 +384,52 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                         </div>
                       </div>
 
+                      {/* Paper Type Selector */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase tracking-widest text-neutral-400 block">
+                          2. Select Official Paper Type
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {paperTypes.map((type) => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => setSelectedPaperType(type)}
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                                selectedPaperType === type
+                                  ? "bg-amber-500 text-neutral-950 border-amber-400 font-black"
+                                  : "bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-neutral-700"
+                              }`}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Official Paper Selector */}
                       <div className="space-y-2">
                         <label className="text-xs font-black uppercase tracking-widest text-neutral-400 block">
-                          2. Select Official Paper
+                          3. Review Selected Paper Structure
                         </label>
                         <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl flex flex-col gap-2">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-white uppercase tracking-wider">
-                              {mode === "UPSC" ? `UPSC CSE ${selectedYear} General Studies (Paper-I)` : `CDS ${selectedYear} Mathematics & General Knowledge`}
+                              {mode === "UPSC"
+                                ? `UPSC CSE ${selectedYear} ${selectedPaperType}`
+                                : `CDS ${selectedYear} ${selectedPaperType}`
+                              }
                             </span>
                             <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-md text-[10px] font-mono font-bold">
-                              100 Items
+                              {getPaperDetails().questions} Items
                             </span>
                           </div>
-                          <p className="text-[11px] text-neutral-400 leading-relaxed">
-                            Official exam structure calibrated with 120-minute countdown timer, OMR response matrix, and standard negative marking calculus ({mode === "UPSC" ? "+2.0 / -0.66" : "+0.83 / -0.27"}).
+                          <div className="flex items-center gap-4 text-[10px] text-neutral-400 font-mono">
+                            <span>Duration: {getPaperDetails().duration} Mins</span>
+                            <span>Marking: {getPaperDetails().marking}</span>
+                          </div>
+                          <p className="text-[11px] text-neutral-450 leading-relaxed mt-1">
+                            Official exam structure calibrated with strict OMR timer, negative marking index, and diagnostic metrics.
                           </p>
                         </div>
                       </div>

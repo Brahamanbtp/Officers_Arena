@@ -131,7 +131,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
 
   const handleSelectOption = (key: string) => {
     if (isMockMode) {
-      recordMockAnswer(activeQuestionIndex, key, confidence || 3);
+      recordMockAnswer(activeQuestionIndex, key, confidence);
     } else {
       setSelectedOption(key);
     }
@@ -247,7 +247,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
               <span className="flex items-center gap-2 text-amber-400">
                 <HelpCircle className="w-4 h-4" /> Metacognitive Calibration
               </span>
-              <span>How confident are you? ({confidence || 3}/5)</span>
+              <span>How confident are you? {confidence !== null ? `(${confidence}/5)` : "(Select rating)"}</span>
             </div>
 
             <div className="grid grid-cols-5 gap-2.5">

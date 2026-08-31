@@ -244,8 +244,9 @@ export default function LibraryPage() {
   };
 
   const filteredItems = LIBRARY_ITEMS.filter((item) => {
-    if (activeFilter === "PYQ") return item.category === "PYQ Papers";
-    if (activeFilter === "BOOKS") return item.category !== "PYQ Papers";
+    if (activeFilter === "PYQ" && item.category !== "PYQ Papers") return false;
+    if (activeFilter === "BOOKS" && item.category === "PYQ Papers") return false;
+    if (item.exam && item.exam !== mode) return false;
     return true;
   });
 
