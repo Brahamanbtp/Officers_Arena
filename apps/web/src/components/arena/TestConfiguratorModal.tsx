@@ -88,7 +88,7 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
     }
   };
 
-  const handleLaunchTest = () => {
+  const handleLaunchTest = async () => {
     if (configTrack === "yearwise") {
       setTestMode("mock");
       const details = getPaperDetails();
@@ -104,6 +104,23 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
         } else if (selectedPaperType === "Paper-II (CSAT)") {
           subjectFilter = "Elementary Mathematics";
         }
+      }
+
+      // Try fetching actual questions from backend database
+      const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      try {
+        const url = `${apiEndpoint}/api/v1/arena/questions?exam_type=${mode}&year=${selectedYear}&subject=${subjectFilter}&limit=${details.questions}`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const actualQuestions = await response.json();
+          if (actualQuestions && actualQuestions.length > 0) {
+            setMockQuestions(actualQuestions);
+            onClose();
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch year-wise questions from DB, falling back to mock generator:", err);
       }
 
       const pyqQuestions = generateQuestionBank(mode, subjectFilter, details.questions, selectedYear, `${selectedPaperType} Paper`);

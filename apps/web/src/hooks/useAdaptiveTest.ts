@@ -76,6 +76,8 @@ export const useAdaptiveTest = () => {
   const setMasteryMetrics = useArenaStore((state) => state.setMasteryMetrics);
   const setFeedback = useArenaStore((state) => state.setFeedback);
 
+  const testMode = useArenaStore((state) => state.testMode);
+
   const getFallbackQuestion = useCallback((examMode: string, sub: string = "All") => {
     const pool = generateQuestionBank(examMode as any, sub, 1);
     return pool[0] || MOCK_CDS_QUESTIONS[0];
@@ -98,20 +100,22 @@ export const useAdaptiveTest = () => {
   }, [setQuestion, resetTimer, mode, selectedSubject, getFallbackQuestion]);
 
   useEffect(() => {
+    if (testMode === "mock") return;
+
     if (!currentQuestion) {
       setQuestion(getFallbackQuestion(mode, selectedSubject));
       return;
     }
 
-    const isCdsQ = currentQuestion.id.toLowerCase().startsWith("cds");
-    const isUpscQ = currentQuestion.id.toLowerCase().startsWith("upsc");
+    // Try finding exam mode from metadata first, then fall back to ID prefix
+    const qExam = currentQuestion.metadata?.exam_type || 
+                  (currentQuestion.id.toLowerCase().startsWith("cds") ? "CDS" : 
+                   currentQuestion.id.toLowerCase().startsWith("upsc") ? "UPSC" : null);
 
-    if (mode === "CDS" && !isCdsQ) {
-      setQuestion(getFallbackQuestion(mode, selectedSubject));
-    } else if (mode === "UPSC" && !isUpscQ) {
+    if (qExam && qExam !== mode) {
       setQuestion(getFallbackQuestion(mode, selectedSubject));
     }
-  }, [mode, selectedSubject, setQuestion, getFallbackQuestion, currentQuestion]);
+  }, [mode, selectedSubject, setQuestion, getFallbackQuestion, currentQuestion, testMode]);
 
   const loadNextQuestion = useCallback(async () => {
     setTransitioning(true);

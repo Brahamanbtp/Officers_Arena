@@ -123,7 +123,7 @@ export default function LibraryPage() {
   const [isSearching, setIsSearching] = useState(false);
 
   // 3.2 The Year-Wise Injector: Launch PYQ directly into Arena
-  const handleLaunchPYQMock = (item: LibraryItem) => {
+  const handleLaunchPYQMock = async (item: LibraryItem) => {
     const targetExam = item.exam || mode || "UPSC";
     const targetYear = item.year || 2024;
     const targetPaper = item.paper || (targetExam === "UPSC" ? "Paper-I (General Studies)" : "Elementary Math & GK");
@@ -133,6 +133,26 @@ export default function LibraryPage() {
     
     // 2. Set test mode to timed Full Mock
     setTestMode("mock");
+
+    // Try fetching actual questions from backend database
+    const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    try {
+      const url = `${apiEndpoint}/api/v1/arena/questions?exam_type=${targetExam}&year=${targetYear}&limit=100`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const actualQuestions = await response.json();
+        if (actualQuestions && actualQuestions.length > 0) {
+          setMockQuestions(actualQuestions);
+          toast.success(`Launching ${item.title} Official Mock Test!`, {
+            description: `Loaded ${actualQuestions.length} official questions from database with timed OMR.`
+          });
+          router.push("/arena");
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch PYQ from DB, falling back:", err);
+    }
 
     // 3. Generate 100-item PYQ question bank using audit metadata
     const pyqQuestions = generateQuestionBank(targetExam, "All", 100, targetYear, targetPaper);

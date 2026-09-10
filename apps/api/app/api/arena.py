@@ -160,7 +160,10 @@ async def next_question(
             metadata={
                 "difficulty": selected_q.difficulty_b or 0.0,
                 "discrimination": selected_q.discrimination_a or 1.0,
-                "guessing": selected_q.guessing_c or 0.25
+                "guessing": selected_q.guessing_c or 0.25,
+                "subject": selected_q.subject,
+                "year": selected_q.year,
+                "exam_type": selected_q.exam_type
             }
         )
 
@@ -586,3 +589,50 @@ async def srs_dashboard(
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"SRS Dashboard failed: {str(e)}")
+
+@router.get(
+    "/api/v1/arena/questions",
+    response_model=List[NextQuestionResponse],
+    summary="Fetch questions filtered by exam, year, and subject",
+    description="Queries database questions with filters for Year-Wise PYQ Mock delivery."
+)
+async def get_questions(
+    exam_type: str = Query(..., description="UPSC or CDS"),
+    year: Optional[int] = Query(None, description="Year of the exam paper"),
+    subject: Optional[str] = Query(None, description="Subject area (e.g. English, General Knowledge, Mathematics)"),
+    limit: int = Query(120, description="Max questions to return"),
+    db: AsyncSession = Depends(get_async_session)
+):
+    try:
+        stmt = select(Questions).where(Questions.exam_type == exam_type)
+        if year is not None:
+            stmt = stmt.where(Questions.year == year)
+        if subject and subject != "All" and subject != "Whole Paper":
+            # Match standard capitalization/partial match if needed
+            stmt = stmt.where(Questions.subject == subject)
+        
+        stmt = stmt.limit(limit)
+        res = await db.execute(stmt)
+        questions = res.scalars().all()
+        
+        return [
+            NextQuestionResponse(
+                id=q.id,
+                text=q.text,
+                options=q.options,
+                correct_answer=q.correct_answer,
+                explanation=q.explanation,
+                metadata={
+                    "difficulty": q.difficulty_b or 0.5,
+                    "discrimination": q.discrimination_a or 1.0,
+                    "guessing": q.guessing_c or 0.25,
+                    "subject": q.subject or "English",
+                    "year": q.year or 2026,
+                    "exam_type": q.exam_type,
+                    "source": f"{exam_type} {q.year or 2026} Official Exam"
+                }
+            )
+            for q in questions
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch questions: {str(e)}")

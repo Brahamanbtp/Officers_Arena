@@ -10,6 +10,7 @@ export interface IRTMetadata {
   year?: number;
   paper?: string;
   source?: string;
+  exam_type?: string;
 }
 
 export interface Question {
