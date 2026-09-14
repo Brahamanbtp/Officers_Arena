@@ -44,13 +44,38 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
   const [selectedTestMode, setSelectedTestMode] = useState<TestMode>(testMode);
 
   // 3. Year-Wise PYQ Controls
-  const [selectedYear, setSelectedYear] = useState<number>(2024);
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [selectedSession, setSelectedSession] = useState<string>("I");
   const [selectedPaperType, setSelectedPaperType] = useState<string>("Whole Paper");
+  const [dbAvailablePapers, setDbAvailablePapers] = useState<any[] | null>(null);
 
   React.useEffect(() => {
     setSelectedSubject("All");
     setSelectedPaperType("Whole Paper");
+    if (mode === "CDS") {
+      setSelectedSession("I");
+    }
   }, [mode]);
+
+  // Dynamically fetch available papers from backend if reachable
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const fetchAvailable = async () => {
+      const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      try {
+        const res = await fetch(`${apiEndpoint}/api/v1/arena/available-papers?exam_type=${mode}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setDbAvailablePapers(data);
+          }
+        }
+      } catch (e) {
+        // Fallback to static years
+      }
+    };
+    fetchAvailable();
+  }, [isOpen, mode]);
 
   const subjects = mode === "UPSC" 
     ? ["All", "Indian Polity", "Modern History", "Geography", "Economy", "General Science"]
@@ -59,7 +84,7 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
   const counts = [10, 25, 50, 100];
 
   const availableYears = [
-    2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009
+    2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009
   ];
 
   const paperTypes = mode === "UPSC"
@@ -109,7 +134,8 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
       // Try fetching actual questions from backend database
       const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
       try {
-        const url = `${apiEndpoint}/api/v1/arena/questions?exam_type=${mode}&year=${selectedYear}&subject=${subjectFilter}&limit=${details.questions}`;
+        const sessionParam = mode === "CDS" && selectedSession ? `&session=${selectedSession}` : "";
+        const url = `${apiEndpoint}/api/v1/arena/questions?exam_type=${mode}&year=${selectedYear}${sessionParam}&subject=${subjectFilter}&limit=${details.questions}`;
         const response = await fetch(url);
         if (response.ok) {
           const actualQuestions = await response.json();
@@ -123,7 +149,14 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
         console.warn("Failed to fetch year-wise questions from DB, falling back to mock generator:", err);
       }
 
-      const pyqQuestions = generateQuestionBank(mode, subjectFilter, details.questions, selectedYear, `${selectedPaperType} Paper`);
+      const pyqQuestions = generateQuestionBank(
+        mode, 
+        subjectFilter, 
+        details.questions, 
+        selectedYear, 
+        `${selectedPaperType} Paper`,
+        mode === "CDS" ? selectedSession : undefined
+      );
       setMockQuestions(pyqQuestions);
     } else {
       setTestMode(selectedTestMode);
@@ -378,11 +411,19 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                   ) : (
                     /* 2. YEAR-WISE PYQ MOCK CONTROLS */
                     <div className="space-y-5">
-                      {/* Year Selector */}
+                      {/* Year & Session Selector */}
                       <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-neutral-400 block">
-                          1. Select Examination Year
-                        </label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-black uppercase tracking-widest text-neutral-400 block">
+                            1. Select Examination Year {mode === "CDS" && "& Session"}
+                          </label>
+                          {mode === "CDS" && (
+                            <span className="text-[10px] font-mono text-amber-400 font-bold">
+                              Twice-Yearly Cycle (I &amp; II)
+                            </span>
+                          )}
+                        </div>
+
                         <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-32 overflow-y-auto pr-1 scrollbar-thin">
                           {availableYears.map((yr) => (
                             <button
@@ -399,6 +440,35 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                             </button>
                           ))}
                         </div>
+
+                        {/* CDS Session Switcher (I vs II) */}
+                        {mode === "CDS" && (
+                          <div className="pt-2">
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-1.5">
+                              Exam Attempt / Session
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {["I", "II"].map((sess) => {
+                                const isSelected = selectedSession === sess;
+                                return (
+                                  <button
+                                    key={sess}
+                                    type="button"
+                                    onClick={() => setSelectedSession(sess)}
+                                    className={`py-2.5 px-3 rounded-xl border text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                                      isSelected
+                                        ? "bg-amber-500 text-neutral-950 border-amber-400 shadow-md font-black"
+                                        : "bg-neutral-900/80 border-neutral-800 text-neutral-300 hover:border-neutral-700"
+                                    }`}
+                                  >
+                                    <Award className="w-3.5 h-3.5" />
+                                    CDS {selectedYear} {sess}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Paper Type Selector */}
@@ -434,7 +504,7 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                             <span className="text-xs font-bold text-white uppercase tracking-wider">
                               {mode === "UPSC"
                                 ? `UPSC CSE ${selectedYear} ${selectedPaperType}`
-                                : `CDS ${selectedYear} ${selectedPaperType}`
+                                : `CDS ${selectedYear} ${selectedSession} ${selectedPaperType}`
                               }
                             </span>
                             <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-md text-[10px] font-mono font-bold">
@@ -463,7 +533,7 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                     >
                       <Play className="w-4 h-4 fill-current" />
                       {configTrack === "yearwise"
-                        ? `Launch ${selectedYear} ${mode} Official Paper Simulation`
+                        ? `Launch ${mode === "CDS" ? `CDS ${selectedYear} ${selectedSession}` : `UPSC CSE ${selectedYear}`} Official Paper Simulation`
                         : `Launch ${questionCount}-Question ${selectedSubject} Test`
                       }
                     </button>

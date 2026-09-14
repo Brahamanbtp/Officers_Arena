@@ -107,7 +107,8 @@ export function generateQuestionBank(
   subject: string = "All", 
   count: number = 25,
   year?: number,
-  paper?: string
+  paper?: string,
+  session?: string
 ): Question[] {
   const basePool = examType === "CDS" ? BASE_CDS_QUESTIONS : BASE_UPSC_QUESTIONS;
   
@@ -133,22 +134,29 @@ export function generateQuestionBank(
   const result: Question[] = [];
   for (let i = 0; i < count; i++) {
     const template = pool[i % pool.length];
-    const itemYear = year || template.metadata?.year || 2024;
+    const itemYear = year || template.metadata?.year || 2026;
+    const itemSession = examType === "CDS" ? (session || template.metadata?.session || "I") : undefined;
     const itemPaper = paper || template.metadata?.paper || (examType === "UPSC" ? "Paper-I" : "General Knowledge & Maths");
     
+    const sourceLabel = examType === "CDS"
+      ? `CDS ${itemYear}${itemSession ? ` ${itemSession}` : ""}`
+      : `UPSC CSE ${itemYear}`;
+
     result.push({
       ...template,
-      id: `${examType.toLowerCase()}-${year ? year : "sim"}-q-${i + 1}`,
+      id: `${examType.toLowerCase()}-${year ? year : "sim"}-${itemSession ? itemSession.toLowerCase() + "-" : ""}q-${i + 1}`,
       text: template.text,
       metadata: {
         ...template.metadata,
         difficulty: template.metadata?.difficulty ?? 0.50,
         subject: template.metadata?.subject || (examType === "UPSC" ? "Indian Polity" : "Elementary Mathematics"),
         year: itemYear,
+        session: itemSession,
         paper: itemPaper,
-        source: year ? `${examType} ${year} Official Exam` : template.metadata?.source || "Mock Engine"
+        source: year ? sourceLabel : template.metadata?.source || "Mock Engine"
       }
     });
   }
   return result;
 }
+

@@ -38,15 +38,17 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({ text, imageU
         const matchIndex = Math.floor(index / 2);
         const imageUuid = matches[matchIndex]?.[1];
         
-        // Resolve URL from map or fallback to server route
-        const imgSrc = imageUrls[imageUuid] || `/api/v1/images/${imageUuid}`;
+        // Resolve URL from map or fallback to backend server route
+        const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const rawSrc = imageUrls[imageUuid] || `${apiEndpoint}/api/v1/images/${imageUuid}`;
+        const imgSrc = rawSrc.startsWith("http") ? rawSrc : `${apiEndpoint}${rawSrc.startsWith("/") ? "" : "/"}${rawSrc}`;
         
         return (
           <MapViewer
             key={`img-${imageUuid}-${index}`}
             src={imgSrc}
-            alt={`Tactical Exhibit (${imageUuid})`}
-            caption="Reference Exhibit: Click to open tactical pan & zoom interface"
+            alt="Original PDF Figure Exhibit"
+            caption="Original PDF Figure Exhibit: Click to open tactical pan & zoom interface"
           />
         );
       })}

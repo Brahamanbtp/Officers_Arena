@@ -18,6 +18,9 @@ import {
   AlertTriangle,
   Lightbulb
 } from "lucide-react";
+import { MathRenderer } from "../shared/MathRenderer";
+import { QuestionRenderer } from "./QuestionRenderer";
+import { MapViewer } from "../shared/MapViewer";
 
 interface QuestionCardProps {
   onSubmit: (optionId: string, confidence: number) => void;
@@ -184,9 +187,33 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
           )}
         </div>
 
-        {/* Question Text */}
-        <div className="text-base text-neutral-100 font-medium leading-relaxed space-y-4 whitespace-pre-line">
-          {currentQuestion.text}
+        {/* Question Text & Visual Content */}
+        <div className="text-base text-neutral-100 font-medium leading-relaxed space-y-4">
+          <QuestionRenderer 
+            text={currentQuestion.text} 
+            imageUrls={(currentQuestion.images || []).reduce((acc, img) => {
+              const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+              const fullUrl = img.url.startsWith("http") ? img.url : `${apiEndpoint}${img.url}`;
+              acc[img.id] = fullUrl;
+              return acc;
+            }, {} as Record<string, string>)}
+          />
+          {currentQuestion.images && currentQuestion.images.length > 0 && !/\[IMAGE_REF:/i.test(currentQuestion.text) && (
+            <div className="flex flex-col gap-3 pt-2">
+              {currentQuestion.images.map((img) => {
+                const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+                const fullUrl = img.url.startsWith("http") ? img.url : `${apiEndpoint}${img.url}`;
+                return (
+                  <MapViewer
+                    key={img.id}
+                    src={fullUrl}
+                    alt={img.description || "Original PDF Figure Exhibit"}
+                    caption={img.description || "Original PDF Figure Exhibit: Click to open pan & zoom interface"}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Options Group */}
@@ -228,7 +255,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
                   }`}>
                     {key}
                   </span>
-                  <span>{value as string}</span>
+                  <div className="text-neutral-200">
+                    <MathRenderer content={value as string} inline />
+                  </div>
                 </div>
                 {iconElement}
               </button>

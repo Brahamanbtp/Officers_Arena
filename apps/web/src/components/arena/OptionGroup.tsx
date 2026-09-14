@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useArenaStore } from "../../store/useArenaStore";
+import { MathRenderer } from "../shared/MathRenderer";
 
 interface OptionGroupProps {
   options: Record<string, string>; // e.g. {"A": "Option text...", "B": "..."}
@@ -83,9 +84,9 @@ export const OptionGroup: React.FC<OptionGroupProps> = ({ options, onSelect }) =
             </span>
 
             {/* Option text content */}
-            <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200 leading-relaxed font-sans pt-0.5">
-              {text}
-            </span>
+            <div className="text-sm font-medium text-neutral-800 dark:text-neutral-200 leading-relaxed font-sans pt-0.5">
+              <MathRenderer content={text} inline />
+            </div>
           </motion.button>
         );
       })}

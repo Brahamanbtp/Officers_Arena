@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Tuple
 from sqlmodel import Session, select
 from app.models.student_stats import SRSMetadata
@@ -30,6 +30,28 @@ class SRSEngine:
                 return 2  # Low confidence incorrect / Expected
 
     @staticmethod
+    def update_sm2_repetition(quality: int, repetition_count: int, interval: float, ease_factor: float) -> Tuple[float, float, float]:
+        """
+        Calculates next interval, ease_factor (stability), and difficulty based on SM-2 quality rating.
+        """
+        stability = ease_factor
+        difficulty = 3.0
+        if quality < 3:
+            interval = 1.0
+            stability = max(1.3, stability - 0.3)
+            difficulty = min(5.0, difficulty + 0.5)
+        else:
+            if repetition_count <= 1 or interval <= 1.0:
+                interval = 1.0
+            elif interval == 1.0:
+                interval = 6.0
+            else:
+                interval = float(round(interval * stability))
+            stability = max(1.3, stability + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)))
+            difficulty = max(1.0, min(5.0, difficulty + (0.1 - (5 - quality) * 0.05)))
+        return interval, stability, difficulty
+
+    @staticmethod
     def update_srs_metadata(
         db: Session,
         user_id: str,
@@ -48,7 +70,7 @@ class SRSEngine:
         )
         srs_meta = db.exec(stmt).first()
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         quality = SRSEngine.calculate_sm2_quality(is_correct, confidence_level)
 
         if not srs_meta:
@@ -109,7 +131,7 @@ class SRSEngine:
         Urgency = 1.0 - P_recall
         where P_recall = exp(-ln(2) * elapsed_days / stability)
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         elapsed_time = now - srs_meta.last_review
         elapsed_days = elapsed_time.total_seconds() / 86400.0  # Convert to days
 

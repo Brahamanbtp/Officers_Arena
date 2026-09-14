@@ -1,10 +1,10 @@
 import uuid
 import math
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlmodel import select
+from sqlmodel import select, col, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 
@@ -35,12 +35,16 @@ class SubmitResponseResult(BaseModel):
     predicted_score: float
     accuracy_margin: float
 
+from fastapi.responses import FileResponse
+from app.models.database import QuestionImages
+
 class NextQuestionResponse(BaseModel):
     id: uuid.UUID
     text: str
     options: Dict[str, Any]
     correct_answer: str
     explanation: Optional[str] = None
+    images: List[Dict[str, Any]] = []
     metadata: Dict[str, Any]
 
 class SRSDashboardItem(BaseModel):
@@ -95,11 +99,11 @@ async def next_question(
         # 3. Query candidates
         q_stmt = select(Questions).where(Questions.exam_type == exam_type)
         q_res = await db.execute(q_stmt)
-        candidates = [q for q in q_res.scalars().all() if q.id not in answered_ids]
+        candidates: List[Questions] = [q for q in q_res.scalars().all() if q.id not in answered_ids]
 
         if not candidates:
             q_res = await db.execute(q_stmt)
-            candidates = q_res.scalars().all()
+            candidates = list(q_res.scalars().all())
             if not candidates:
                 raise HTTPException(status_code=404, detail="No questions available for this exam type.")
 
@@ -145,11 +149,25 @@ async def next_question(
 
             # Hard Fallback
             if not selected_q:
-                candidates.sort(key=lambda q: abs((q.difficulty_b if q.difficulty_b is not None else 0.0) - student_state.theta))
+                candidates = sorted(candidates, key=lambda q: abs((q.difficulty_b if q.difficulty_b is not None else 0.0) - student_state.theta))
                 selected_q = candidates[0]
 
         if not selected_q:
             raise HTTPException(status_code=404, detail="Could not select a matching question.")
+
+        # Query associated QuestionImages
+        img_stmt = select(QuestionImages).where(QuestionImages.question_id == selected_q.id)
+        img_res = await db.execute(img_stmt)
+        q_images = img_res.scalars().all()
+        
+        image_list = []
+        for img in q_images:
+            image_list.append({
+                "id": str(img.id),
+                "url": f"/api/v1/images/{img.id}",
+                "file_path": img.file_path,
+                "description": img.description or ""
+            })
 
         return NextQuestionResponse(
             id=selected_q.id,
@@ -157,6 +175,7 @@ async def next_question(
             options=selected_q.options,
             correct_answer=selected_q.correct_answer,
             explanation=selected_q.explanation,
+            images=image_list,
             metadata={
                 "difficulty": selected_q.difficulty_b or 0.0,
                 "discrimination": selected_q.discrimination_a or 1.0,
@@ -171,6 +190,47 @@ async def next_question(
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Next question failed: {str(e)}")
+
+@router.get(
+    "/api/v1/images/{image_id}",
+    summary="Serve question exhibit image",
+    description="Streams the binary PNG/JPEG image for a given QuestionImages record ID or file UUID."
+)
+async def serve_question_image(
+    image_id: str,
+    db: AsyncSession = Depends(get_async_session)
+):
+    import os
+    from pathlib import Path
+    
+    # Check if image_id is valid UUID
+    try:
+        uuid_obj = uuid.UUID(image_id)
+        stmt = select(QuestionImages).where(QuestionImages.id == uuid_obj)
+        res = await db.execute(stmt)
+        qi_rec = res.scalars().first()
+        if qi_rec:
+            rel_path = qi_rec.file_path.lstrip("/").replace("static/images/questions/", "")
+            base_dir = Path(__file__).resolve().parent.parent.parent
+            possible_paths = [
+                base_dir / "static" / "images" / "questions" / rel_path,
+                base_dir.parent.parent / "data" / "processed" / "crops" / rel_path,
+                Path(qi_rec.file_path)
+            ]
+            for p in possible_paths:
+                if p.exists() and p.is_file():
+                    return FileResponse(str(p), media_type="image/png")
+    except ValueError:
+        pass
+        
+    # Search by filename match or relative path
+    images_dir = Path(__file__).resolve().parent.parent.parent.parent / "data" / "processed" / "crops"
+    if images_dir.exists():
+        for img_file in images_dir.rglob("*.png"):
+            if image_id in img_file.name or image_id in str(img_file):
+                return FileResponse(str(img_file), media_type="image/png")
+            
+    raise HTTPException(status_code=404, detail="Question image exhibit not found.")
 
 @router.post(
     "/api/v1/arena/submit",
@@ -220,9 +280,9 @@ async def submit_response(
         # 5. Fetch past 5 performance logs with question parameters to update theta
         history_stmt = (
             select(PerformanceLog, Questions)
-            .join(Questions, PerformanceLog.question_id == Questions.id)
+            .join(Questions, col(PerformanceLog.question_id) == col(Questions.id))
             .where(PerformanceLog.user_id == request.user_id)
-            .order_by(PerformanceLog.timestamp.desc())
+            .order_by(col(PerformanceLog.timestamp).desc())
             .limit(5)
         )
         history_res = await db.execute(history_stmt)
@@ -245,7 +305,7 @@ async def submit_response(
 
         student_state.theta = new_theta
         student_state.total_answered += 1
-        student_state.last_updated = datetime.utcnow()
+        student_state.last_updated = datetime.now(timezone.utc)
         db.add(student_state)
 
         # 6. Update Spaced Repetition Metadata
@@ -257,7 +317,7 @@ async def submit_response(
         srs_meta = srs_res.scalars().first()
 
         quality = SRSEngine.calculate_sm2_quality(is_correct, request.confidence_level)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         if not srs_meta:
             srs_meta = SRSMetadata(
@@ -272,30 +332,18 @@ async def submit_response(
             db.add(srs_meta)
             await db.flush()
 
-        stability = srs_meta.stability
-        difficulty = srs_meta.difficulty
-        interval = srs_meta.interval
+        new_interval, new_stability, new_difficulty = SRSEngine.update_sm2_repetition(
+            quality=quality,
+            repetition_count=1 if srs_meta.interval <= 1.0 else 2,
+            interval=srs_meta.interval,
+            ease_factor=srs_meta.stability
+        )
 
-        # SM-2 intervals logic
-        if quality < 3:
-            interval = 1.0
-            stability = max(1.3, stability - 0.3)
-            difficulty = min(5.0, difficulty + 0.5)
-        else:
-            if interval <= 1.0:
-                interval = 1.0
-            elif interval == 1.0:
-                interval = 6.0
-            else:
-                interval = round(interval * stability)
-            stability = max(1.3, stability + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)))
-            difficulty = max(1.0, min(5.0, difficulty + (0.1 - (5 - quality) * 0.05)))
-
-        srs_meta.stability = stability
-        srs_meta.difficulty = difficulty
-        srs_meta.interval = interval
+        srs_meta.interval = new_interval
+        srs_meta.stability = new_stability
+        srs_meta.difficulty = new_difficulty
         srs_meta.last_review = now
-        srs_meta.due_date = now + timedelta(days=interval)
+        srs_meta.due_date = now + timedelta(days=new_interval)
         db.add(srs_meta)
 
         # 7. Bayesian Knowledge Tracing (BKT) Update
@@ -304,7 +352,7 @@ async def submit_response(
             activity_log = UserActivityLog(
                 user_id=request.user_id,
                 topic_id=question.subtopic_id,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(timezone.utc)
             )
             db.add(activity_log)
 
@@ -335,7 +383,7 @@ async def submit_response(
                 
                 # Map difficulty_b to 1-5 difficulty_level
                 diff_b = question.difficulty_b if question.difficulty_b is not None else 0.0
-                difficulty_level = int(round(3.0 + diff_b))
+                difficulty_level = round(3.0 + diff_b)
                 difficulty_level = max(1, min(5, difficulty_level))
                 
                 # Perform BKT update
@@ -402,7 +450,7 @@ async def explain_question(
         attempt_stmt = (
             select(PerformanceLog)
             .where(PerformanceLog.user_id == user_id, PerformanceLog.question_id == question_id)
-            .order_by(PerformanceLog.timestamp.desc())
+            .order_by(col(PerformanceLog.timestamp).desc())
         )
         attempt_res = await db.execute(attempt_stmt)
         attempt = attempt_res.scalars().first()
@@ -481,9 +529,9 @@ async def get_session_report(
         # Get performance logs
         stmt = (
             select(PerformanceLog, Questions)
-            .join(Questions, PerformanceLog.question_id == Questions.id)
+            .join(Questions, col(PerformanceLog.question_id) == col(Questions.id))
             .where(PerformanceLog.user_id == user_id)
-            .order_by(PerformanceLog.timestamp.asc())
+            .order_by(col(PerformanceLog.timestamp).asc())
         )
         res = await db.execute(stmt)
         all_logs = res.all()
@@ -564,7 +612,7 @@ async def srs_dashboard(
     try:
         stmt = (
             select(SRSMetadata, Questions)
-            .join(Questions, SRSMetadata.question_id == Questions.id)
+            .join(Questions, col(SRSMetadata.question_id) == col(Questions.id))
             .where(SRSMetadata.user_id == user_id)
         )
         res = await db.execute(stmt)
@@ -590,49 +638,159 @@ async def srs_dashboard(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"SRS Dashboard failed: {str(e)}")
 
+class AvailablePaper(BaseModel):
+    id: str
+    exam_type: str
+    year: int
+    session: Optional[str] = None
+    subjects: List[str] = []
+    question_count: int = 0
+    display_name: str
+
 @router.get(
     "/api/v1/arena/questions",
     response_model=List[NextQuestionResponse],
-    summary="Fetch questions filtered by exam, year, and subject",
+    summary="Fetch questions filtered by exam, year, session, and subject",
     description="Queries database questions with filters for Year-Wise PYQ Mock delivery."
 )
 async def get_questions(
     exam_type: str = Query(..., description="UPSC or CDS"),
     year: Optional[int] = Query(None, description="Year of the exam paper"),
+    session: Optional[str] = Query(None, description="Exam session: I or II (for CDS)"),
     subject: Optional[str] = Query(None, description="Subject area (e.g. English, General Knowledge, Mathematics)"),
     limit: int = Query(120, description="Max questions to return"),
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
         stmt = select(Questions).where(Questions.exam_type == exam_type)
-        if year is not None:
+        if isinstance(year, int):
             stmt = stmt.where(Questions.year == year)
-        if subject and subject != "All" and subject != "Whole Paper":
-            # Match standard capitalization/partial match if needed
-            stmt = stmt.where(Questions.subject == subject)
+        if isinstance(session, str) and session.strip():
+            stmt = stmt.where(Questions.session == session.strip().upper())
+        if isinstance(subject, str) and subject.strip() and subject not in ("All", "Whole Paper"):
+            stmt = stmt.where(Questions.subject == subject.strip())
         
-        stmt = stmt.limit(limit)
+        limit_val = limit if isinstance(limit, int) else 120
+        stmt = stmt.limit(limit_val)
         res = await db.execute(stmt)
         questions = res.scalars().all()
         
-        return [
-            NextQuestionResponse(
-                id=q.id,
-                text=q.text,
-                options=q.options,
-                correct_answer=q.correct_answer,
-                explanation=q.explanation,
-                metadata={
-                    "difficulty": q.difficulty_b or 0.5,
-                    "discrimination": q.discrimination_a or 1.0,
-                    "guessing": q.guessing_c or 0.25,
-                    "subject": q.subject or "English",
-                    "year": q.year or 2026,
-                    "exam_type": q.exam_type,
-                    "source": f"{exam_type} {q.year or 2026} Official Exam"
+        q_ids = [q.id for q in questions]
+        img_map: Dict[str, List[QuestionImages]] = {}
+        if q_ids:
+            img_stmt = select(QuestionImages).where(col(QuestionImages.question_id).in_(q_ids))
+            img_res = await db.execute(img_stmt)
+            for img in img_res.scalars().all():
+                q_id_str = str(img.question_id)
+                if q_id_str not in img_map:
+                    img_map[q_id_str] = []
+                img_map[q_id_str].append(img)
+
+        result_list = []
+        for q in questions:
+            q_images = img_map.get(str(q.id), [])
+            
+            image_list = [
+                {
+                    "id": str(img.id),
+                    "url": f"/api/v1/images/{img.id}",
+                    "file_path": img.file_path,
+                    "description": img.description or ""
                 }
+                for img in q_images
+            ]
+            
+            result_list.append(
+                NextQuestionResponse(
+                    id=q.id,
+                    text=q.text,
+                    options=q.options,
+                    correct_answer=q.correct_answer,
+                    explanation=q.explanation,
+                    images=image_list,
+                    metadata={
+                        "difficulty": q.difficulty_b or 0.5,
+                        "discrimination": q.discrimination_a or 1.0,
+                        "guessing": q.guessing_c or 0.25,
+                        "subject": q.subject or "English",
+                        "year": q.year or 2026,
+                        "session": q.session,
+                        "exam_type": q.exam_type,
+                        "source": f"{q.exam_type} {q.year or 2026}{(' ' + q.session) if q.session else ''}"
+                    }
+                )
             )
-            for q in questions
-        ]
+            
+        return result_list
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch questions: {str(e)}")
+
+
+@router.get(
+    "/api/v1/arena/available-papers",
+    response_model=List[AvailablePaper],
+    summary="List available examination papers dynamically from database",
+    description="Returns all distinct exam paper combinations (exam, year, session, subjects) present in the database."
+)
+async def get_available_papers(
+    exam_type: Optional[str] = Query(None, description="Filter by exam type: UPSC or CDS"),
+    db: AsyncSession = Depends(get_async_session)
+):
+    try:
+        stmt = select(Questions.exam_type, Questions.year, Questions.session, Questions.subject)
+        if exam_type:
+            stmt = stmt.where(Questions.exam_type == exam_type)
+        res = await db.execute(stmt)
+        rows = res.all()
+
+        # Group by (exam_type, year, session)
+        papers_map: Dict[str, Dict[str, Any]] = {}
+        for e_type, yr, sess, subj in rows:
+            e_type = e_type or "CDS"
+            yr = yr or 2026
+            sess = sess if e_type == "CDS" else None
+            
+            # Key identifier
+            key = f"{e_type}-{yr}-{sess or 'NONE'}"
+            if key not in papers_map:
+                if e_type == "CDS":
+                    disp = f"CDS {yr} {sess}" if sess else f"CDS {yr}"
+                else:
+                    disp = f"UPSC CSE {yr}"
+
+                papers_map[key] = {
+                    "id": key.lower(),
+                    "exam_type": e_type,
+                    "year": yr,
+                    "session": sess,
+                    "subjects": set(),
+                    "question_count": 0,
+                    "display_name": disp
+                }
+
+            if subj:
+                papers_map[key]["subjects"].add(subj)
+            papers_map[key]["question_count"] += 1
+
+        result = []
+        for p in papers_map.values():
+            result.append(AvailablePaper(
+                id=p["id"],
+                exam_type=p["exam_type"],
+                year=p["year"],
+                session=p["session"],
+                subjects=sorted(list(p["subjects"])),
+                question_count=p["question_count"],
+                display_name=p["display_name"]
+            ))
+
+        # Sort newest year first, then session II before I
+        result.sort(key=lambda x: (x.year, x.session or ""), reverse=True)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch available papers: {str(e)}")
+
+
+
+
+

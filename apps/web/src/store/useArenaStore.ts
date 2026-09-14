@@ -8,9 +8,17 @@ export interface IRTMetadata {
   guessing?: number;
   subject?: string;
   year?: number;
+  session?: string;
   paper?: string;
   source?: string;
   exam_type?: string;
+}
+
+export interface QuestionImage {
+  id: string;
+  url: string;
+  file_path?: string;
+  description?: string;
 }
 
 export interface Question {
@@ -19,6 +27,7 @@ export interface Question {
   options: Record<string, string>; // {"A": "Option text...", "B": "..."}
   correct_answer?: string;
   explanation?: string;
+  images?: QuestionImage[];
   metadata?: IRTMetadata;
   subtopic_id?: string;
   topic_id?: string;

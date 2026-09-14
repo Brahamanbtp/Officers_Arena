@@ -29,6 +29,7 @@ interface LibraryItem {
   category: "PYQ Papers" | "Reference Books" | "NCERT Textbooks";
   exam?: "UPSC" | "CDS";
   year?: number;
+  session?: string;
   paper?: string;
   chapters: number;
   questionCount?: number;
@@ -36,7 +37,7 @@ interface LibraryItem {
   content: string;
 }
 
-const LIBRARY_ITEMS: LibraryItem[] = [
+const BASE_LIBRARY_ITEMS: LibraryItem[] = [
   {
     id: "pyq-2024-upsc",
     title: "UPSC CSE 2024 Prelims (Paper-I)",
@@ -62,28 +63,43 @@ const LIBRARY_ITEMS: LibraryItem[] = [
     content: "Question 1: Consider the following statements in respect of the Election Commission of India:\n1. The Chief Election Commissioner and other Election Commissioners enjoy equal powers.\n2. The term of office of an Election Commissioner is 6 years or up to 65 years of age, whichever is earlier.\nWhich of the statements is/are correct?\nAnswer: Both 1 and 2."
   },
   {
-    id: "pyq-2024-cds",
-    title: "CDS 2024-I General Knowledge & Mathematics",
+    id: "pyq-2026-i-cds",
+    title: "CDS 2026 I English & General Knowledge",
     category: "PYQ Papers",
     exam: "CDS",
-    year: 2024,
-    paper: "Elementary Math & GK",
-    chapters: 100,
-    questionCount: 100,
+    year: 2026,
+    session: "I",
+    paper: "English & General Knowledge",
+    chapters: 120,
+    questionCount: 120,
     durationMinutes: 120,
-    content: "Question 1: In a right triangle ABC, if the hypotenuse c = 10 cm and leg a = 6 cm, find the inradius r.\nFormula: r = (a + b - c) / 2 = (6 + 8 - 10)/2 = 2 cm.\nQuestion 2: Which article of the Constitution governs Emergency Provisions?\nAnswer: Article 352-360."
+    content: "Official CDS 2026 I Combined Defence Services Examination Paper.\nIncludes complete bilingual English and General Knowledge sections."
   },
   {
-    id: "pyq-2023-cds",
-    title: "CDS 2023-I General Knowledge & Mathematics",
+    id: "pyq-2025-ii-cds",
+    title: "CDS 2025 II General Knowledge & Mathematics",
     category: "PYQ Papers",
     exam: "CDS",
-    year: 2023,
+    year: 2025,
+    session: "II",
     paper: "Elementary Math & GK",
     chapters: 100,
     questionCount: 100,
     durationMinutes: 120,
-    content: "Question 1: The Tropic of Cancer passes through how many Indian States?\nAnswer: 8 States (Gujarat, Rajasthan, MP, Chhattisgarh, Jharkhand, West Bengal, Tripura, Mizoram)."
+    content: "Official CDS 2025 II Combined Defence Services Examination Paper."
+  },
+  {
+    id: "pyq-2025-i-cds",
+    title: "CDS 2025 I General Knowledge & Mathematics",
+    category: "PYQ Papers",
+    exam: "CDS",
+    year: 2025,
+    session: "I",
+    paper: "Elementary Math & GK",
+    chapters: 100,
+    questionCount: 100,
+    durationMinutes: 120,
+    content: "Official CDS 2025 I Combined Defence Services Examination Paper."
   },
   {
     id: "lib-1",
@@ -121,11 +137,47 @@ export default function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [dynamicPapers, setDynamicPapers] = useState<LibraryItem[]>([]);
+
+  // Dynamically load available PYQs from database
+  React.useEffect(() => {
+    const fetchAvailablePapers = async () => {
+      const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      try {
+        const response = await fetch(`${apiEndpoint}/api/v1/arena/available-papers?exam_type=${mode}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const mappedItems: LibraryItem[] = data.map((p: any) => ({
+              id: `db-${p.id}`,
+              title: p.subjects && p.subjects.length > 0 
+                ? `${p.display_name} — ${p.subjects.join(", ")}` 
+                : p.display_name,
+              category: "PYQ Papers",
+              exam: p.exam_type as "UPSC" | "CDS",
+              year: p.year,
+              session: p.session,
+              paper: p.subjects && p.subjects.length > 0 ? p.subjects[0] : "Official Paper",
+              chapters: p.question_count || 100,
+              questionCount: p.question_count || 100,
+              durationMinutes: 120,
+              content: `Official ${p.display_name} Examination Paper with ${p.question_count} verified questions.`
+            }));
+            setDynamicPapers(mappedItems);
+          }
+        }
+      } catch (err) {
+        // Fall back to static items
+      }
+    };
+    fetchAvailablePapers();
+  }, [mode]);
 
   // 3.2 The Year-Wise Injector: Launch PYQ directly into Arena
   const handleLaunchPYQMock = async (item: LibraryItem) => {
     const targetExam = item.exam || mode || "UPSC";
-    const targetYear = item.year || 2024;
+    const targetYear = item.year || 2026;
+    const targetSession = item.session;
     const targetPaper = item.paper || (targetExam === "UPSC" ? "Paper-I (General Studies)" : "Elementary Math & GK");
 
     // 1. Sync global exam mode
@@ -137,7 +189,8 @@ export default function LibraryPage() {
     // Try fetching actual questions from backend database
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
     try {
-      const url = `${apiEndpoint}/api/v1/arena/questions?exam_type=${targetExam}&year=${targetYear}&limit=100`;
+      const sessionParam = targetSession ? `&session=${targetSession}` : "";
+      const url = `${apiEndpoint}/api/v1/arena/questions?exam_type=${targetExam}&year=${targetYear}${sessionParam}&limit=100`;
       const response = await fetch(url);
       if (response.ok) {
         const actualQuestions = await response.json();
@@ -155,13 +208,13 @@ export default function LibraryPage() {
     }
 
     // 3. Generate 100-item PYQ question bank using audit metadata
-    const pyqQuestions = generateQuestionBank(targetExam, "All", 100, targetYear, targetPaper);
+    const pyqQuestions = generateQuestionBank(targetExam, "All", 100, targetYear, targetPaper, targetSession);
 
     // 4. Inject questions into Zustand store
     setMockQuestions(pyqQuestions);
 
     toast.success(`Launching ${item.title} Official Mock Test!`, {
-      description: `Loaded 100 official ${targetExam} ${targetYear} questions with 120-minute OMR timer.`
+      description: `Loaded 100 official ${targetExam} ${targetYear}${targetSession ? ` ${targetSession}` : ""} questions with 120-minute OMR timer.`
     });
 
     // 5. Clean routing transition to Arena
@@ -263,7 +316,15 @@ export default function LibraryPage() {
     }
   };
 
-  const filteredItems = LIBRARY_ITEMS.filter((item) => {
+  const combinedItems = React.useMemo(() => {
+    if (dynamicPapers.length > 0) {
+      const booksAndNcert = BASE_LIBRARY_ITEMS.filter((i) => i.category !== "PYQ Papers");
+      return [...dynamicPapers, ...booksAndNcert];
+    }
+    return BASE_LIBRARY_ITEMS;
+  }, [dynamicPapers]);
+
+  const filteredItems = combinedItems.filter((item) => {
     if (activeFilter === "PYQ" && item.category !== "PYQ Papers") return false;
     if (activeFilter === "BOOKS" && item.category === "PYQ Papers") return false;
     if (item.exam && item.exam !== mode) return false;
@@ -407,7 +468,7 @@ export default function LibraryPage() {
                         : "bg-neutral-900 text-neutral-400 border-neutral-800"
                       }
                     `}>
-                      {book.category} {book.year ? `• ${book.year}` : ""}
+                      {book.category} {book.year ? `• ${book.year}${book.session ? ` ${book.session}` : ""}` : ""}
                     </span>
 
                     {isPYQ && (

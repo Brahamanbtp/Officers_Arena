@@ -5,7 +5,7 @@ import json
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 
 # Ensure apps/api and scripts are in the search path
 root_dir = Path(__file__).resolve().parent.parent
@@ -18,18 +18,24 @@ def parse_filename_metadata(file_path: Path):
     """
     Parses metadata from raw paper filenames.
     Pattern Examples: 
-      CDS-I-26-ENGLISH.pdf -> exam_type="CDS", year=2026, subject="English"
-      UPSC_CDS_2023_General_Ability.pdf -> exam_type="CDS", year=2023, subject="General Ability"
+      CDS-I-26-ENGLISH.pdf -> exam_type="CDS", year=2026, session="I", subject="English"
+      CDS-II-27-ENGLISH.pdf -> exam_type="CDS", year=2027, session="II", subject="English"
+      UPSC_CDS_2023_General_Ability.pdf -> exam_type="CDS", year=2023, session="I", subject="General Ability"
+      UPSC_CSE_2024_GS1.pdf -> exam_type="UPSC", year=2024, session=None, subject="General Studies"
     """
     base_name = file_path.stem
+    base_upper = base_name.upper()
     
-    # 1. Extract year (4-digit like 2026 or 2-digit like -26-)
+    # 1. Extract exam type
+    exam_type = "CDS" if "CDS" in str(file_path).upper() else "UPSC"
+
+    # 2. Extract year (4-digit like 2026 or 2-digit like -26-)
     year = None
-    year_match_4 = re.search(r'\b(19\d\d|20\d\d)\b', base_name)
+    year_match_4 = re.search(r'(19\d\d|20\d\d)', base_name)
     if year_match_4:
         year = int(year_match_4.group(1))
     else:
-        year_match_2 = re.search(r'[-_]([0-9]{2})[-_]', base_name)
+        year_match_2 = re.search(r'[-_\s]([0-9]{2})[-_\s]', base_name)
         if year_match_2:
             yr_num = int(year_match_2.group(1))
             year = 2000 + yr_num if yr_num < 50 else 1900 + yr_num
@@ -37,21 +43,28 @@ def parse_filename_metadata(file_path: Path):
     if not year:
         year = 2026 # Default fallback year
         
-    # 2. Extract exam type
-    exam_type = "CDS" if "CDS" in str(file_path).upper() else "UPSC"
+    # 3. Extract session for CDS (I or II)
+    session = None
+    if exam_type == "CDS":
+        # Check for II first to avoid partial matching I
+        if re.search(r'[-_\s]II[-_\s]|[-_\s]2[-_\s]|CDS[-_]?II', base_upper):
+            session = "II"
+        elif re.search(r'[-_\s]I[-_\s]|[-_\s]1[-_\s]|CDS[-_]?I', base_upper):
+            session = "I"
+        else:
+            session = "I"  # Default CDS session
             
-    # 3. Extract subject
-    base_upper = base_name.upper()
+    # 4. Extract subject
     if "ENGLISH" in base_upper:
         subject = "English"
     elif "MATH" in base_upper:
-        subject = "Elementary Mathematics"
+        subject = "Mathematics"
     elif "GK" in base_upper or "GENERAL" in base_upper:
         subject = "General Knowledge"
     else:
         subject = "General Studies"
         
-    return exam_type, year, subject
+    return exam_type, year, session, subject
 
 def main():
     # Setup Directories
@@ -116,10 +129,11 @@ def main():
         relative_path_str = str(pdf_path.relative_to(root_dir))
         
         # Extract filename metadata
-        exam_type, year, subject = parse_filename_metadata(pdf_path)
+        exam_type, year, session, subject = parse_filename_metadata(pdf_path)
         
+        session_str = f" | Session: {session}" if session else ""
         print(f"\nProcessing File: {relative_path_str}")
-        print(f"Metadata -> Exam: {exam_type} | Year: {year} | Subject: {subject}")
+        print(f"Metadata -> Exam: {exam_type} | Year: {year}{session_str} | Subject: {subject}")
         
         # Initialize Extractor with metadata context overrides
         try:
@@ -128,12 +142,13 @@ def main():
                 openai_api_key=openai_key,
                 exam_type=exam_type,
                 year=year,
+                session=session,
                 subject=subject
             )
             
             if use_mock_openai:
                 from test_ingestion import MockOpenAIClient
-                extractor.client = MockOpenAIClient()
+                extractor.client = MockOpenAIClient()  # type: ignore
             
             # Execute Ingestion
             upserted_ids = extractor.process_pdf(str(pdf_path))
@@ -146,6 +161,7 @@ def main():
                 "metadata": {
                     "exam_type": exam_type,
                     "year": year,
+                    "session": session,
                     "subject": subject
                 }
             }

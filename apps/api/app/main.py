@@ -5,6 +5,7 @@ load_dotenv()
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.api.student import router as student_router
 from app.api.intelligence import router as intelligence_router
 from app.api.arena import router as arena_router
@@ -46,6 +47,10 @@ app.include_router(tutor_router)
 app.include_router(research_router)
 app.include_router(ingestion_router)
 app.include_router(adaptive_engine_router)
+
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 @app.get("/")
