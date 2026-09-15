@@ -15,6 +15,8 @@ class BilingualFilter:
             return False
         return bool(cls.DEVANAGARI_REGEX.search(text))
 
+    OPTION_LINE_REGEX = re.compile(r"^\s*(?:\([a-dA-D1-4]\)|\[[a-dA-D1-4]\]|[a-dA-D1-4]\s*[\.\:\)])")
+
     @classmethod
     def strip_hindi(cls, text: str) -> str:
         if not text:
@@ -25,13 +27,25 @@ class BilingualFilter:
         english_lines = []
 
         for line in lines:
-            hindi_chars = len(cls.DEVANAGARI_REGEX.findall(line))
-            # If line is mostly Hindi text, skip it
-            if hindi_chars > 0 and (len(line.strip()) < 15 or hindi_chars / max(1, len(line.strip())) > 0.3):
+            stripped_line = line.strip()
+            if not stripped_line:
                 continue
+
+            hindi_chars = len(cls.DEVANAGARI_REGEX.findall(line))
             
-            # Remove any stray Hindi characters within an English line
+            # If line is an option or contains mathematical symbols, NEVER discard it completely
+            is_option_or_math = bool(cls.OPTION_LINE_REGEX.match(stripped_line)) or any(c in stripped_line for c in ["=", "\\", "$", "^", "_", "+", "-", "(a)", "(b)", "(c)", "(d)"])
+            
+            if hindi_chars > 0 and not is_option_or_math:
+                # If line is purely or overwhelmingly Hindi, skip it
+                latin_chars = len(re.findall(r"[a-zA-Z]", stripped_line))
+                if latin_chars == 0 or (hindi_chars / max(1, len(stripped_line)) > 0.5 and latin_chars < 5):
+                    continue
+            
+            # Remove any stray Hindi characters within the line while preserving English/math
             cleaned = cls.DEVANAGARI_REGEX.sub("", line).strip()
+            # Clean up residual artifacts
+            cleaned = re.sub(r"[\s\t]+", " ", cleaned).strip()
             if cleaned:
                 english_lines.append(cleaned)
 

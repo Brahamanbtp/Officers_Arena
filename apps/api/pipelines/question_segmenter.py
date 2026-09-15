@@ -22,6 +22,7 @@ class QuestionSegmenter:
     Layout-aware Question Segmentation Engine.
     Detects numerical question boundaries, statements, and option candidate regions
     while preventing false triggers on years, percentages, decimals, or statement lists.
+    Enforces monotonic question progression to eliminate sub-statement collisions.
     """
 
     # Matches genuine question anchors: e.g. "1.", "2)", "Q.1", "Question 1:", "101."
@@ -31,15 +32,21 @@ class QuestionSegmenter:
     )
 
     STATEMENT_ANCHOR_REGEX = re.compile(
-        r"^\s*(\d{1,2})\s*[\.\)]\s+(.*)"
+        r"^\s*(?:Statement\s+[I|V|X\d]+|Assertion\s*\([A-Z]\)|Reason\s*\([A-Z]\)|List\s*[-–—]?\s*[I|V|X\d]+|\(?\b(?:[i|v|x]+|\d{1,2})\b\s*[\.\)]\s+)(.*)",
+        re.IGNORECASE
     )
 
     OPTION_START_REGEX = re.compile(
         r"^\s*(?:\([a-dA-D1-4]\)|\[[a-dA-D1-4]\]|[a-dA-D1-4]\s*[\.\:\)])"
     )
 
+    DIRECTIONS_REGEX = re.compile(
+        r"^\s*(?:Directions?|PASSAGE\s+[I|V|X\d]+|Read\s+the\s+following)\b",
+        re.IGNORECASE
+    )
+
     @classmethod
-    def is_false_question_anchor(cls, num_val: int, line_text: str) -> bool:
+    def is_false_question_anchor(cls, num_val: int, line_text: str, current_q_num: Optional[int] = None) -> bool:
         """Checks if a numerical match is a false question anchor."""
         if num_val < 1 or num_val > 250:
             return True
@@ -56,6 +63,16 @@ class QuestionSegmenter:
         if "%" in line_text[:10]:
             return True
 
+        # Sequence monotonicity: If we are already on Question N (e.g. Q15),
+        # a line with "1." or "2." is a statement or sub-item, not a jump backwards to Q1/Q2.
+        if current_q_num is not None and current_q_num > 0:
+            # New question must be sequential or close (e.g. current_q_num + 1 to current_q_num + 3)
+            # It cannot go backwards, and cannot skip more than 5 numbers without explicit 'Question' label
+            if num_val <= current_q_num:
+                return True
+            if num_val > current_q_num + 5 and not re.match(r"^\s*Q(?:uestion)?\b", line_text, re.IGNORECASE):
+                return True
+
         return False
 
     @classmethod
@@ -65,6 +82,7 @@ class QuestionSegmenter:
         """
         raw_questions: List[RawSegmentedQuestion] = []
         current_q: Optional[RawSegmentedQuestion] = None
+        current_directions: str = ""
 
         in_options_mode = False
 
@@ -85,32 +103,37 @@ class QuestionSegmenter:
 
             lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
             for line in lines:
-                # Check for new question anchor
-                q_match = cls.Q_ANCHOR_REGEX.match(line)
-                
-                # Check if this line is a statement inside an active multi-statement question
+                # Check for Directions or Passage headers
+                if cls.DIRECTIONS_REGEX.match(line):
+                    current_directions = line
+                    if current_q and len(current_q.question_lines) == 0:
+                        current_q.question_lines.append(line)
+                    continue
+
+                # Check if this line is an explicit statement inside an active multi-statement question
                 is_statement = False
                 if current_q and len(current_q.question_lines) > 0:
                     stmt_match = cls.STATEMENT_ANCHOR_REGEX.match(line)
                     if stmt_match:
-                        stmt_num = int(stmt_match.group(1))
-                        # If stmt_num is small (1-5) and question has words like "consider", "following", "statements"
-                        q_context = " ".join(current_q.question_lines).lower()
-                        if stmt_num in [1, 2, 3, 4, 5] and ("consider" in q_context or "following" in q_context or "statement" in q_context or "list" in q_context):
-                            is_statement = True
+                        is_statement = True
 
+                # Check for new question anchor
+                q_match = cls.Q_ANCHOR_REGEX.match(line)
+                
                 if q_match and not is_statement:
                     num_candidate = int(q_match.group(1))
-                    if not cls.is_false_question_anchor(num_candidate, line):
+                    curr_num = current_q.question_number if current_q else None
+                    if not cls.is_false_question_anchor(num_candidate, line, curr_num):
                         # Finalize previous question
                         if current_q:
                             raw_questions.append(current_q)
 
                         # Start new question
+                        q_init_lines = [current_directions] if current_directions and "PASSAGE" in current_directions.upper() else []
                         current_q = RawSegmentedQuestion(
                             question_number=num_candidate,
                             source_pages=[page.page_number],
-                            question_lines=[],
+                            question_lines=q_init_lines,
                             option_lines=[],
                             statement_lines=[],
                             raw_blocks=[blk],
@@ -122,7 +145,7 @@ class QuestionSegmenter:
                         rest = q_match.group(2).strip()
                         if rest:
                             # Check if the rest of line starts options immediately
-                            if cls.OPTION_START_REGEX.match(rest):
+                            if cls.OPTION_START_REGEX.match(rest) or OptionReconstructor.extract_inline_options(rest):
                                 in_options_mode = True
                                 current_q.option_lines.append(rest)
                             else:

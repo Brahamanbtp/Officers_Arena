@@ -1,4 +1,6 @@
 import os
+import re
+import time
 import json
 import uuid
 import sys
@@ -12,6 +14,7 @@ from app.models.database import Syllabus, Questions, QuestionImages
 from app.schemas.question import QuestionIngestSchema, ExtractedQuestionsResponse
 from pipelines.extractors.pdf_extractor import extract_pdf_content
 from pipelines.vectorizer.embedder import get_embedding
+from pipelines.schemas.manifest import PaperManifest, QuestionManifest, FigureManifest
 
 import openai
 from dotenv import load_dotenv
@@ -191,13 +194,41 @@ class QuestionExtractor:
             print(f"Error generating image description for {image_path}: {e}")
             return f"Error describing image: {e}"
 
+    def _chunk_raw_text(self, raw_text: str, max_questions_per_chunk: int = 8) -> List[str]:
+        """
+        Splits raw text into bounded chunks of 5-8 questions to ensure LLM responses
+        stay well within maximum output token limits (guaranteeing zero truncated JSON).
+        """
+        lines = raw_text.splitlines()
+        chunks: List[str] = []
+        current_chunk_lines: List[str] = []
+        q_count = 0
+
+        for line in lines:
+            if re.match(r"^\s*(?:Q(?:uestion)?\s*[\.\:]?\s*)?\d{1,3}\s*[\.\:\)]\s*", line):
+                q_count += 1
+                if q_count > max_questions_per_chunk and len(current_chunk_lines) > 20:
+                    chunks.append("\n".join(current_chunk_lines))
+                    current_chunk_lines = []
+                    q_count = 1
+            current_chunk_lines.append(line)
+
+        if current_chunk_lines:
+            chunks.append("\n".join(current_chunk_lines))
+
+        if not chunks:
+            step = 3500
+            chunks = [raw_text[i:i+step] for i in range(0, max(1, len(raw_text)), step)]
+
+        return chunks
+
     def structure_content(self, raw_text: str, image_descriptions: Dict[str, str]) -> Tuple[List[QuestionIngestSchema], str]:
         """
-        Converts the raw extracted text + vision descriptions into structured Pydantic models.
+        Converts the raw extracted text + vision descriptions into structured Pydantic models
+        using windowed chunking to avoid output token limits.
         """
-        print("Structuring content into JSON format with gpt-4o-mini...")
+        print("Structuring content into JSON format using windowed chunking with gpt-4o-mini...")
         
-        # Format the image descriptions for the LLM
         image_desc_text = ""
         if image_descriptions:
             image_desc_text = "\n".join([f"[{ref_id}]: {desc}" for ref_id, desc in image_descriptions.items()])
@@ -209,34 +240,68 @@ class QuestionExtractor:
             "Convert all math, chemistry, and science formulas to standard KaTeX notation.\n"
             "Use single '$' for inline equations (e.g. $CH_4$ or $E=mc^2$) and double '$$' for block/centered equations.\n"
             "For multi-statement questions (e.g., 'Consider the following statements...'), preserve the numbered statement list inside the question text exactly, using linebreaks.\n"
-            "Include the correct answer key ('A', 'B', 'C', or 'D'), options dictionary, and detailed explanation.\n"
+            "Ensure options dictionary has non-empty values for A, B, C, and D without label duplication.\n"
+            "Include the correct answer key ('A', 'B', 'C', or 'D'), options dictionary, and explanation.\n"
             "Ensure the output conforms exactly to the requested JSON structure."
         )
 
-        user_content = (
-            f"Here is the raw text extracted from the PDF:\n\n{raw_text}\n\n"
-            f"Here are the descriptions of the extracted images:\n\n{image_desc_text}\n\n"
-            f"Please structure this content into a list of questions using the required format."
-        )
+        chunks = self._chunk_raw_text(raw_text, max_questions_per_chunk=8)
+        all_parsed_questions: List[QuestionIngestSchema] = []
+        raw_responses: List[str] = []
 
-        try:
-            # Use beta parsing API for guaranteed schema adherence
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_content}
-                ],
-                response_format=ExtractedQuestionsResponse,
-                timeout=120
+        for c_idx, chunk in enumerate(chunks):
+            print(f"Processing chunk {c_idx + 1}/{len(chunks)} ({len(chunk)} characters)...")
+            user_content = (
+                f"Here is a section of raw text extracted from the PDF:\n\n{chunk}\n\n"
+                f"Here are the descriptions of the extracted images:\n\n{image_desc_text}\n\n"
+                f"Please structure all questions in this chunk into the required JSON format."
             )
-            parsed = response.choices[0].message.parsed  # type: ignore
-            parsed_questions = parsed.questions if parsed else []
-            raw_response = response.choices[0].message.content or ""  # type: ignore
-            return parsed_questions, raw_response
-        except Exception as e:
-            print(f"Error structuring content with LLM: {e}")
-            raise e
+
+            try:
+                response = self.client.beta.chat.completions.parse(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    response_format=ExtractedQuestionsResponse,
+                    timeout=90
+                )
+                parsed = response.choices[0].message.parsed  # type: ignore
+                if parsed and parsed.questions:
+                    all_parsed_questions.extend(parsed.questions)
+                raw_response = response.choices[0].message.content or ""  # type: ignore
+                raw_responses.append(raw_response)
+            except Exception as e:
+                print(f"Error structuring chunk {c_idx + 1} with LLM: {e}")
+                # Retry once on failure
+                try:
+                    time.sleep(2)
+                    response = self.client.beta.chat.completions.parse(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_content}
+                        ],
+                        response_format=ExtractedQuestionsResponse,
+                        timeout=90
+                    )
+                    parsed = response.choices[0].message.parsed  # type: ignore
+                    if parsed and parsed.questions:
+                        all_parsed_questions.extend(parsed.questions)
+                except Exception as retry_err:
+                    print(f"Retry failed for chunk {c_idx + 1}: {retry_err}")
+
+        # Deduplicate parsed questions by text/question number
+        seen_texts = set()
+        deduped_questions: List[QuestionIngestSchema] = []
+        for q in all_parsed_questions:
+            t_key = q.text[:50].strip().lower()
+            if t_key not in seen_texts:
+                seen_texts.add(t_key)
+                deduped_questions.append(q)
+
+        return deduped_questions, "\n---\n".join(raw_responses)
 
     def map_to_syllabus(self, question_text: str, exam_type: str) -> Optional[uuid.UUID]:
         """

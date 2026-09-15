@@ -22,9 +22,9 @@ class OptionReconstructor:
     """
 
     # Matches standalone option markers at start of lines or within single-line clusters
-    # Examples: (a), (A), [a], [A], a., A., 1), (1)
+    # Examples: (a), (A), [a], [A], a., A., 1), (1), (i), (ii)
     OPT_TOKEN_SPLIT_REGEX = re.compile(
-        r"(?:(?<=\s)|(?<=^))"
+        r"(?:(?<=\s)|(?<=^)|(?<=[,\.;]))"
         r"(?:\((?P<p_label>[a-dA-D1-4])\)|\[(?P<b_label>[a-dA-D1-4])\]|(?P<d_label>[a-dA-D1-4])\s*[\.\:\)])\s*",
         re.MULTILINE
     )
@@ -42,16 +42,16 @@ class OptionReconstructor:
             return "UNKNOWN"
         t = text.strip()
 
-        # Pure numeric / numeric with units (e.g. "25", "25 km/h", "50%", "3.14")
-        if re.match(r"^[\+\-]?\d+(?:\.\d+)?(?:\s*(?:km/h|km/hr|m|cm|mm|kg|g|sec|seconds|hours|%|°|years?))?$", t, re.IGNORECASE):
+        # Pure numeric / numeric with units (e.g. "25", "25 km/h", "50%", "3.14", "₹1,200")
+        if re.match(r"^[\+\-₹$]?\d+(?:,\d+)*(?:\.\d+)?(?:\s*(?:km/h|km/hr|kmph|m|cm|mm|kg|g|sec|seconds|s|hours|hrs|%|°|years?|m²|cm³|m³))?$", t, re.IGNORECASE):
             return "NUMERIC"
 
         # Mathematical expression
-        if any(k in t for k in ["\\frac", "\\sqrt", "^", "_", "\\pm", "\\theta", "\\pi", "\\Delta", "\\angle", "\\sin", "\\cos", "\\tan", "="]):
+        if any(k in t for k in ["\\frac", "\\sqrt", "^", "_", "\\pm", "\\theta", "\\pi", "\\Delta", "\\angle", "\\sin", "\\cos", "\\tan", "=", "+", "-", "\\times"]):
             return "MATHEMATICAL"
 
         # Statements (e.g. "1 only", "Both 1 and 2", "Neither 1 nor 2")
-        if re.search(r"\b(?:only|both|neither|and|nor|statement|statements)\b", t, re.IGNORECASE):
+        if re.search(r"\b(?:only|both|neither|and|nor|statement|statements|list)\b", t, re.IGNORECASE):
             return "STATEMENT"
 
         if re.search(r"\d", t) and re.search(r"[a-zA-Z]", t):
@@ -63,7 +63,7 @@ class OptionReconstructor:
     def extract_inline_options(cls, text: str) -> Dict[str, str]:
         """
         Extracts options from text where multiple options may reside on the same line.
-        e.g. "(a) 25   (b) 50   (c) 75   (d) 100"
+        e.g. "(a) 25   (b) 50   (c) 75   (d) 100" or "(a) 1 only (b) 2 only"
         """
         matches = list(cls.OPT_TOKEN_SPLIT_REGEX.finditer(text))
         if not matches:
@@ -81,8 +81,11 @@ class OptionReconstructor:
             # Clean trailing punctuation / noise
             content = re.sub(r"[\s\n\r]+", " ", content).strip()
 
+            # Remove trailing label remnants if matched
+            content = re.sub(r"\s*[\(\[]?[a-dA-D1-4][\)\]\.\:]\s*$", "", content).strip()
+
             # CRITICAL SAFEGUARD: Do not allow content to be just the label itself
-            if content.lower() == raw_lbl.lower():
+            if content.lower() == raw_lbl.lower() or not content:
                 continue
 
             results[norm_lbl] = content
@@ -114,6 +117,17 @@ class OptionReconstructor:
         lines = [ln.strip() for ln in combined_text.splitlines() if ln.strip()]
 
         for line in lines:
+            # Check if line contains multiple inline options
+            sub_opts = cls.extract_inline_options(line)
+            if len(sub_opts) >= 2:
+                if active_label and active_lines:
+                    options_map[active_label] = " ".join(active_lines).strip()
+                    active_label = None
+                    active_lines = []
+                for k, v in sub_opts.items():
+                    options_map[k] = v
+                continue
+
             # Check if line starts with an option token
             match = cls.OPT_TOKEN_SPLIT_REGEX.match(line)
             if match:
@@ -125,15 +139,6 @@ class OptionReconstructor:
                 raw_lbl = match.group("p_label") or match.group("b_label") or match.group("d_label")
                 norm_lbl = cls.LABEL_NORM_MAP.get(raw_lbl, raw_lbl.upper())
                 active_label = norm_lbl
-
-                # Check if this line also contains multiple options
-                sub_opts = cls.extract_inline_options(line)
-                if len(sub_opts) > 1:
-                    for k, v in sub_opts.items():
-                        options_map[k] = v
-                    active_label = None
-                    active_lines = []
-                    continue
 
                 content_rest = line[match.end():].strip()
                 if content_rest:
@@ -160,7 +165,6 @@ class OptionReconstructor:
             raw_val = options_map.get(expected_lbl, "").strip()
             
             # Remove any accidentally included label from the value
-            # e.g. "a) 25" -> "25"
             cleaned_val = re.sub(r"^\s*[\(\[]?[a-dA-D1-4][\)\]\.\:]\s*", "", raw_val).strip()
 
             # Sanitize KaTeX math

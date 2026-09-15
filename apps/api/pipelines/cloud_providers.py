@@ -120,9 +120,11 @@ class GoogleVisionCloudProvider:
 class GeminiCloudProvider:
     """Gemini Reasoning & KaTeX Vision Provider."""
     MODELS = [
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
+        "models/gemini-3.6-flash",
+        "models/gemini-3.5-flash",
+        "models/gemini-3.1-flash-lite",
+        "models/gemini-3.5-flash-lite",
+        "models/gemini-flash-latest"
     ]
 
     @classmethod
