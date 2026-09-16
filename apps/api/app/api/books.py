@@ -69,10 +69,13 @@ async def list_books(
         for b in books
     ]
 
-def resolve_pdf_path(stored_path: str, file_name: str) -> Path:
-    p = Path(stored_path)
-    if p.is_absolute() and p.exists():
-        return p
+from fastapi.responses import FileResponse, RedirectResponse
+
+def resolve_pdf_path(stored_path: str, file_name: str) -> Optional[Path]:
+    if stored_path and not stored_path.startswith("http"):
+        p = Path(stored_path)
+        if p.is_absolute() and p.exists():
+            return p
 
     candidates = [
         Path.cwd(),
@@ -83,17 +86,18 @@ def resolve_pdf_path(stored_path: str, file_name: str) -> Path:
     ]
     
     for base in candidates:
-        candidate_path = base / stored_path
-        if candidate_path.exists():
-            return candidate_path
-        # Search by filename
+        if stored_path and not stored_path.startswith("http"):
+            candidate_path = base / stored_path
+            if candidate_path.exists():
+                return candidate_path
+        # Search by filename in data/raw_books
         raw_books_dir = base / "data" / "raw_books"
         if raw_books_dir.exists():
             found = list(raw_books_dir.glob(f"**/{file_name}"))
             if found:
                 return found[0]
 
-    return p
+    return None
 
 @router.get("/{book_id}/pdf")
 async def get_book_pdf(book_id: str, session: AsyncSession = Depends(get_session)):
@@ -108,18 +112,22 @@ async def get_book_pdf(book_id: str, session: AsyncSession = Depends(get_session
         raise HTTPException(status_code=404, detail="Book not found")
 
     pdf_path = resolve_pdf_path(book.file_path, book.file_name)
-    if not pdf_path.exists():
-        raise HTTPException(status_code=404, detail=f"PDF file not found on disk at {pdf_path}")
+    if pdf_path and pdf_path.exists():
+        return FileResponse(
+            path=str(pdf_path),
+            media_type="application/pdf",
+            filename=book.file_name,
+            headers={
+                "Content-Disposition": f'inline; filename="{book.file_name}"',
+                "Accept-Ranges": "bytes"
+            }
+        )
+    
+    # If not found on local disk, redirect to Supabase Storage CDN URL
+    if book.file_path and book.file_path.startswith("http"):
+        return RedirectResponse(url=book.file_path)
 
-    return FileResponse(
-        path=str(pdf_path),
-        media_type="application/pdf",
-        filename=book.file_name,
-        headers={
-            "Content-Disposition": f'inline; filename="{book.file_name}"',
-            "Accept-Ranges": "bytes"
-        }
-    )
+    raise HTTPException(status_code=404, detail="PDF file not available on local disk or cloud CDN")
 
 @router.get("/{book_id}/pages/{page_num}")
 async def get_book_page(book_id: str, page_num: int, session: AsyncSession = Depends(get_session)):
