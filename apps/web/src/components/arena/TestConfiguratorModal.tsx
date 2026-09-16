@@ -83,32 +83,36 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
 
   const counts = [10, 25, 50, 100];
 
-  const availableYears = [
-    2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009
-  ];
+  const availableYears = mode === "UPSC"
+    ? [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011]
+    : [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016];
 
   const paperTypes = mode === "UPSC"
     ? ["Whole Paper", "Paper-I (General Studies)", "Paper-II (CSAT)"]
     : ["Whole Paper", "English", "General Knowledge", "Mathematics"];
 
+  const setMockTimerLeft = useArenaStore((state) => state.setMockTimerLeft);
+
   const getPaperDetails = () => {
     if (mode === "CDS") {
       if (selectedPaperType === "English") {
-        return { questions: 120, duration: 120, marking: "+0.83 / -0.27" };
+        return { questions: 120, duration: 120, marking: "+0.83 / -0.27", label: "CDS English" };
       } else if (selectedPaperType === "General Knowledge") {
-        return { questions: 120, duration: 120, marking: "+0.83 / -0.27" };
+        return { questions: 120, duration: 120, marking: "+0.83 / -0.27", label: "CDS General Knowledge" };
       } else if (selectedPaperType === "Mathematics") {
-        return { questions: 100, duration: 120, marking: "+1.0 / -0.33" };
+        return { questions: 100, duration: 120, marking: "+1.0 / -0.33", label: "CDS Mathematics" };
       } else {
-        return { questions: 100, duration: 120, marking: "+0.83 / -0.27" };
+        // Whole Paper: English (120q) + GK (120q) + Maths (100q) = 340 questions, 6 Hours (360 Mins)
+        return { questions: 340, duration: 360, marking: "English/GK (+0.83/-0.27) & Maths (+1.0/-0.33)", label: "CDS Complete (English + GK + Maths)" };
       }
     } else {
       if (selectedPaperType === "Paper-I (General Studies)") {
-        return { questions: 100, duration: 120, marking: "+2.0 / -0.66" };
+        return { questions: 100, duration: 120, marking: "+2.0 / -0.66", label: "GS Paper-I" };
       } else if (selectedPaperType === "Paper-II (CSAT)") {
-        return { questions: 80, duration: 120, marking: "+2.5 / -0.83" };
+        return { questions: 80, duration: 120, marking: "+2.5 / -0.83", label: "CSAT Paper-II" };
       } else {
-        return { questions: 100, duration: 120, marking: "+2.0 / -0.66" };
+        // Whole Paper: GS Paper-I (100q) + CSAT Paper-II (80q) = 180 questions, 4 Hours (240 Mins)
+        return { questions: 180, duration: 240, marking: "GS (+2.0/-0.66) & CSAT (+2.5/-0.83)", label: "UPSC Complete (GS Paper-I + CSAT Paper-II)" };
       }
     }
   };
@@ -117,6 +121,7 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
     if (configTrack === "yearwise") {
       setTestMode("mock");
       const details = getPaperDetails();
+      setMockTimerLeft(details.duration * 60);
       
       let subjectFilter = "All";
       if (mode === "CDS") {
@@ -163,6 +168,7 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
       setSelectedSubjectStore(selectedSubject);
       const adaptiveQuestions = generateQuestionBank(mode, selectedSubject, questionCount);
       if (selectedTestMode === "mock") {
+        setMockTimerLeft(Math.max(300, Math.round(adaptiveQuestions.length * 72)));
         setMockQuestions(adaptiveQuestions);
       } else {
         setQuestion(adaptiveQuestions[0] || null);

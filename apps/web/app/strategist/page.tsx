@@ -359,7 +359,8 @@ export default function StrategistPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            window.location.href = `/library?search=${encodeURIComponent(day.focusArea.split("(")[0].trim())}`;
+                            const bookQuery = day.targetReading.replace("Read ", "").split("(")[0].trim();
+                            window.location.href = `/library?book=${encodeURIComponent(bookQuery)}&search=${encodeURIComponent(day.focusArea)}&autoOpen=true`;
                           }}
                           className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/50 text-neutral-200 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
                         >
@@ -370,17 +371,14 @@ export default function StrategistPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            const setSelectedSubject = useArenaStore.getState().setSelectedSubject;
-                            const setTestMode = useArenaStore.getState().setTestMode;
-                            const subj = day.focusArea.split("(")[0].trim();
-                            setSelectedSubject(subj);
-                            setTestMode("practice");
-                            window.location.href = `/arena?subject=${encodeURIComponent(subj)}`;
+                            const subj = day.dayTitle.split(":")[0].trim();
+                            const focus = day.focusArea.split("(")[0].trim();
+                            window.location.href = `/arena?autoStart=true&mode=practice&exam_type=${mode}&subject=${encodeURIComponent(subj)}&topic=${encodeURIComponent(focus)}&count=25`;
                           }}
                           className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 text-xs font-black uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow"
                         >
                           <Target className="w-3.5 h-3.5" />
-                          Launch Drill
+                          Launch 25-Q Drill
                         </button>
                       </div>
                     </div>

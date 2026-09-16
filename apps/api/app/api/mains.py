@@ -2,7 +2,7 @@ import uuid, os, base64
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel, Field
-from sqlmodel import select, col
+from sqlmodel import select, col, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
@@ -42,8 +42,45 @@ async def list_mains_questions(
     )
     
     # Filter by paper type or subject
-    if paper:
-        stmt = stmt.where(col(Questions.subject).ilike(f"%{paper}%"))
+    if paper and paper != "ALL":
+        p_up = paper.upper()
+        if p_up in ["GS1", "GS-1", "GS 1"]:
+            stmt = stmt.where(or_(
+                col(Questions.subject).ilike("%Paper%I%"),
+                col(Questions.subject).ilike("%GS1%"),
+                col(Questions.subject).ilike("%History%"),
+                col(Questions.subject).ilike("%Geography%"),
+                col(Questions.subject).ilike("%Society%")
+            ))
+        elif p_up in ["GS2", "GS-2", "GS 2"]:
+            stmt = stmt.where(or_(
+                col(Questions.subject).ilike("%Paper%II%"),
+                col(Questions.subject).ilike("%GS2%"),
+                col(Questions.subject).ilike("%Polity%"),
+                col(Questions.subject).ilike("%Governance%"),
+                col(Questions.subject).ilike("%International%")
+            ))
+        elif p_up in ["GS3", "GS-3", "GS 3"]:
+            stmt = stmt.where(or_(
+                col(Questions.subject).ilike("%Paper%III%"),
+                col(Questions.subject).ilike("%GS3%"),
+                col(Questions.subject).ilike("%Economy%"),
+                col(Questions.subject).ilike("%Environment%"),
+                col(Questions.subject).ilike("%Security%"),
+                col(Questions.subject).ilike("%Science%")
+            ))
+        elif p_up in ["GS4", "GS-4", "GS 4"]:
+            stmt = stmt.where(or_(
+                col(Questions.subject).ilike("%Paper%IV%"),
+                col(Questions.subject).ilike("%GS4%"),
+                col(Questions.subject).ilike("%Ethics%"),
+                col(Questions.subject).ilike("%Integrity%")
+            ))
+        elif p_up == "ESSAY":
+            stmt = stmt.where(col(Questions.subject).ilike("%Essay%"))
+        else:
+            stmt = stmt.where(col(Questions.subject).ilike(f"%{paper}%"))
+
     if year:
         stmt = stmt.where(Questions.year == year)
 

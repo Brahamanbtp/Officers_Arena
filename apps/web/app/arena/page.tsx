@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAdaptiveTest } from "@/src/hooks/useAdaptiveTest";
 import { useArenaStore } from "@/src/store/useArenaStore";
 import { ArenaLayout } from "@/src/components/arena/ArenaLayout";
@@ -12,34 +13,72 @@ import { TestConfiguratorModal } from "@/src/components/arena/TestConfiguratorMo
 import { Clock, Sliders, Sparkles } from "lucide-react";
 import { AppHeader } from "@/src/components/shared/AppHeader";
 import { GuestWarningBanner } from "@/src/components/auth/GuestWarningBanner";
+import { generateQuestionBank } from "@/src/utils/mockQuestionBank";
 
-export default function ArenaPage() {
+function ArenaContent() {
+  const searchParams = useSearchParams();
   const { currentQuestion, submitResponse, loadNextQuestion } = useAdaptiveTest();
   const selectedOption = useArenaStore((state) => state.selectedOption);
   const confidence = useArenaStore((state) => state.confidence);
   const timer = useArenaStore((state) => state.timer);
   const mode = useArenaStore((state) => state.mode);
+  const setMode = useArenaStore((state) => state.setMode);
 
   // Test Mode State: "practice" | "mock"
   const testMode = useArenaStore((state) => state.testMode);
+  const setTestMode = useArenaStore((state) => state.setTestMode);
   const mockQuestions = useArenaStore((state) => state.mockQuestions);
+  const setMockQuestions = useArenaStore((state) => state.setMockQuestions);
+  const setQuestion = useArenaStore((state) => state.setQuestion);
+  const setMockTimerLeft = useArenaStore((state) => state.setMockTimerLeft);
+  const setSelectedSubject = useArenaStore((state) => state.setSelectedSubject);
   const activeQuestionIndex = useArenaStore((state) => state.activeQuestionIndex);
   const isMockSubmitted = useArenaStore((state) => state.isMockSubmitted);
   const submitMockTest = useArenaStore((state) => state.submitMockTest);
 
   const [isConfiguratorOpen, setIsConfiguratorOpen] = useState(false);
 
-  // AUTO-OPEN LOGIC: If no question or mock test is active, pop the Mission Briefing modal immediately
+  // Handle URL Auto-Start parameters (from Strategist, Library, or Growth launches)
   useEffect(() => {
+    const autoStart = searchParams.get("autoStart");
+    if (autoStart === "true") {
+      const paramMode = searchParams.get("exam_type") as "UPSC" | "CDS" | null;
+      const paramSubject = searchParams.get("subject") || "All";
+      const paramTopic = searchParams.get("topic");
+      const paramCount = parseInt(searchParams.get("count") || "25", 10);
+      const paramTestMode = (searchParams.get("mode") as "practice" | "mock") || "practice";
+      const paramYear = searchParams.get("year") ? parseInt(searchParams.get("year")!, 10) : undefined;
+      const paramSession = searchParams.get("session") || undefined;
+
+      if (paramMode) setMode(paramMode);
+      setTestMode(paramTestMode);
+      setSelectedSubject(paramSubject);
+
+      const targetExam = paramMode || mode;
+      const questions = generateQuestionBank(targetExam, paramSubject, paramCount, paramYear, paramTopic || undefined, paramSession || undefined);
+      
+      if (paramTestMode === "mock") {
+        setMockQuestions(questions);
+        setMockTimerLeft(Math.max(300, Math.round(questions.length * 72)));
+      } else {
+        setMockQuestions(questions);
+        setQuestion(questions[0] || null);
+      }
+      setIsConfiguratorOpen(false);
+      return;
+    }
+
     const isTestActive = Boolean(currentQuestion || mockQuestions.length > 0);
     if (!isTestActive) {
       setIsConfiguratorOpen(true);
     }
-  }, [currentQuestion, mockQuestions.length]);
+  }, [searchParams]);
 
-  const handleSubmitPractice = () => {
-    if (selectedOption !== null && confidence !== null) {
-      submitResponse(selectedOption, confidence, timer);
+  const handleSubmitPractice = (opt?: string, conf?: number) => {
+    const chosenOption = opt || selectedOption;
+    const chosenConfidence = conf !== undefined ? conf : (confidence !== null ? confidence : 3);
+    if (chosenOption) {
+      submitResponse(chosenOption, chosenConfidence, timer);
     }
   };
 
@@ -69,7 +108,7 @@ export default function ArenaPage() {
               </span>
             </div>
 
-            {/* ONLY keep the 'Configure Setup' button as backup */}
+            {/* Configure Setup button */}
             <div className="flex items-center gap-3">
               <div className="text-xs font-bold text-neutral-300 font-mono hidden md:block">
                 {isMock ? (
@@ -139,5 +178,13 @@ export default function ArenaPage() {
         Officers Arena &copy; 2026 | ADAPTIVE EXAMINATION ENGINE
       </footer>
     </div>
+  );
+}
+
+export default function ArenaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0b0b0b] flex items-center justify-center text-white">Loading Arena...</div>}>
+      <ArenaContent />
+    </Suspense>
   );
 }

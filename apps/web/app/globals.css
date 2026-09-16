@@ -32,6 +32,62 @@ body {
   overflow-x: hidden;
 }
 
+/* Full-Page Light Theme Dynamic Overrides */
+html.light body,
+html.light main,
+html.light .min-h-screen {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.light div[class*="bg-[#0b0b0b]"],
+html.light div[class*="bg-[#080808]"],
+html.light div[class*="bg-[#0a0a0a]"],
+html.light div[class*="bg-[#0c0c0c]"] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.light div[class*="bg-[#121212]"],
+html.light div[class*="bg-[#111111]"],
+html.light div[class*="bg-[#101010]"],
+html.light div[class*="bg-neutral-900"],
+html.light div[class*="bg-neutral-950"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light textarea,
+html.light input[type="text"] {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light .text-white,
+html.light .text-neutral-100,
+html.light .text-neutral-200 {
+  color: #0f172a !important;
+}
+
+html.light .text-neutral-300,
+html.light .text-neutral-400 {
+  color: #475569 !important;
+}
+
+html.light .border-neutral-800,
+html.light .border-neutral-850,
+html.light .border-neutral-900 {
+  border-color: #e2e8f0 !important;
+}
+
+html.light footer {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
 /* Custom accessible scrollbar */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
