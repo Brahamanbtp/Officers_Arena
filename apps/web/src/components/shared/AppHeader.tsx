@@ -106,7 +106,7 @@ export const AppHeader: React.FC = () => {
 
           <Link
             href="/growth"
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               isGrowthActive 
                 ? "bg-amber-600 text-neutral-950 shadow-md font-black" 
                 : `${isLight ? "text-neutral-700 hover:text-neutral-950" : "text-neutral-300 hover:text-white"}`
@@ -117,8 +117,20 @@ export const AppHeader: React.FC = () => {
           </Link>
 
           <Link
+            href="/research"
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              pathname === "/research" 
+                ? "bg-amber-600 text-neutral-950 shadow-md font-black" 
+                : `${isLight ? "text-neutral-700 hover:text-neutral-950" : "text-neutral-300 hover:text-white"}`
+            }`}
+          >
+            <BrainCircuit className="w-4 h-4 text-purple-400" />
+            Research
+          </Link>
+
+          <Link
             href="/strategist"
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               isStrategistActive 
                 ? "bg-amber-600 text-neutral-950 shadow-md font-black" 
                 : `${isLight ? "text-neutral-700 hover:text-neutral-950" : "text-neutral-300 hover:text-white"}`

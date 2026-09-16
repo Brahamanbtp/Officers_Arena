@@ -168,20 +168,46 @@ export default function LibraryPage() {
     router.push("/arena");
   };
 
-  // Launch Adaptive Subject Practice
-  const handleLaunchSubjectPractice = (item: LibraryItem) => {
-    const subjectMap: Record<string, string> = {
-      "M. Laxmikanth - Indian Polity (7th Edition)": "Indian Polity",
-      "NCERT Class XI - Indian Constitution at Work": "Indian Polity",
-      "Bipin Chandra - History of Modern India": "Modern History"
-    };
-
-    const targetSubject = subjectMap[item.title] || "All";
+  // Launch Adaptive Subject Practice directly linked to Textbook Questions
+  const handleLaunchSubjectPractice = async (item: LibraryItem) => {
     setTestMode("practice");
-    const practiceQuestions = generateQuestionBank(mode, targetSubject, 25);
+    const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
+    try {
+      // First try fetching questions linked directly to this specific book
+      let res = await fetch(`${apiEndpoint}/api/v1/arena/questions?exam_type=${mode}&book_id=${item.id}&limit=25`);
+      let questions = [];
+      if (res.ok) {
+        questions = await res.json();
+      }
+
+      // If no direct book questions, fetch by subject with book filter
+      if (!questions || questions.length === 0) {
+        const subj = item.subject || "General Studies";
+        res = await fetch(`${apiEndpoint}/api/v1/arena/questions?exam_type=${mode}&subject=${encodeURIComponent(subj)}&limit=25`);
+        if (res.ok) {
+          questions = await res.json();
+        }
+      }
+
+      if (questions && questions.length > 0) {
+        setMockQuestions(questions);
+        setQuestion(questions[0] || null);
+        toast.success(`Launching ${item.title} Practice!`, {
+          description: `Loaded ${questions.length} authentic questions with Socratic AI feedback.`
+        });
+        router.push("/arena");
+        return;
+      }
+    } catch (err) {
+      console.warn("Falling back to client generator:", err);
+    }
+
+    const practiceQuestions = generateQuestionBank(mode, item.subject || "All", 25);
+    setMockQuestions(practiceQuestions);
     setQuestion(practiceQuestions[0] || null);
 
-    toast.success(`Launching ${targetSubject} Adaptive Practice`, {
+    toast.success(`Launching ${item.title} Practice`, {
       description: "Socratic feedback and BKT knowledge tracing enabled."
     });
 

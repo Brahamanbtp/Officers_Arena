@@ -650,25 +650,41 @@ class AvailablePaper(BaseModel):
 @router.get(
     "/api/v1/arena/questions",
     response_model=List[NextQuestionResponse],
-    summary="Fetch questions filtered by exam, year, session, and subject",
-    description="Queries database questions with filters for Year-Wise PYQ Mock delivery."
+    summary="Fetch questions filtered by exam, year, session, subject, book, and source",
+    description="Queries database questions with dual-track filters for Year-Wise Official Mocks and Omni-Source Adaptive Practice."
 )
 async def get_questions(
     exam_type: str = Query(..., description="UPSC or CDS"),
     year: Optional[int] = Query(None, description="Year of the exam paper"),
     session: Optional[str] = Query(None, description="Exam session: I or II (for CDS)"),
     subject: Optional[str] = Query(None, description="Subject area (e.g. English, General Knowledge, Mathematics)"),
+    source_filter: Optional[str] = Query("ALL", description="ALL, PYQ_ONLY, or BOOKS_ONLY"),
+    book_id: Optional[str] = Query(None, description="Filter by specific textbook UUID"),
     limit: int = Query(120, description="Max questions to return"),
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
-        stmt = select(Questions).where(Questions.exam_type == exam_type)
+        stmt = select(Questions)
+        if exam_type and exam_type != "ALL":
+            stmt = stmt.where(Questions.exam_type == exam_type)
         if isinstance(year, int):
             stmt = stmt.where(Questions.year == year)
         if isinstance(session, str) and session.strip():
             stmt = stmt.where(Questions.session == session.strip().upper())
-        if isinstance(subject, str) and subject.strip() and subject not in ("All", "Whole Paper"):
-            stmt = stmt.where(Questions.subject == subject.strip())
+        if isinstance(subject, str) and subject.strip() and subject not in ("All", "Whole Paper", "All Subjects"):
+            stmt = stmt.where(Questions.subject.ilike(f"%{subject.strip()}%"))
+        
+        # Source & Book filtering
+        if book_id and book_id.strip():
+            try:
+                b_uuid = uuid.UUID(book_id.strip())
+                stmt = stmt.where(Questions.book_id == b_uuid)
+            except ValueError:
+                pass
+        elif source_filter == "BOOKS_ONLY":
+            stmt = stmt.where(Questions.source_type.in_(["TEXTBOOK_PRACTICE", "BOOK_PRACTICE", "BOOK_GROUNDED_AI"]))
+        elif source_filter == "PYQ_ONLY":
+            stmt = stmt.where(Questions.source_type == "OFFICIAL_PYQ")
         
         limit_val = limit if isinstance(limit, int) else 120
         stmt = stmt.limit(limit_val)
@@ -700,6 +716,8 @@ async def get_questions(
                 for img in q_images
             ]
             
+            source_label = f"Book: {q.book_chapter}" if q.book_chapter else (f"{q.exam_type} {q.year or 2026}{(' ' + q.session) if q.session else ''}")
+            
             result_list.append(
                 NextQuestionResponse(
                     id=q.id,
@@ -712,11 +730,15 @@ async def get_questions(
                         "difficulty": q.difficulty_b or 0.5,
                         "discrimination": q.discrimination_a or 1.0,
                         "guessing": q.guessing_c or 0.25,
-                        "subject": q.subject or "English",
+                        "subject": q.subject or "General Studies",
                         "year": q.year or 2026,
                         "session": q.session,
                         "exam_type": q.exam_type,
-                        "source": f"{q.exam_type} {q.year or 2026}{(' ' + q.session) if q.session else ''}"
+                        "source_type": q.source_type or "OFFICIAL_PYQ",
+                        "book_id": str(q.book_id) if q.book_id else None,
+                        "book_page_number": q.book_page_number,
+                        "book_chapter": q.book_chapter,
+                        "source": source_label
                     }
                 )
             )
@@ -730,14 +752,20 @@ async def get_questions(
     "/api/v1/arena/available-papers",
     response_model=List[AvailablePaper],
     summary="List available examination papers dynamically from database",
-    description="Returns all distinct exam paper combinations (exam, year, session, subjects) present in the database."
+    description="Returns all distinct official exam paper combinations (exam, year, session, subjects) present in the database."
 )
 async def get_available_papers(
     exam_type: Optional[str] = Query(None, description="Filter by exam type: UPSC or CDS"),
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
-        stmt = select(Questions.exam_type, Questions.year, Questions.session, Questions.subject)
+        # Strictly query distinct official PYQ papers with valid years for instant response
+        stmt = select(
+            Questions.exam_type, Questions.year, Questions.session, Questions.subject
+        ).where(
+            Questions.source_type == "OFFICIAL_PYQ",
+            Questions.year.isnot(None)
+        ).distinct()
         if exam_type:
             stmt = stmt.where(Questions.exam_type == exam_type)
         res = await db.execute(stmt)

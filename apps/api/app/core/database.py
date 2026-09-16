@@ -1,12 +1,18 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlmodel import SQLModel
 
+# Explicitly load .env files from potential root or local directory
+load_dotenv("apps/api/.env")
+load_dotenv(".env")
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
 # Load database URL from environment or fallback
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    # Resolve to an absolute path pointing to apps/api/data/test_officers_arena.db
     core_dir = os.path.dirname(os.path.abspath(__file__))
     apps_api_dir = os.path.dirname(os.path.dirname(core_dir))
     db_path = os.path.join(apps_api_dir, "data", "test_officers_arena.db")

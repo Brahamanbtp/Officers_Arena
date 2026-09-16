@@ -162,6 +162,13 @@ class Questions(SQLModel, table=True):
     discrimination_a: Optional[float] = Field(default=1.0, sa_column_kwargs={"index": True})
     guessing_c: Optional[float] = Field(default=0.25, sa_column_kwargs={"index": True})
 
+    # Book & Provenance Linkage for Adaptive Practice
+    book_id: Optional[uuid.UUID] = Field(default=None, foreign_key="books.id", index=True)
+    book_page_number: Optional[int] = Field(default=None, index=True)
+    book_chapter: Optional[str] = Field(default=None)
+    source_type: Optional[str] = Field(default="OFFICIAL_PYQ", index=True)  # "OFFICIAL_PYQ", "TEXTBOOK_PRACTICE", "BOOK_GROUNDED_AI"
+    source_citation: Optional[str] = Field(default=None)
+
     # Relationships
     subtopic: Optional[Syllabus] = Relationship(back_populates="questions")
     images: List["QuestionImages"] = Relationship(

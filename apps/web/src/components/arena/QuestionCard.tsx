@@ -160,15 +160,33 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
         transition={{ duration: 0.25, ease: "easeOut" }}
         className="w-full bg-[#111111] border border-neutral-800 p-6 md:p-8 rounded-3xl shadow-2xl flex flex-col gap-6 relative select-none font-sans"
       >
-        {/* Header Badge & Topic */}
-        <div className="flex items-center justify-between text-xs border-b border-neutral-850 pb-4">
-          <div className="flex items-center gap-3">
-            <span className="px-3.5 py-1.5 bg-neutral-900 border border-neutral-800 rounded-lg font-bold text-xs uppercase tracking-widest text-amber-400">
+        {/* Header Badge, Source Provenance & Topic */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs border-b border-neutral-850 pb-4">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-lg font-bold text-xs uppercase tracking-widest text-amber-400">
               {(currentQuestion.metadata as any)?.subject || `${examMode} Subject`}
             </span>
-            <span className="text-xs text-neutral-300 font-bold uppercase tracking-wider">
-              {isMockMode ? `Mock Item (${activeQuestionIndex + 1}/${mockQuestions.length})` : `${examMode} Practice Item`}
-            </span>
+            
+            {/* Provenance Badge (Official PYQ vs Standard Textbook) */}
+            {(currentQuestion.metadata as any)?.source_type === "TEXTBOOK_PRACTICE" || (currentQuestion.metadata as any)?.book_chapter ? (
+              <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 rounded-lg text-xs font-bold flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                {(currentQuestion.metadata as any)?.book_chapter || "Standard Textbook Practice"}
+                {(currentQuestion.metadata as any)?.book_page_number ? ` (Pg. ${(currentQuestion.metadata as any).book_page_number})` : ""}
+              </span>
+            ) : (
+              <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                {(currentQuestion.metadata as any)?.source || `${examMode} Official PYQ`}
+              </span>
+            )}
+
+            {/* Cognitive & IRT Difficulty Level */}
+            {(currentQuestion.metadata as any)?.difficulty && (
+              <span className="px-2.5 py-1 bg-neutral-900 border border-neutral-800 text-neutral-400 rounded-lg text-[11px] font-mono">
+                IRT θ: {(currentQuestion.metadata as any).difficulty}
+              </span>
+            )}
           </div>
 
           {/* Mark for Review Button in Mock Mode */}
