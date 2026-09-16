@@ -74,7 +74,8 @@ class PageRouter:
         for b_idx, b in enumerate(raw_text_blocks):
             if len(b) < 5:
                 continue
-            x0, y0, x1, y1, text = b[:5]
+            x0, y0, x1, y1 = float(b[0]), float(b[1]), float(b[2]), float(b[3])
+            text = str(b[4])
             clean_t = text.strip()
             if not clean_t:
                 continue

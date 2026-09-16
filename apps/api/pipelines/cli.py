@@ -56,10 +56,15 @@ def run_ingest_all():
 
     with Session(engine) as session:
         for paper_info in PDF_MAP:
-            pdf_path = raw_papers_dir / paper_info["filename"]
+            filename_str = str(paper_info["filename"])
+            pdf_path = raw_papers_dir / filename_str
             assert pdf_path.exists(), f"Raw PDF missing: {pdf_path}"
 
-            print(f"\n--- Processing Paper: {paper_info['filename']} ({paper_info['subject']} {paper_info['year']}) ---")
+            subject_str = str(paper_info["subject"])
+            year_int = int(paper_info["year"])
+            db_session_val = str(paper_info["db_session"]) if paper_info.get("db_session") is not None else None
+
+            print(f"\n--- Processing Paper: {filename_str} ({subject_str} {year_int}) ---")
             
             # 1. Segment questions directly from PDF
             doc = fitz.open(str(pdf_path))
@@ -82,12 +87,12 @@ def run_ingest_all():
                 # Check if question already exists in DB
                 q_query = select(Questions).where(
                     Questions.exam_type == "CDS",
-                    Questions.year == paper_info["year"],
-                    Questions.subject == paper_info["subject"],
+                    Questions.year == year_int,
+                    Questions.subject == subject_str,
                     Questions.question_number == q_num
                 )
-                if paper_info["db_session"]:
-                    q_query = q_query.where(Questions.session == paper_info["db_session"])
+                if db_session_val:
+                    q_query = q_query.where(Questions.session == db_session_val)
                 else:
                     q_query = q_query.where((Questions.session == None) | (Questions.session == "I"))
 
@@ -97,11 +102,11 @@ def run_ingest_all():
                         text=sanitized_text,
                         options={"A": "Option A", "B": "Option B", "C": "Option C", "D": "Option D"},
                         correct_answer="A",
-                        explanation=f"Detailed solution for {paper_info['subject']} {paper_info['year']} Q{q_num}",
-                        year=paper_info["year"],
-                        session=paper_info["db_session"],
+                        explanation=f"Detailed solution for {subject_str} {year_int} Q{q_num}",
+                        year=year_int,
+                        session=db_session_val,
                         question_number=q_num,
-                        subject=paper_info["subject"],
+                        subject=subject_str,
                         exam_type="CDS",
                         is_verified=True,
                         language_type="english"
@@ -121,7 +126,8 @@ def run_ingest_all():
 
                         fig_bbox = VisualExtractor.find_figure_bounding_box(page, q_num, sanitized_text, column)
                         if fig_bbox:
-                            filename_prefix = f"CDS_{paper_info['subject'].replace(' ', '_')}_{paper_info['year']}_Q{q_num}"
+                            clean_subj = subject_str.replace(' ', '_')
+                            filename_prefix = f"CDS_{clean_subj}_{year_int}_Q{q_num}"
                             crop_path, status = VisualExtractor.crop_and_save_figure(
                                 doc, fig_bbox, str(crops_dir), filename_prefix
                             )

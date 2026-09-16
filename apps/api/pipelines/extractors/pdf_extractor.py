@@ -34,7 +34,8 @@ def extract_pdf_content(pdf_path: str, output_image_dir: str) -> Tuple[str, List
         page = doc[page_num]
         
         # Get text from page
-        page_text = page.get_text("text").strip()
+        raw_page_text = page.get_text("text")
+        page_text = str(raw_page_text or "").strip()
         
         # Extract embedded images
         image_list = page.get_images(full=True)

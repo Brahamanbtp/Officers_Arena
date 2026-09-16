@@ -96,7 +96,8 @@ def detect_column_layout(page: fitz.Page) -> str:
     for b in blocks:
         # b = (x0, y0, x1, y1, text, block_no, block_type)
         if len(b) >= 4:
-            x0, _, x1, _ = b[:4]
+            x0 = float(b[0])
+            x1 = float(b[2])
             # Ignore header/footer full width blocks
             if (x1 - x0) > 0.7 * page_width:
                 continue
@@ -148,7 +149,7 @@ def run_pdf_preflight(pdf_path: str) -> PaperManifest:
     
     for p_idx in range(len(doc)):
         page = doc[p_idx]
-        p_text = page.get_text("text")
+        p_text = str(page.get_text("text") or "")
         
         # Cache render
         render_page_to_cache(page, pdf_hash, p_idx, dpi=200)

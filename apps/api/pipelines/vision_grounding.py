@@ -49,8 +49,8 @@ class VisionGroundingEngine:
         # Extract text blocks with PyMuPDF spatial bounding
         blocks = page.get_text("blocks")
         # Filter English column blocks (left column x0 < 0.55 * w_pt)
-        eng_blocks = [b for b in blocks if b[0] < 0.55 * w_pt]
-        eng_blocks.sort(key=lambda b: b[1])  # Sort vertically
+        eng_blocks = [b for b in blocks if float(b[0]) < 0.55 * w_pt]
+        eng_blocks.sort(key=lambda b: float(b[1]))  # Sort vertically
 
         # Render 300 DPI pixmap for OpenCV visual check
         pix = page.get_pixmap(dpi=300)

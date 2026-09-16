@@ -215,12 +215,13 @@ class VisualExtractor:
         # Clip bottom edge precisely to strip Hindi text line below diagram baseline
         final_y1 = max(final_y0 + 50.0, fig_y1 - 12.0)
 
+        p_num_int = int(page.number) if page.number is not None else 0
         bbox = BoundingBox(
             x0=final_x0,
             y0=final_y0,
             x1=final_x1,
             y1=final_y1,
-            page_num=int(page.number) + 1
+            page_num=p_num_int + 1
         )
         return bbox
 

@@ -510,6 +510,7 @@ class QuestionExtractor:
         from pipelines.preflight import run_pdf_preflight
         from pipelines.segmentation import QuestionSegmenter
         from pipelines.visual_extractor import VisualExtractor
+        from pipelines.validator import IngestionValidator
         try:
             import pymupdf as fitz
         except ImportError:
