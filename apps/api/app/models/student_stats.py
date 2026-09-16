@@ -5,7 +5,7 @@ from sqlmodel import SQLModel, Field
 from sqlalchemy import Index
 
 class StudentAttempt(SQLModel, table=True):
-    __tablename__ = "student_attempts"
+    __tablename__ = "student_attempts"  # type: ignore
     __table_args__ = (
         Index("ix_student_attempts_user_exam", "user_id", "exam_type"),
         Index("ix_student_attempts_user_subtopic", "user_id", "subtopic_id"),
@@ -35,7 +35,7 @@ class StudentAttempt(SQLModel, table=True):
     calibration_impact: float = Field(default=0.0, nullable=False)  # Confidence weight impact
 
 class StudentMastery(SQLModel, table=True):
-    __tablename__ = "student_mastery"
+    __tablename__ = "student_mastery"  # type: ignore
     __table_args__ = (
         Index("ix_student_mastery_user_exam", "user_id", "exam_type"),
         Index("ix_student_mastery_user_subtopic", "user_id", "subtopic_id"),
@@ -69,7 +69,7 @@ class StudentMastery(SQLModel, table=True):
     last_alert_sent: Optional[datetime] = Field(default=None, nullable=True)
 
 class MetacognitiveStats(SQLModel, table=True):
-    __tablename__ = "metacognitive_stats"
+    __tablename__ = "metacognitive_stats"  # type: ignore
     __table_args__ = (
         Index("ix_metacognitive_stats_user_exam", "user_id", "exam_type"),
     )
@@ -84,7 +84,7 @@ class MetacognitiveStats(SQLModel, table=True):
     bias_type: str = Field(default="Calibrated", nullable=False)  # "Overconfident", "Underconfident", "Calibrated"
 
 class StudentState(SQLModel, table=True):
-    __tablename__ = "student_state"
+    __tablename__ = "student_state"  # type: ignore
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -97,7 +97,7 @@ class StudentState(SQLModel, table=True):
     last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
 
 class PerformanceLog(SQLModel, table=True):
-    __tablename__ = "performance_log"
+    __tablename__ = "performance_log"  # type: ignore
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -111,7 +111,7 @@ class PerformanceLog(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
 
 class SRSMetadata(SQLModel, table=True):
-    __tablename__ = "srs_metadata"
+    __tablename__ = "srs_metadata"  # type: ignore
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -126,7 +126,7 @@ class SRSMetadata(SQLModel, table=True):
     last_review: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
 
 class TopicMastery(SQLModel, table=True):
-    __tablename__ = "topic_mastery"
+    __tablename__ = "topic_mastery"  # type: ignore
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -138,7 +138,7 @@ class TopicMastery(SQLModel, table=True):
     p_transit: float = Field(default=0.10, nullable=False)
 
 class UserActivityLog(SQLModel, table=True):
-    __tablename__ = "user_activity_logs"
+    __tablename__ = "user_activity_logs"  # type: ignore
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -149,7 +149,7 @@ class UserActivityLog(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
 
 class TutorChatSession(SQLModel, table=True):
-    __tablename__ = "tutor_chat_sessions"
+    __tablename__ = "tutor_chat_sessions"  # type: ignore
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,

@@ -110,7 +110,7 @@ async def onboard_initialize(
 ):
     verify_user_authorization(auth_user, request.user_id)
     try:
-        attempts_list = [a.dict() for a in request.attempts]
+        attempts_list = [a.model_dump() if hasattr(a, "model_dump") else a.dict() for a in request.attempts]
         result = await DiagnosticService.initialize_student_profile(
             db=db,
             user_id=request.user_id,
