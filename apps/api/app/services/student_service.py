@@ -1,10 +1,10 @@
 import uuid
 import logging
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Tuple
 
-from sqlmodel import select
+from sqlmodel import select, col
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.student_stats import StudentAttempt, StudentMastery, MetacognitiveStats
@@ -46,7 +46,7 @@ class StudentService:
         Saves student attempt, updates BKT (IRT/confidence-weighted)/HLR, and logs trace metrics.
         If confidence_level is omitted, implicitly infers confidence from response-time velocity.
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Infer implicit confidence from chronometric velocity if not explicitly reported
         if confidence_level is None:
@@ -87,7 +87,7 @@ class StudentService:
                 if parent_name:
                     # Query parent subtopic mastery score for this user
                     parent_stmt = select(StudentMastery).join(
-                        Syllabus, StudentMastery.subtopic_id == Syllabus.id
+                        Syllabus, col(StudentMastery.subtopic_id) == col(Syllabus.id)
                     ).where(
                         StudentMastery.user_id == user_id,
                         Syllabus.name == parent_name,
@@ -308,7 +308,7 @@ class StudentService:
         Query subtopic mastery where estimated recall probability < 0.5.
         Uses mathematical simplification: 2^(-delta_t / h) < 0.5  <=>  delta_t > h
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         mastery_stmt = select(StudentMastery).where(
             StudentMastery.user_id == user_id,
@@ -353,7 +353,7 @@ class StudentService:
         edges = []
         
         subjects = [s for s in syllabus_list if s.level == "Subject"]
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         for idx, subj in enumerate(subjects):
             subj_angle = (2 * math.pi * idx) / max(1, len(subjects))
@@ -434,7 +434,7 @@ class StudentService:
             return []
             
         subtopic_ids = [m.subtopic_id for m in masteries]
-        sub_stmt = select(Syllabus).where(Syllabus.id.in_(subtopic_ids))
+        sub_stmt = select(Syllabus).where(col(Syllabus.id).in_(subtopic_ids))
         sub_res = await self.db.execute(sub_stmt)
         sub_map = {s.id: s.name for s in sub_res.scalars().all()}
         
