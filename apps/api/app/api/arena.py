@@ -672,19 +672,19 @@ async def get_questions(
         if isinstance(session, str) and session.strip():
             stmt = stmt.where(Questions.session == session.strip().upper())
         if isinstance(subject, str) and subject.strip() and subject not in ("All", "Whole Paper", "All Subjects"):
-            stmt = stmt.where(Questions.subject.ilike(f"%{subject.strip()}%"))
+            stmt = stmt.where(col(Questions.subject).ilike(f"%{subject.strip()}%"))
         
         # Source & Book filtering
         if book_id and book_id.strip():
             try:
                 b_uuid = uuid.UUID(book_id.strip())
-                stmt = stmt.where(Questions.book_id == b_uuid)
+                stmt = stmt.where(col(Questions.book_id) == b_uuid)
             except ValueError:
                 pass
         elif source_filter == "BOOKS_ONLY":
-            stmt = stmt.where(Questions.source_type.in_(["TEXTBOOK_PRACTICE", "BOOK_PRACTICE", "BOOK_GROUNDED_AI"]))
+            stmt = stmt.where(col(Questions.source_type).in_(["TEXTBOOK_PRACTICE", "BOOK_PRACTICE", "BOOK_GROUNDED_AI"]))
         elif source_filter == "PYQ_ONLY":
-            stmt = stmt.where(Questions.source_type == "OFFICIAL_PYQ")
+            stmt = stmt.where(col(Questions.source_type) == "OFFICIAL_PYQ")
         
         limit_val = limit if isinstance(limit, int) else 120
         stmt = stmt.limit(limit_val)
@@ -764,7 +764,7 @@ async def get_available_papers(
             Questions.exam_type, Questions.year, Questions.session, Questions.subject
         ).where(
             Questions.source_type == "OFFICIAL_PYQ",
-            Questions.year.isnot(None)
+            col(Questions.year).isnot(None)
         ).distinct()
         if exam_type:
             stmt = stmt.where(Questions.exam_type == exam_type)
