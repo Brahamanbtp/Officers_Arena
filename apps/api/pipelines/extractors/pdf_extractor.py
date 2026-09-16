@@ -1,4 +1,7 @@
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 import uuid
 import os
 from typing import Tuple, List, Dict, Any

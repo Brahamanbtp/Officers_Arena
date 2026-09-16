@@ -10,7 +10,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import google.generativeai as genai
+import warnings
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    import google.generativeai as genai
 
 genai_key = os.getenv("GEMINI_API_KEY")
 if genai_key:

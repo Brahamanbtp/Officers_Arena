@@ -1,7 +1,10 @@
 import os
 import re
 import hashlib
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Optional
 from datetime import datetime, timezone

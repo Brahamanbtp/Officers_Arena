@@ -1,6 +1,9 @@
 import os
 import re
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from pipelines.schemas.manifest import BoundingBox, FigureManifest, QuestionManifest

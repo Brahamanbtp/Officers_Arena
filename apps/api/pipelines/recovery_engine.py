@@ -1,4 +1,7 @@
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 from typing import Optional, Dict, Any, Tuple
 from pipelines.document_representation import BoundingBox
 from pipelines.image_preprocessor import ImagePreprocessor

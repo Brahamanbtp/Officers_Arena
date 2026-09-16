@@ -510,8 +510,10 @@ class QuestionExtractor:
         from pipelines.preflight import run_pdf_preflight
         from pipelines.segmentation import QuestionSegmenter
         from pipelines.visual_extractor import VisualExtractor
-        from pipelines.validator import IngestionValidator
-        import fitz
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            import fitz
 
         print(f"=== Starting Question-Centric Pipeline for: {pdf_path} (dry_run={dry_run}) ===")
         doc = fitz.open(pdf_path)

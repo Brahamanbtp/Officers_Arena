@@ -1,6 +1,13 @@
 import os
-import google.generativeai as genai
+import json
+import logging
 from typing import Optional
+import httpx
+from dotenv import load_dotenv
+
+load_dotenv("apps/api/.env")
+
+logger = logging.getLogger("services.tutor")
 
 class TutorService:
     @staticmethod
@@ -56,21 +63,40 @@ class TutorService:
     ) -> str:
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            # Fallback explanation if API key is not present
             return cls._generate_fallback_explanation(question_text, correct_answer, student_answer, theta)
             
         try:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-3.5-flash-lite")
             prompt = cls.get_prompt_for_theta(question_text, correct_answer, student_answer, theta)
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
             
-            # Since generating content can be blocking, we run it in an executor or call async if available.
-            # google-generativeai supports async calls: generate_content_async
-            response = await model.generate_content_async(prompt, request_options={"timeout": 8.0})
-            return response.text.strip()
+            payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": prompt}
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.3,
+                    "maxOutputTokens": 800
+                }
+            }
+
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.post(url, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    candidates = data.get("candidates", [])
+                    if candidates and "content" in candidates[0]:
+                        parts = candidates[0]["content"].get("parts", [])
+                        if parts and "text" in parts[0]:
+                            return parts[0]["text"].strip()
+
+            return cls._generate_fallback_explanation(question_text, correct_answer, student_answer, theta)
         except Exception as e:
-            # Fallback on API errors
-            return f"{cls._generate_fallback_explanation(question_text, correct_answer, student_answer, theta)}\n\n*(Note: AI tutor service is currently running in local fallback mode: {str(e)})*"
+            logger.warning("Gemini explanation call failed, using fallback: %s", e)
+            return f"{cls._generate_fallback_explanation(question_text, correct_answer, student_answer, theta)}\n\n*(Note: AI tutor service is running in local heuristic mode)*"
 
     @staticmethod
     def _generate_fallback_explanation(question: str, correct: str, selected: str, theta: float) -> str:
@@ -79,22 +105,22 @@ class TutorService:
                 f"### Beginner Explanation\n"
                 f"The correct option is **{correct}**.\n\n"
                 f"**Definitions & Concepts:**\n"
-                f"- This question tests basic terms. Always start by verifying the definitions of key terms in the stem.\n"
-                f"- Make sure to write down definitions for reference before analyzing choices."
+                f"- This question tests foundational terminology. Start by reviewing the core definitions in the stem.\n"
+                f"- Ground each option against standard textbook principles before selecting."
             )
         elif -1.0 <= theta <= 1.0:
             return (
                 f"### Intermediate Logical Breakdown\n"
                 f"The correct option is **{correct}**, while you selected **{selected}**.\n\n"
                 f"**Logical Connectivity:**\n"
-                f"- Connecting terms: Notice how the core concept directly implies the correct choice.\n"
-                f"- Process of elimination: Option {selected} fails under closer analysis because it lacks the necessary prerequisites."
+                f"- Connecting terms: Notice how the primary concept directly implies the correct choice.\n"
+                f"- Process of elimination: Option {selected} fails under scrutiny because it lacks statutory or empirical support."
             )
         else:
             return (
                 f"### Advanced Nuance & Distractor Analysis\n"
                 f"The correct option is **{correct}** (Selected: **{selected}**).\n\n"
                 f"**Nuance & Trap Analysis:**\n"
-                f"- The option {selected} functions as a classic cognitive distractor, appealing to general terms but failing on the specific legal/technical details.\n"
-                f"- Note the precise statutory exceptions or edge cases that make {correct} the only valid option."
+                f"- Option {selected} is a subtle distractor designed to appeal to general intuition but failing on specific exceptions.\n"
+                f"- Verify the exact constitutional provisions or landmark precedents that establish {correct}."
             )

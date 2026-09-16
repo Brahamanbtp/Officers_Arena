@@ -13,7 +13,10 @@ sys.path.insert(0, str(root_dir))
 
 load_dotenv(str(root_dir / ".env"))
 
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 from sqlmodel import Session, create_engine, select
 
 from app.models.database import Questions, QuestionImages, IngestionJob, IngestionPageQueue, IngestionJobStatus

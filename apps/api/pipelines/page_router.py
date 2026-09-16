@@ -1,5 +1,8 @@
 import re
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 from typing import Dict, Any, List, Optional, Tuple
 from pipelines.document_representation import PageIR, BlockIR, LineIR, BoundingBox
 

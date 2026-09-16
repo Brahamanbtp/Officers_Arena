@@ -1,5 +1,8 @@
 import re
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 from typing import List, Dict, Tuple, Any, Optional
 from pipelines.schemas.manifest import BoundingBox, QuestionManifest, QuestionOwnershipRegion
 

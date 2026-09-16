@@ -1,6 +1,9 @@
 import os
 import hashlib
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 from PIL import Image
 from pathlib import Path
 from typing import Dict, Any, Optional

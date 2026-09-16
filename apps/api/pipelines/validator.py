@@ -3,7 +3,10 @@ import re
 import json
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 from pipelines.schemas.manifest import PaperManifest, QuestionManifest
 
 

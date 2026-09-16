@@ -1,6 +1,9 @@
 import os
 import sys
-import fitz
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 import json
 import argparse
 from pathlib import Path
