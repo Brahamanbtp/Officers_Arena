@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AppHeader } from "@/src/components/shared/AppHeader";
 import { GuestWarningBanner } from "@/src/components/auth/GuestWarningBanner";
+import { MathMarkdown } from "@/src/components/shared/MathMarkdown";
 import {
   PenTool,
   Clock,
@@ -20,7 +21,10 @@ import {
   ChevronRight,
   ShieldCheck,
   TrendingUp,
-  Layers
+  Layers,
+  Maximize2,
+  Minimize2,
+  ListFilter
 } from "lucide-react";
 import {
   RadarChart,
@@ -88,6 +92,10 @@ export default function MainsEvaluationPage() {
   const [selectedPaper, setSelectedPaper] = useState("ALL");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   
+  // Mobile responsive view tabs
+  const [mobileTab, setMobileTab] = useState<"questions" | "editor" | "rubric">("editor");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   // Timer & Metrics
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -103,8 +111,16 @@ export default function MainsEvaluationPage() {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            setQuestions(data);
-            setSelectedQuestion(data[0]);
+            // Filter out any objective/instruction artifacts
+            const cleanQs = data.filter(q => 
+              !q.text.toLowerCase().includes("instruction") && 
+              !q.text.toLowerCase().includes("answer sheet") &&
+              !q.text.toLowerCase().includes("mark the correct code")
+            );
+            if (cleanQs.length > 0) {
+              setQuestions(cleanQs);
+              setSelectedQuestion(cleanQs[0]);
+            }
           }
         }
       } catch (err) {
@@ -167,6 +183,7 @@ export default function MainsEvaluationPage() {
       if (res.ok) {
         const data = await res.json();
         setEvaluationResult(data);
+        setMobileTab("rubric");
         toast.success("Mains Answer Evaluated Successfully!", {
           description: `Score: ${data.rubrics.total_score} / ${data.rubrics.max_marks} Marks`
         });
@@ -195,36 +212,40 @@ export default function MainsEvaluationPage() {
       <GuestWarningBanner />
       <AppHeader />
 
-      <main className="flex-grow max-w-7xl w-full mx-auto p-4 md:p-8 flex flex-col gap-8">
+      <main className="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col gap-6">
+        
         {/* Header Hero Banner */}
-        <div className="bg-[#101010] border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 z-10">
-            <div className="flex items-center gap-2">
+        <div className="bg-[#101010] border border-neutral-800 rounded-3xl p-5 md:p-7 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1.5 z-10">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold rounded-lg uppercase tracking-wider flex items-center gap-1.5">
                 <PenTool className="w-3.5 h-3.5 text-amber-400" />
-                UPSC Mains Automated Essay & Answer Scoring Engine (AES)
+                UPSC Mains AES Evaluator
               </span>
               <span className="px-2.5 py-1 bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono font-bold rounded-lg">
-                Multi-Criteria Rubrics • PESTLE • Book Citations
+                5-Axis Radar • PESTLE • Book Citations
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-              Descriptive Answer Writing & Socratic Examiner Evaluation
+            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">
+              Descriptive Answer Writing & Socratic Evaluation
             </h1>
             <p className="text-xs md:text-sm text-neutral-400 max-w-3xl leading-relaxed">
-              Practice official UPSC Mains questions (2013–2026). Receive instantaneous multi-dimensional rubric scoring, PESTLE analysis, missing constitutional case law citations, and page-grounded textbook excerpts from M. Laxmikanth, Spectrum, and D.D. Basu.
+              Official GS1–GS4 & Essay descriptive practice grounded in canonical textbooks (*M. Laxmikanth, Spectrum, Subhash Kashyap*).
             </p>
           </div>
         </div>
 
-        {/* Paper & Subject Filters */}
-        <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-[#121212] border border-neutral-800 rounded-2xl">
-          <div className="flex flex-wrap items-center gap-2">
+        {/* Paper & Subject Filters + Mobile Tab Switcher */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 bg-[#121212] border border-neutral-800 rounded-2xl">
+          
+          {/* Paper Pills */}
+          <div className="flex flex-wrap items-center gap-1.5">
             {["ALL", "GS1", "GS2", "GS3", "GS4", "Essay"].map((paper) => (
               <button
                 key={paper}
+                type="button"
                 onClick={() => setSelectedPaper(paper)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   selectedPaper === paper
                     ? "bg-amber-600 text-neutral-950 font-black shadow-md"
                     : "bg-neutral-900 text-neutral-400 hover:text-white"
@@ -235,22 +256,53 @@ export default function MainsEvaluationPage() {
             ))}
           </div>
 
-          <div className="text-xs font-mono text-neutral-400">
-            Showing {filteredQuestions.length} Questions
+          {/* Mobile Screen Tab Toggle (Visible on < 1024px) */}
+          <div className="flex lg:hidden items-center bg-neutral-900 border border-neutral-800 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setMobileTab("questions")}
+              className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                mobileTab === "questions" ? "bg-amber-600 text-neutral-950" : "text-neutral-400"
+              }`}
+            >
+              📝 Pick ({filteredQuestions.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab("editor")}
+              className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                mobileTab === "editor" ? "bg-amber-600 text-neutral-950" : "text-neutral-400"
+              }`}
+            >
+              ✍️ Write
+            </button>
+            {evaluationResult && (
+              <button
+                type="button"
+                onClick={() => setMobileTab("rubric")}
+                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  mobileTab === "rubric" ? "bg-purple-600 text-white" : "text-purple-400"
+                }`}
+              >
+                📊 Score
+              </button>
+            )}
           </div>
         </div>
 
-        {/* 3-Column Split Interface */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Dynamic Responsive Multi-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* Column 1: Question Selector (4 Cols) */}
-          <div className="lg:col-span-4 bg-[#121212] border border-neutral-800 p-5 rounded-3xl space-y-4 shadow-xl max-h-[800px] overflow-y-auto">
-            <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400 flex items-center justify-between border-b border-neutral-800 pb-3">
-              <span>Select Mains Question</span>
+          {/* Column 1: Question Selection Drawer/List (Visible on desktop or when mobileTab === 'questions') */}
+          <div className={`lg:col-span-4 bg-[#121212] border border-neutral-800 p-4 sm:p-5 rounded-3xl space-y-3.5 shadow-xl max-h-[750px] overflow-y-auto scrollbar-thin ${
+            mobileTab !== "questions" ? "hidden lg:block" : "block"
+          }`}>
+            <h3 className="text-xs font-black uppercase tracking-wider text-neutral-300 flex items-center justify-between border-b border-neutral-800 pb-3">
+              <span>Select Mains Prompt</span>
               <FileText className="w-4 h-4 text-amber-400" />
             </h3>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {filteredQuestions.map((q) => {
                 const isSelected = selectedQuestion.id === q.id;
                 return (
@@ -262,8 +314,9 @@ export default function MainsEvaluationPage() {
                       setEvaluationResult(null);
                       setIsTimerRunning(false);
                       setTimerSeconds(0);
+                      setMobileTab("editor");
                     }}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col gap-2.5 ${
+                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col gap-2 ${
                       isSelected
                         ? "bg-amber-500/10 border-amber-500/50 shadow-lg shadow-amber-500/5"
                         : "bg-neutral-900/50 border-neutral-800 hover:border-neutral-700"
@@ -274,7 +327,7 @@ export default function MainsEvaluationPage() {
                         UPSC {q.year}
                       </span>
                       <span className="text-neutral-400 font-bold">
-                        {q.max_marks} Marks • {q.word_limit} Words
+                        {q.max_marks}M • {q.word_limit}w
                       </span>
                     </div>
                     <p className="text-xs text-neutral-200 line-clamp-3 leading-relaxed font-serif">
@@ -286,31 +339,46 @@ export default function MainsEvaluationPage() {
             </div>
           </div>
 
-          {/* Column 2: Answer Writing Canvas (8 Cols or 5 if Evaluated) */}
-          <div className={`${evaluationResult ? "lg:col-span-4" : "lg:col-span-8"} bg-[#121212] border border-neutral-800 p-6 md:p-8 rounded-3xl space-y-6 shadow-xl`}>
+          {/* Column 2: Answer Writing Canvas */}
+          <div className={`${
+            evaluationResult ? "lg:col-span-4" : "lg:col-span-8"
+          } bg-[#121212] border border-neutral-800 p-5 md:p-7 rounded-3xl space-y-5 shadow-xl ${
+            mobileTab !== "editor" ? "hidden lg:block" : "block"
+          } ${isFullscreen ? "fixed inset-4 z-50 bg-[#121212] overflow-y-auto" : ""}`}>
+            
             {/* Active Question Prompt */}
-            <div className="space-y-3 border-b border-neutral-800 pb-5">
+            <div className="space-y-2.5 border-b border-neutral-800 pb-4">
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold rounded-lg font-mono">
+                <span className="px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold rounded-lg font-mono">
                   {selectedQuestion.subject} • {selectedQuestion.year}
                 </span>
-                <span className="px-2.5 py-1 bg-neutral-900 border border-neutral-800 text-neutral-300 rounded-lg text-xs font-mono font-bold">
-                  Target: {selectedQuestion.word_limit} Words ({selectedQuestion.max_marks} Marks)
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 bg-neutral-900 border border-neutral-800 text-neutral-300 rounded-lg text-xs font-mono font-bold">
+                    Target: {selectedQuestion.word_limit} Words ({selectedQuestion.max_marks}M)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    className="p-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white"
+                    title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Focus Mode"}
+                  >
+                    {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <h2 className="text-sm md:text-base font-bold text-white leading-relaxed font-serif">
                 {selectedQuestion.text}
               </h2>
 
-              <div className="p-3 bg-neutral-950 border border-neutral-800/80 rounded-xl text-xs text-neutral-300 flex items-start gap-2">
-                <span className="text-amber-400 font-black">Directive Focus:</span>
+              <div className="p-2.5 bg-neutral-950 border border-neutral-800/80 rounded-xl text-xs text-neutral-300 flex items-start gap-2">
+                <span className="text-amber-400 font-black">Directive:</span>
                 <span className="text-neutral-300">{selectedQuestion.directive}</span>
               </div>
             </div>
 
             {/* Answer Input Canvas */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-neutral-400">Your Answer:</span>
@@ -333,6 +401,7 @@ export default function MainsEvaluationPage() {
                   </span>
                   {!isTimerRunning && timerSeconds === 0 && (
                     <button
+                      type="button"
                       onClick={handleStartWriting}
                       className="text-[10px] text-amber-400 hover:underline uppercase font-bold cursor-pointer"
                     >
@@ -350,14 +419,14 @@ export default function MainsEvaluationPage() {
                     setIsTimerRunning(true);
                   }
                 }}
-                placeholder="Write your structured answer here (Introduction -> Body Dimensions -> Committee/Case Citations -> Constructive Way Forward)..."
-                rows={14}
+                placeholder="Structure your answer (Contextual Introduction -> Multi-dimensional Body -> Case Law/Statutory Citations -> Constructive Way Forward)..."
+                rows={isFullscreen ? 22 : 12}
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-2xl p-4 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-amber-500 transition-all font-serif leading-relaxed"
               />
             </div>
 
             {/* Submit Evaluation Action */}
-            <div className="flex items-center justify-between gap-4 pt-2">
+            <div className="flex items-center justify-between gap-4 pt-1">
               <button
                 type="button"
                 onClick={() => {
@@ -366,141 +435,107 @@ export default function MainsEvaluationPage() {
                   setTimerSeconds(0);
                   setIsTimerRunning(false);
                 }}
-                className="px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+                className="px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
               >
-                Clear Answer
+                Clear
               </button>
 
               <button
                 type="button"
                 disabled={isEvaluating || wordCount < 20}
                 onClick={handleEvaluateAnswer}
-                className="px-6 py-3.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 font-black uppercase text-xs tracking-wider rounded-xl transition-all shadow-xl flex items-center gap-2 cursor-pointer shadow-amber-500/20 disabled:opacity-50"
+                className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-neutral-950 font-black uppercase text-xs tracking-wider rounded-xl transition-all shadow-xl flex items-center gap-2 cursor-pointer shadow-amber-500/20 disabled:opacity-50"
               >
                 {isEvaluating ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Evaluating with AI Examiner...
+                    <span>Grading with Rubrics...</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
-                    Evaluate with AI Senior Examiner
+                    <Sparkles className="w-4 h-4" />
+                    <span>Evaluate Answer</span>
                   </>
                 )}
               </button>
             </div>
           </div>
 
-          {/* Column 3: Multi-Criteria AI Examiner Report (4 Cols when Evaluated) */}
+          {/* Column 3: Socratic Evaluation Results */}
           {evaluationResult && (
-            <div className="lg:col-span-4 bg-[#121212] border border-amber-500/40 p-6 rounded-3xl space-y-6 shadow-2xl">
+            <div className={`lg:col-span-4 bg-[#121212] border border-neutral-800 p-5 md:p-6 rounded-3xl space-y-5 shadow-2xl ${
+              mobileTab !== "rubric" ? "hidden lg:block" : "block"
+            }`}>
+              
               {/* Score Header */}
-              <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
+              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">
-                    Evaluation Verdict
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 block">
+                    Scaled UPSC Score
                   </span>
-                  <div className="text-2xl font-black text-white flex items-baseline gap-1">
-                    <span>{evaluationResult.rubrics.total_score}</span>
-                    <span className="text-sm text-neutral-400 font-normal">/ {evaluationResult.rubrics.max_marks} Marks</span>
+                  <div className="text-2xl font-black font-mono text-white mt-0.5">
+                    {evaluationResult.rubrics.total_score} <span className="text-sm font-normal text-neutral-400">/ {evaluationResult.rubrics.max_marks}</span>
                   </div>
                 </div>
-
-                <div className="px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-center">
-                  <span className="text-[10px] text-amber-400 font-bold uppercase block">Efficiency</span>
-                  <span className="text-xs font-mono font-bold text-white">
-                    {evaluationResult.time_taken_seconds ? formatTimer(evaluationResult.time_taken_seconds) : "7m 30s"}
-                  </span>
+                <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-400">
+                  <Award className="w-7 h-7" />
                 </div>
               </div>
 
-              {/* 5-Axis Radar Rubric */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-black uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-                  <RadarChart className="w-3.5 h-3.5 text-amber-400" />
-                  Pedagogical Rubric Radar
+              {/* 5-Axis Radar Chart */}
+              <div className="space-y-2 border-b border-neutral-800 pb-4">
+                <h4 className="text-xs font-black uppercase text-neutral-300">
+                  5-Axis Multi-Criteria Rubrics
                 </h4>
                 <div className="h-56 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={evaluationResult.radar_data}>
-                      <PolarGrid stroke="#333" />
-                      <PolarAngleAxis dataKey="dimension" stroke="#888" fontSize={9} />
-                      <PolarRadiusAxis domain={[0, 100]} stroke="#444" fontSize={8} />
-                      <Radar name="Score" dataKey="score" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.4} />
+                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={evaluationResult.radar_data}>
+                      <PolarGrid stroke="#262626" />
+                      <PolarAngleAxis dataKey="dimension" stroke="#a3a3a3" tick={{ fill: "#a3a3a3", fontSize: 9 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#404040" />
+                      <Radar name="Candidate Score" dataKey="score" stroke="#d97706" fill="#f59e0b" fillOpacity={0.4} />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* PESTLE Multi-Dimensional Check */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400 block">
-                  PESTLE Multi-Dimensional Scope
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(evaluationResult.pestle_breakdown).map(([dim, present]) => (
+              {/* PESTLE Multi-Dimensional Analysis */}
+              <div className="space-y-2 border-b border-neutral-800 pb-4">
+                <h4 className="text-xs font-black uppercase text-neutral-300">
+                  PESTLE Multi-Depth Coverage
+                </h4>
+                <div className="grid grid-cols-3 gap-1.5 text-center font-mono text-[11px]">
+                  {Object.entries(evaluationResult.pestle_breakdown || {}).map(([dim, covered]) => (
                     <div
                       key={dim}
-                      className={`p-2 rounded-lg border text-[10px] font-bold flex items-center justify-between ${
-                        present
+                      className={`p-2 rounded-xl border flex flex-col items-center gap-0.5 ${
+                        covered
                           ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
                           : "bg-neutral-900 border-neutral-800 text-neutral-500"
                       }`}
                     >
-                      <span className="truncate">{dim}</span>
-                      {present ? <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0" /> : <XCircle className="w-3 h-3 text-neutral-600 flex-shrink-0" />}
+                      <span className="font-bold uppercase text-[9px]">{dim}</span>
+                      {covered ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <XCircle className="w-3.5 h-3.5 text-neutral-600" />}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Strengths & Missing Gaps */}
-              <div className="space-y-3 text-xs">
-                <div>
-                  <span className="font-black uppercase tracking-wider text-emerald-400 text-[10px] block mb-1">
-                    Key Strengths
-                  </span>
-                  <ul className="space-y-1 text-neutral-300">
-                    {evaluationResult.strengths.map((s: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <span className="font-black uppercase tracking-wider text-red-400 text-[10px] block mb-1">
-                    Identified Gaps & Traps
-                  </span>
-                  <ul className="space-y-1 text-neutral-300">
-                    {evaluationResult.identified_gaps.map((g: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 text-red-400 mt-0.5 flex-shrink-0" />
-                        <span>{g}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Missing Key Citations from 38 Reference Books */}
+              {/* Grounded Citations Callout */}
               {evaluationResult.missing_key_citations && evaluationResult.missing_key_citations.length > 0 && (
-                <div className="space-y-2 border-t border-neutral-800 pt-4">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <div className="space-y-2 border-b border-neutral-800 pb-4">
+                  <h4 className="text-xs font-black uppercase text-amber-400 flex items-center gap-1.5">
                     <BookOpen className="w-3.5 h-3.5" />
-                    Recommended Citations from Canonical Books
-                  </span>
+                    Missing Key Textbook Citations
+                  </h4>
                   <div className="space-y-2">
-                    {evaluationResult.missing_key_citations.map((cite: any, idx: number) => (
-                      <div key={idx} className="p-3 bg-neutral-950 border border-indigo-500/20 rounded-xl space-y-1">
-                        <div className="flex items-center justify-between text-[11px] font-bold text-indigo-300">
-                          <span>{cite.book_title}</span>
-                          <span className="text-[10px] font-mono text-neutral-400">Page {cite.page_number}</span>
+                    {evaluationResult.missing_key_citations.map((cite: any, i: number) => (
+                      <div key={i} className="p-3 bg-neutral-950 border border-neutral-800/80 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-neutral-200">{cite.book_title}</span>
+                          <span className="text-amber-400 font-mono">Pg. {cite.page_number}</span>
                         </div>
-                        <p className="text-[11px] text-neutral-300 font-serif leading-relaxed">
+                        <p className="text-[11px] text-neutral-400 font-serif line-clamp-2">
                           {cite.relevant_concept}
                         </p>
                       </div>
@@ -508,9 +543,22 @@ export default function MainsEvaluationPage() {
                   </div>
                 </div>
               )}
+
+              {/* Examiner Verdict */}
+              <div className="p-3.5 bg-neutral-950 border border-neutral-800 rounded-2xl space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">
+                  Examiner Synthesis
+                </span>
+                <p className="text-xs text-neutral-300 leading-relaxed font-serif">
+                  {evaluationResult.overall_verdict}
+                </p>
+              </div>
+
             </div>
           )}
+
         </div>
+
       </main>
     </div>
   );

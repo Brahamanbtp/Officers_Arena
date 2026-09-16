@@ -218,19 +218,19 @@ export default function ResearchSandboxPage() {
         </div>
 
         {/* Interactive Parameter Control Deck */}
-        <div className="bg-[#121212] border border-neutral-800 p-6 rounded-3xl space-y-4">
-          <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-            <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+        <div className="bg-[#121212] border border-neutral-800 p-5 sm:p-6 rounded-3xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-800 pb-3">
+            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
               <Sliders className="w-4 h-4 text-amber-400" />
-              Interactive Bayesian Knowledge Tracing (BKT) Parameter Sandbox
+              BKT Parameter Sandbox
             </h3>
-            <span className="text-xs text-neutral-400 font-mono">Real-Time State Space Simulation</span>
+            <span className="text-[11px] text-neutral-400 font-mono">Real-Time State Space Simulation</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 pt-2">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-neutral-300 font-bold">P(L₀) Initial Mastery:</span>
+                <span className="text-neutral-300 font-bold">P(L₀) Initial:</span>
                 <span className="font-mono text-amber-400 font-bold">{initMastery.toFixed(2)}</span>
               </div>
               <input
@@ -246,7 +246,7 @@ export default function ResearchSandboxPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-neutral-300 font-bold">P(T) Learning Transition:</span>
+                <span className="text-neutral-300 font-bold">P(T) Learn Rate:</span>
                 <span className="font-mono text-emerald-400 font-bold">{learnRate.toFixed(2)}</span>
               </div>
               <input
@@ -262,7 +262,7 @@ export default function ResearchSandboxPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-neutral-300 font-bold">P(S) Slip Probability:</span>
+                <span className="text-neutral-300 font-bold">P(S) Slip:</span>
                 <span className="font-mono text-red-400 font-bold">{slipProb.toFixed(2)}</span>
               </div>
               <input
@@ -278,7 +278,7 @@ export default function ResearchSandboxPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-neutral-300 font-bold">P(G) Guess Probability:</span>
+                <span className="text-neutral-300 font-bold">P(G) Guess:</span>
                 <span className="font-mono text-cyan-400 font-bold">{guessProb.toFixed(2)}</span>
               </div>
               <input
@@ -294,39 +294,47 @@ export default function ResearchSandboxPage() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-neutral-800 gap-2">
+        {/* Tab Navigation (Horizontally scrollable on mobile) */}
+        <div className="flex overflow-x-auto border-b border-neutral-800 gap-2 pb-1 scrollbar-thin">
           <button
             onClick={() => setActiveTab("MODELS")}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
-              activeTab === "MODELS" ? "border-amber-500 text-amber-400 bg-amber-500/5" : "border-transparent text-neutral-400 hover:text-white"
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "MODELS"
+                ? "bg-amber-600 text-neutral-950 font-black shadow-md"
+                : "text-neutral-400 hover:text-white"
             }`}
           >
-            Learning Gain & ROC Analysis
+            1. Knowledge Tracing (BKT vs FSRS)
           </button>
           <button
             onClick={() => setActiveTab("CALIBRATION")}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
-              activeTab === "CALIBRATION" ? "border-amber-500 text-amber-400 bg-amber-500/5" : "border-transparent text-neutral-400 hover:text-white"
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "CALIBRATION"
+                ? "bg-amber-600 text-neutral-950 font-black shadow-md"
+                : "text-neutral-400 hover:text-white"
             }`}
           >
-            Reliability & ECE Calibration
+            2. AUC-ROC & ECE Calibration
           </button>
           <button
             onClick={() => setActiveTab("DRIFT")}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
-              activeTab === "DRIFT" ? "border-amber-500 text-amber-400 bg-amber-500/5" : "border-transparent text-neutral-400 hover:text-white"
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "DRIFT"
+                ? "bg-amber-600 text-neutral-950 font-black shadow-md"
+                : "text-neutral-400 hover:text-white"
             }`}
           >
-            Temporal Topic Recurrence (2009–2026)
+            3. 18-Year Topic Drift (2009–2026)
           </button>
           <button
             onClick={() => setActiveTab("RAGAS")}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
-              activeTab === "RAGAS" ? "border-amber-500 text-amber-400 bg-amber-500/5" : "border-transparent text-neutral-400 hover:text-white"
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "RAGAS"
+                ? "bg-amber-600 text-neutral-950 font-black shadow-md"
+                : "text-neutral-400 hover:text-white"
             }`}
           >
-            RAGAS & Empirical Baselines
+            4. RAGAS Grounding Verification
           </button>
         </div>
 

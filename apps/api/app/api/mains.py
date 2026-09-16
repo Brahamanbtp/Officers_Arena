@@ -28,7 +28,13 @@ async def list_mains_questions(
     """
     Returns official UPSC Mains questions from 2013 to 2026.
     """
-    stmt = select(Questions).where(Questions.exam_type == "UPSC")
+    stmt = select(Questions).where(
+        Questions.exam_type == "UPSC",
+        ~col(Questions.text).ilike("%instruction%"),
+        ~col(Questions.text).ilike("%answer sheet%"),
+        ~col(Questions.text).ilike("%mark the correct code%"),
+        ~col(Questions.text).ilike("%(a) 1 only%")
+    )
     
     # Filter by paper type or subject
     if paper:
@@ -42,7 +48,12 @@ async def list_mains_questions(
 
     # If few returned, fetch without paper filter
     if len(qs) == 0:
-        stmt = select(Questions).where(Questions.exam_type == "UPSC").limit(limit)
+        stmt = select(Questions).where(
+            Questions.exam_type == "UPSC",
+            ~col(Questions.text).ilike("%instruction%"),
+            ~col(Questions.text).ilike("%answer sheet%"),
+            ~col(Questions.text).ilike("%mark the correct code%")
+        ).limit(limit)
         res = await db.execute(stmt)
         qs = res.scalars().all()
 

@@ -14,6 +14,7 @@ import {
   Send
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { MathMarkdown } from "@/src/components/shared/MathMarkdown";
 
 interface StudyDay {
   dayNumber: number;
@@ -412,7 +413,7 @@ export default function StrategistPage() {
                       : "bg-neutral-900 border border-neutral-800 text-neutral-200 mr-4"
                   }`}
                 >
-                  <p className="whitespace-pre-line">{msg.text}</p>
+                  <MathMarkdown content={msg.text} />
                 </div>
               ))}
               <div ref={messagesEndRef} />
