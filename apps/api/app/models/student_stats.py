@@ -1,10 +1,16 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from sqlalchemy import Index
 
 class StudentAttempt(SQLModel, table=True):
     __tablename__ = "student_attempts"
+    __table_args__ = (
+        Index("ix_student_attempts_user_exam", "user_id", "exam_type"),
+        Index("ix_student_attempts_user_subtopic", "user_id", "subtopic_id"),
+        Index("ix_student_attempts_user_timestamp", "user_id", "timestamp"),
+    )
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -21,7 +27,7 @@ class StudentAttempt(SQLModel, table=True):
     response_time: float = Field(nullable=False)  # Response time in seconds
     confidence_level: int = Field(nullable=False)  # Scale from 1 to 5
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         nullable=False
     )
     # Advanced Schema Evolution Fields
@@ -30,6 +36,11 @@ class StudentAttempt(SQLModel, table=True):
 
 class StudentMastery(SQLModel, table=True):
     __tablename__ = "student_mastery"
+    __table_args__ = (
+        Index("ix_student_mastery_user_exam", "user_id", "exam_type"),
+        Index("ix_student_mastery_user_subtopic", "user_id", "subtopic_id"),
+        Index("ix_student_mastery_fragile", "user_id", "exam_type", "is_fragile"),
+    )
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -45,7 +56,7 @@ class StudentMastery(SQLModel, table=True):
     mastery_score: float = Field(default=0.15, nullable=False)  # BKT probability of mastery
     half_life: float = Field(default=1.0, nullable=False)  # Spaced repetition half-life in days
     last_practiced: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         nullable=False
     )
     stability_factor: float = Field(default=2.0, nullable=False)
@@ -59,6 +70,9 @@ class StudentMastery(SQLModel, table=True):
 
 class MetacognitiveStats(SQLModel, table=True):
     __tablename__ = "metacognitive_stats"
+    __table_args__ = (
+        Index("ix_metacognitive_stats_user_exam", "user_id", "exam_type"),
+    )
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -80,7 +94,7 @@ class StudentState(SQLModel, table=True):
     theta: float = Field(default=0.0, nullable=False)
     total_answered: int = Field(default=0, nullable=False)
     is_adaptive: bool = Field(default=True, nullable=False)
-    last_updated: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
 
 class PerformanceLog(SQLModel, table=True):
     __tablename__ = "performance_log"
@@ -94,7 +108,7 @@ class PerformanceLog(SQLModel, table=True):
     is_correct: bool = Field(nullable=False)
     response_time: float = Field(nullable=False)
     confidence_level: int = Field(nullable=False)
-    timestamp: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
 
 class SRSMetadata(SQLModel, table=True):
     __tablename__ = "srs_metadata"
@@ -108,8 +122,8 @@ class SRSMetadata(SQLModel, table=True):
     stability: float = Field(default=2.0, nullable=False)
     difficulty: float = Field(default=3.0, nullable=False)
     interval: float = Field(default=1.0, nullable=False)  # Interval in days
-    due_date: datetime = Field(default_factory=datetime.utcnow, index=True, nullable=False)
-    last_review: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    due_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True, nullable=False)
+    last_review: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
 
 class TopicMastery(SQLModel, table=True):
     __tablename__ = "topic_mastery"
@@ -123,7 +137,6 @@ class TopicMastery(SQLModel, table=True):
     p_mastery: float = Field(default=0.15, nullable=False)
     p_transit: float = Field(default=0.10, nullable=False)
 
-
 class UserActivityLog(SQLModel, table=True):
     __tablename__ = "user_activity_logs"
 
@@ -133,8 +146,7 @@ class UserActivityLog(SQLModel, table=True):
     )
     user_id: str = Field(index=True, nullable=False)
     topic_id: uuid.UUID = Field(foreign_key="syllabus.id", index=True, nullable=False)
-    timestamp: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
 
 class TutorChatSession(SQLModel, table=True):
     __tablename__ = "tutor_chat_sessions"
@@ -146,8 +158,4 @@ class TutorChatSession(SQLModel, table=True):
     user_id: str = Field(index=True, nullable=False)
     question_id: uuid.UUID = Field(foreign_key="questions.id", index=True, nullable=False)
     messages: str = Field(default="[]", nullable=False)  # JSON-serialized list of messages
-    last_updated: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-
-
-
-
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)

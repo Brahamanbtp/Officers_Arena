@@ -2,6 +2,7 @@ import uuid
 import json
 from typing import List, Optional, Dict, Any, ClassVar
 from sqlmodel import SQLModel, Field, Relationship, Column
+from sqlalchemy import Index
 from sqlalchemy.types import TypeDecorator, TEXT, JSON
 
 class SafeVector(TypeDecorator):
@@ -265,6 +266,9 @@ class Book(SQLModel, table=True):
 
 class BookPage(SQLModel, table=True):
     __tablename__ = "book_pages"  # type: ignore
+    __table_args__ = (
+        Index("ix_book_pages_book_page", "book_id", "page_number"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     book_id: uuid.UUID = Field(foreign_key="books.id", index=True)

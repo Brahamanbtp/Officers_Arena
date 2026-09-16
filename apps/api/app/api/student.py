@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional, Dict, Any
 
 from app.core.database import get_async_session
+from app.core.auth import get_current_user_optional, verify_user_authorization
 from app.services.student_service import StudentService
 from app.services.diagnostic_service import DiagnosticService
 from app.tasks.student_tasks import flag_fragile_learning
@@ -28,8 +29,12 @@ router = APIRouter()
 async def submit_attempt(
     request: AttemptSubmitRequest,
     background_tasks: BackgroundTasks,
+    auth_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_async_session)
 ):
+    # Verify authorization if request contains authentication credentials
+    verify_user_authorization(auth_user, request.user_id)
+    
     service = StudentService(db)
     try:
         result = await service.submit_attempt(
@@ -53,6 +58,8 @@ async def submit_attempt(
         )
         
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -68,10 +75,12 @@ async def submit_attempt(
 )
 async def onboard_student(
     request: dict,
+    auth_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
-        user_id = request.get("user_id") or request.get("id")
+        user_id = request.get("user_id") or request.get("id") or "guest_student"
+        verify_user_authorization(auth_user, user_id)
         exam_type = request.get("target_exam", "UPSC")
         
         return {
@@ -80,6 +89,8 @@ async def onboard_student(
             "user_id": user_id,
             "target_exam": exam_type
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -94,8 +105,10 @@ async def onboard_student(
 )
 async def onboard_initialize(
     request: DiagnosticOnboardRequest,
+    auth_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_async_session)
 ):
+    verify_user_authorization(auth_user, request.user_id)
     try:
         attempts_list = [a.dict() for a in request.attempts]
         result = await DiagnosticService.initialize_student_profile(
@@ -105,6 +118,8 @@ async def onboard_initialize(
             diagnostic_attempts=attempts_list
         )
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -122,12 +137,16 @@ async def onboard_initialize(
 async def get_student_profile(
     user_id: str,
     exam_type: str = Query(..., description="Filter isolation by exam type (e.g. UPSC, CDS)"),
+    auth_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_async_session)
 ):
+    verify_user_authorization(auth_user, user_id)
     service = StudentService(db)
     try:
         profile = await service.get_student_profile(user_id=user_id, exam_type=exam_type)
         return profile
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -143,12 +162,16 @@ async def get_student_profile(
 async def get_revision_list(
     user_id: str = Query(..., description="Unique ID of the student"),
     exam_type: str = Query(..., description="Exam type (UPSC or CDS)"),
+    auth_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_async_session)
 ):
+    verify_user_authorization(auth_user, user_id)
     service = StudentService(db)
     try:
         revisions = await service.get_revision_list(user_id=user_id, exam_type=exam_type)
         return revisions
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -164,12 +187,16 @@ async def get_revision_list(
 async def get_mastery_galaxy(
     user_id: str = Query(..., description="Unique ID of the student"),
     exam_type: str = Query(..., description="Exam type (UPSC or CDS)"),
+    auth_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_async_session)
 ):
+    verify_user_authorization(auth_user, user_id)
     service = StudentService(db)
     try:
         galaxy_data = await service.get_mastery_galaxy(user_id=user_id, exam_type=exam_type)
         return galaxy_data
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -187,12 +214,16 @@ async def get_mastery_galaxy(
 async def get_fragile_alerts(
     user_id: str = Query(..., description="Unique student identifier"),
     exam_type: str = Query(..., description="UPSC or CDS"),
+    auth_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_async_session)
 ):
+    verify_user_authorization(auth_user, user_id)
     service = StudentService(db)
     try:
         alerts = await service.get_fragile_alerts(user_id=user_id, exam_type=exam_type)
         return alerts
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,

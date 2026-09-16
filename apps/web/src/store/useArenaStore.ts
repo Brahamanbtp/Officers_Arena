@@ -304,7 +304,13 @@ export const useArenaStore = create<ArenaState>()(
         sessionScore: state.sessionScore,
         masteryPercentage: state.masteryPercentage,
         thetaDelta: state.thetaDelta,
-        enableConfidenceRating: state.enableConfidenceRating
+        enableConfidenceRating: state.enableConfidenceRating,
+        mockQuestions: state.mockQuestions,
+        userAnswers: state.userAnswers,
+        activeQuestionIndex: state.activeQuestionIndex,
+        mockTimerLeft: state.mockTimerLeft,
+        isMockSubmitted: state.isMockSubmitted,
+        questionTimes: state.questionTimes
       })
     }
   )
