@@ -32,7 +32,7 @@ async def list_mains_questions(
     
     # Filter by paper type or subject
     if paper:
-        stmt = stmt.where(Questions.subject.ilike(f"%{paper}%"))
+        stmt = stmt.where(col(Questions.subject).ilike(f"%{paper}%"))
     if year:
         stmt = stmt.where(Questions.year == year)
 

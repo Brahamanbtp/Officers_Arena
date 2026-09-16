@@ -1,7 +1,7 @@
 import os, sys, json, time, re
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
-from sqlmodel import select
+from sqlmodel import select, col
 from sqlalchemy.ext.asyncio import AsyncSession
 from dotenv import load_dotenv
 
@@ -86,7 +86,6 @@ class MainsEvaluationService:
         word_count = len(student_answer.strip().split())
         directive = MainsEvaluationService.extract_directive(question_text)
         pestle = MainsEvaluationService.analyze_pestle(student_answer)
-
         # 1. Fetch Grounded Citations from Database
         missing_citations = []
         if db:
@@ -95,8 +94,8 @@ class MainsEvaluationService:
                 keywords = [w for w in question_text.split() if len(w) > 4][:5]
                 if keywords:
                     query_term = f"%{keywords[0]}%"
-                    stmt = select(BookPage, Book).join(Book, BookPage.book_id == Book.id).where(
-                        BookPage.extracted_text.ilike(query_term)
+                    stmt = select(BookPage, Book).join(Book, col(BookPage.book_id) == col(Book.id)).where(
+                        col(BookPage.extracted_text).ilike(query_term)
                     ).limit(3)
                     res = await db.execute(stmt)
                     rows = res.all()
@@ -220,11 +219,27 @@ EVALUATE AND OUTPUT STRICT JSON ONLY with the following structure:
                 "way_forward_outline": "Propose 3 actionable policy reforms inspired by 2nd ARC / NITI Aayog Strategy, concluding with constitutional ethos."
             }
 
-        d_score = float(evaluation_json.get("directive_score", 6.5))
-        f_score = float(evaluation_json.get("factual_score", 6.0))
-        p_score = float(evaluation_json.get("pestle_score", 6.5))
-        s_score = float(evaluation_json.get("structure_score", 7.0))
-        w_score = float(evaluation_json.get("way_forward_score", 6.0))
+        def _safe_float(val: Any, default: float = 6.0) -> float:
+            try:
+                return float(val) # type: ignore
+            except (ValueError, TypeError):
+                return default
+
+        def _safe_list_str(val: Any, default: List[str]) -> List[str]:
+            if isinstance(val, list):
+                return [str(x) for x in val]
+            return default
+
+        def _safe_str(val: Any, default: str = "") -> str:
+            if val is None:
+                return default
+            return str(val)
+
+        d_score = _safe_float(evaluation_json.get("directive_score"), 6.5)
+        f_score = _safe_float(evaluation_json.get("factual_score"), 6.0)
+        p_score = _safe_float(evaluation_json.get("pestle_score"), 6.5)
+        s_score = _safe_float(evaluation_json.get("structure_score"), 7.0)
+        w_score = _safe_float(evaluation_json.get("way_forward_score"), 6.0)
 
         # Weighted calculation scaled to max_marks
         raw_weighted_avg = (d_score * 0.20 + f_score * 0.25 + p_score * 0.20 + s_score * 0.15 + w_score * 0.20)
@@ -248,6 +263,13 @@ EVALUATE AND OUTPUT STRICT JSON ONLY with the following structure:
             {"dimension": "Actionable Way Forward", "score": w_score * 10, "fullMark": 100}
         ]
 
+        strengths_list = _safe_list_str(evaluation_json.get("strengths"), [])
+        gaps_list = _safe_list_str(evaluation_json.get("gaps"), [])
+        intro_text = _safe_str(evaluation_json.get("intro_outline"), "")
+        body_text = _safe_str(evaluation_json.get("body_outline"), "")
+        way_forward_text = _safe_str(evaluation_json.get("way_forward_outline"), "")
+        verdict_text = _safe_str(evaluation_json.get("overall_verdict"), "Competent answer.")
+
         return MainsEvaluationResult(
             question_text=question_text,
             directive_type=directive,
@@ -256,13 +278,13 @@ EVALUATE AND OUTPUT STRICT JSON ONLY with the following structure:
             rubrics=rubrics,
             radar_data=radar_data,
             pestle_breakdown=pestle,
-            strengths=evaluation_json.get("strengths", []),
-            identified_gaps=evaluation_json.get("gaps", []),
+            strengths=strengths_list,
+            identified_gaps=gaps_list,
             missing_key_citations=missing_citations,
             model_answer_outline={
-                "Introduction": evaluation_json.get("intro_outline", ""),
-                "Body Arguments": evaluation_json.get("body_outline", ""),
-                "Way Forward & Conclusion": evaluation_json.get("way_forward_outline", "")
+                "Introduction": intro_text,
+                "Body Arguments": body_text,
+                "Way Forward & Conclusion": way_forward_text
             },
-            overall_verdict=evaluation_json.get("overall_verdict", "Good answer.")
+            overall_verdict=verdict_text
         )
