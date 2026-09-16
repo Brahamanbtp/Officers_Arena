@@ -84,6 +84,27 @@ class MistralCloudProvider:
 
         return retry_with_backoff(_call)
 
+    @classmethod
+    def generate_text(cls, prompt: str) -> Optional[str]:
+        key = os.getenv("MISTRAL_API_KEY")
+        if not key:
+            return None
+
+        def _call():
+            url = "https://api.mistral.ai/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+            payload = {
+                "model": "mistral-small-latest",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.2
+            }
+            resp = requests.post(url, headers=headers, json=payload, timeout=30)
+            if resp.status_code == 200:
+                return resp.json()["choices"][0]["message"]["content"].strip()
+            return None
+
+        return retry_with_backoff(_call)
+
 
 class GoogleVisionCloudProvider:
     """Google Cloud Vision REST API Provider."""
@@ -150,6 +171,29 @@ class GeminiCloudProvider:
                 )
                 if res and res.text:
                     return (res.text.strip(), model_name)
+                return None
+
+            result = retry_with_backoff(_call, max_retries=2)
+            if result:
+                return result
+        return None
+
+    @classmethod
+    def generate_text(cls, prompt: str) -> Optional[str]:
+        current_key = os.getenv("GEMINI_API_KEY")
+        if not current_key:
+            return None
+
+        for model_name in cls.MODELS:
+            def _call():
+                genai.configure(api_key=current_key)
+                m = genai.GenerativeModel(model_name)
+                res = m.generate_content(
+                    prompt,
+                    generation_config={"temperature": 0.2}
+                )
+                if res and res.text:
+                    return res.text.strip()
                 return None
 
             result = retry_with_backoff(_call, max_retries=2)

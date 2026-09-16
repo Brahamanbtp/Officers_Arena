@@ -26,6 +26,8 @@ env/
 Thumbs.db
 *.log
 data/processed/
+data/raw_books/
+data/raw_papers/
 docs/officers_arena_research_proposal.md
 
 scratch/

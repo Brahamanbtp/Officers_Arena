@@ -13,6 +13,7 @@ from app.api.v1.strategist import router as strategist_router
 from app.api.v1.tutor import router as tutor_router
 from app.api.research import router as research_router
 from app.api.ingestion import router as ingestion_router
+from app.api.books import router as books_router
 from app.core.adaptive_engine import router as adaptive_engine_router
 from app.core.database import init_db
 
@@ -46,6 +47,7 @@ app.include_router(strategist_router)
 app.include_router(tutor_router)
 app.include_router(research_router)
 app.include_router(ingestion_router)
+app.include_router(books_router)
 app.include_router(adaptive_engine_router)
 
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")

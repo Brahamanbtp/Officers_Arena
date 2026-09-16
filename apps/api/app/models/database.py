@@ -235,4 +235,42 @@ Question = Questions
 QuestionImage = QuestionImages
 
 
+class Book(SQLModel, table=True):
+    __tablename__ = "books"  # type: ignore
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    title: str = Field(index=True)
+    author: Optional[str] = Field(default=None)
+    edition: Optional[str] = Field(default=None)
+    subject: str = Field(index=True)
+    exam_type: str = Field(default="UPSC", index=True)
+    category: str = Field(default="Reference Books", index=True)
+    total_pages: int = Field(default=0)
+    cover_image_url: Optional[str] = Field(default=None)
+    file_path: str = Field(nullable=False)
+    file_name: str = Field(nullable=False)
+
+    pages: List["BookPage"] = Relationship(
+        back_populates="book",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
+
+
+class BookPage(SQLModel, table=True):
+    __tablename__ = "book_pages"  # type: ignore
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    book_id: uuid.UUID = Field(foreign_key="books.id", index=True)
+    page_number: int = Field(index=True)
+    chapter_title: Optional[str] = Field(default=None)
+    extracted_text: str = Field(nullable=False)
+    embedding: Optional[List[float]] = Field(
+        default=None,
+        sa_column=Column(SafeVector(1536), nullable=True)
+    )
+
+    book: Optional[Book] = Relationship(back_populates="pages")
+
+
+
 

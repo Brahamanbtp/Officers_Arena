@@ -22,107 +22,26 @@ import {
 import { useArenaStore } from "@/src/store/useArenaStore";
 import { generateQuestionBank } from "@/src/utils/mockQuestionBank";
 import { toast } from "sonner";
+import { BookReaderModal, BookItem } from "@/src/components/library/BookReaderModal";
 
 interface LibraryItem {
   id: string;
   title: string;
+  author?: string;
   category: "PYQ Papers" | "Reference Books" | "NCERT Textbooks";
   exam?: "UPSC" | "CDS";
   year?: number;
   session?: string;
   paper?: string;
+  subject?: string;
   chapters: number;
   questionCount?: number;
   durationMinutes?: number;
   content: string;
+  isRealPdf?: boolean;
 }
 
-const BASE_LIBRARY_ITEMS: LibraryItem[] = [
-  {
-    id: "pyq-2024-upsc",
-    title: "UPSC CSE 2024 Prelims (Paper-I)",
-    category: "PYQ Papers",
-    exam: "UPSC",
-    year: 2024,
-    paper: "Paper-I (General Studies)",
-    chapters: 100,
-    questionCount: 100,
-    durationMinutes: 120,
-    content: "Question 1: With reference to the Parliament of India, consider the following statements:\n1. A bill pending in the Lok Sabha lapses on its dissolution.\n2. A bill pending in the Rajya Sabha, which has not been passed by the Lok Sabha, shall not lapse on dissolution of the Lok Sabha.\nWhich of the statements given above is/are correct?\nAnswer: Both 1 and 2."
-  },
-  {
-    id: "pyq-2023-upsc",
-    title: "UPSC CSE 2023 Prelims (Paper-I)",
-    category: "PYQ Papers",
-    exam: "UPSC",
-    year: 2023,
-    paper: "Paper-I (General Studies)",
-    chapters: 100,
-    questionCount: 100,
-    durationMinutes: 120,
-    content: "Question 1: Consider the following statements in respect of the Election Commission of India:\n1. The Chief Election Commissioner and other Election Commissioners enjoy equal powers.\n2. The term of office of an Election Commissioner is 6 years or up to 65 years of age, whichever is earlier.\nWhich of the statements is/are correct?\nAnswer: Both 1 and 2."
-  },
-  {
-    id: "pyq-2026-i-cds",
-    title: "CDS 2026 I English & General Knowledge",
-    category: "PYQ Papers",
-    exam: "CDS",
-    year: 2026,
-    session: "I",
-    paper: "English & General Knowledge",
-    chapters: 120,
-    questionCount: 120,
-    durationMinutes: 120,
-    content: "Official CDS 2026 I Combined Defence Services Examination Paper.\nIncludes complete bilingual English and General Knowledge sections."
-  },
-  {
-    id: "pyq-2025-ii-cds",
-    title: "CDS 2025 II General Knowledge & Mathematics",
-    category: "PYQ Papers",
-    exam: "CDS",
-    year: 2025,
-    session: "II",
-    paper: "Elementary Math & GK",
-    chapters: 100,
-    questionCount: 100,
-    durationMinutes: 120,
-    content: "Official CDS 2025 II Combined Defence Services Examination Paper."
-  },
-  {
-    id: "pyq-2025-i-cds",
-    title: "CDS 2025 I General Knowledge & Mathematics",
-    category: "PYQ Papers",
-    exam: "CDS",
-    year: 2025,
-    session: "I",
-    paper: "Elementary Math & GK",
-    chapters: 100,
-    questionCount: 100,
-    durationMinutes: 120,
-    content: "Official CDS 2025 I Combined Defence Services Examination Paper."
-  },
-  {
-    id: "lib-1",
-    title: "M. Laxmikanth - Indian Polity (7th Edition)",
-    category: "Reference Books",
-    chapters: 80,
-    content: "Chapter 3: Salient Features of the Constitution\nThe Indian Constitution is unique in its contents and spirit. Though borrowed from almost every constitution of the world, the constitution of India has several salient features that distinguish it from the constitutions of other countries. It is the lengthiest written constitution, drawn from various sources, features a blend of rigidity and flexibility, and establishes a federal system with unitary bias."
-  },
-  {
-    id: "lib-2",
-    title: "NCERT Class XI - Indian Constitution at Work",
-    category: "NCERT Textbooks",
-    chapters: 10,
-    content: "Chapter 1: Constitution: Why and How?\nWe need a constitution to provide a set of basic rules that allow for minimal coordination amongst members of a society. The constitution specifies who has the power to make decisions in a society. It decides how the government will be constituted. It also sets limits on what a government can impose on its citizens."
-  },
-  {
-    id: "lib-4",
-    title: "Bipin Chandra - History of Modern India",
-    category: "Reference Books",
-    chapters: 24,
-    content: "Chapter 7: The Struggle for Swaraj\nThe National Movement entered its second phase after 1905 with the partition of Bengal. Swadeshi and Boycott movements fostered unprecedented mass participation and patriotic fervor across India."
-  }
-];
+const BASE_LIBRARY_ITEMS: LibraryItem[] = [];
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -133,16 +52,20 @@ export default function LibraryPage() {
   const setQuestion = useArenaStore((state) => state.setQuestion);
 
   const [selectedBook, setSelectedBook] = useState<LibraryItem | null>(null);
+  const [activeReadingBook, setActiveReadingBook] = useState<BookItem | null>(null);
   const [activeFilter, setActiveFilter] = useState<"ALL" | "PYQ" | "BOOKS">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [dynamicPapers, setDynamicPapers] = useState<LibraryItem[]>([]);
+  const [dynamicBooks, setDynamicBooks] = useState<LibraryItem[]>([]);
 
-  // Dynamically load available PYQs from database
+  // Dynamically load available PYQs and Books from database
   React.useEffect(() => {
-    const fetchAvailablePapers = async () => {
+    const fetchAvailableData = async () => {
       const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      
+      // 1. Fetch available papers
       try {
         const response = await fetch(`${apiEndpoint}/api/v1/arena/available-papers?exam_type=${mode}`);
         if (response.ok) {
@@ -167,10 +90,34 @@ export default function LibraryPage() {
           }
         }
       } catch (err) {
-        // Fall back to static items
+        // Fall back
+      }
+
+      // 2. Fetch available reference books
+      try {
+        const booksRes = await fetch(`${apiEndpoint}/api/books`);
+        if (booksRes.ok) {
+          const bData = await booksRes.json();
+          if (Array.isArray(bData) && bData.length > 0) {
+            const mappedBooks: LibraryItem[] = bData.map((b: any) => ({
+              id: b.id,
+              title: b.title,
+              author: b.author,
+              category: b.category || "Reference Books",
+              exam: b.exam_type as "UPSC" | "CDS",
+              subject: b.subject,
+              chapters: b.total_pages,
+              content: `Official standard textbook: ${b.title} by ${b.author || 'Standard Author'}. Total ${b.total_pages} Pages with full KaTeX & AI Senior Mentor grounding.`,
+              isRealPdf: true
+            }));
+            setDynamicBooks(mappedBooks);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch books from backend:", err);
       }
     };
-    fetchAvailablePapers();
+    fetchAvailableData();
   }, [mode]);
 
   // 3.2 The Year-Wise Injector: Launch PYQ directly into Arena
@@ -317,17 +264,14 @@ export default function LibraryPage() {
   };
 
   const combinedItems = React.useMemo(() => {
-    if (dynamicPapers.length > 0) {
-      const booksAndNcert = BASE_LIBRARY_ITEMS.filter((i) => i.category !== "PYQ Papers");
-      return [...dynamicPapers, ...booksAndNcert];
-    }
-    return BASE_LIBRARY_ITEMS;
-  }, [dynamicPapers]);
+    return [...dynamicPapers, ...dynamicBooks];
+  }, [dynamicPapers, dynamicBooks]);
 
   const filteredItems = combinedItems.filter((item) => {
-    if (activeFilter === "PYQ" && item.category !== "PYQ Papers") return false;
-    if (activeFilter === "BOOKS" && item.category === "PYQ Papers") return false;
-    if (item.exam && item.exam !== mode) return false;
+    const isPYQ = item.category === "PYQ Papers";
+    if (activeFilter === "PYQ" && !isPYQ) return false;
+    if (activeFilter === "BOOKS" && isPYQ) return false;
+    if (isPYQ && item.exam && item.exam !== mode) return false;
     return true;
   });
 
@@ -343,42 +287,43 @@ export default function LibraryPage() {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
               <BookOpen className="w-4 h-4" />
-              PYQ & Syllabus Launchpad
+              Official Library & Study Vault
             </div>
             <h1 className="text-2xl font-black uppercase tracking-wider text-white mt-1">
-              Digital Syllabus & PYQ Vault ({mode} Track)
+              Authentic Textbooks & PYQ Vault ({mode} Track)
             </h1>
             <p className="text-sm text-neutral-300 mt-1">
-              Launch official Year-Wise PYQ Mock simulations or perform PGVector semantic searches.
+              Read authentic standard textbooks with AI Senior Mentor grounding or launch timed PYQ simulations.
             </p>
           </div>
 
           {/* Filter Pills */}
-          <div className="flex bg-[#121212] p-1 rounded-xl border border-neutral-800 self-start md:self-auto">
+          <div className="flex bg-[#121212] p-1 rounded-xl border border-neutral-800 self-start md:self-auto gap-1">
             <button
               onClick={() => setActiveFilter("ALL")}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeFilter === "ALL" ? "bg-amber-600 text-neutral-950 font-black" : "text-neutral-400 hover:text-white"
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeFilter === "ALL" ? "bg-amber-600 text-neutral-950 font-black shadow-md" : "text-neutral-400 hover:text-white"
               }`}
             >
-              All Assets
+              All Assets ({combinedItems.length})
             </button>
             <button
               onClick={() => setActiveFilter("PYQ")}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeFilter === "PYQ" ? "bg-amber-600 text-neutral-950 font-black" : "text-neutral-400 hover:text-white"
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeFilter === "PYQ" ? "bg-amber-600 text-neutral-950 font-black shadow-md" : "text-neutral-400 hover:text-white"
               }`}
             >
               <Award className="w-3.5 h-3.5" />
-              Year-Wise PYQs
+              Year-Wise PYQs ({dynamicPapers.length})
             </button>
             <button
               onClick={() => setActiveFilter("BOOKS")}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeFilter === "BOOKS" ? "bg-amber-600 text-neutral-950 font-black" : "text-neutral-400 hover:text-white"
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeFilter === "BOOKS" ? "bg-amber-600 text-neutral-950 font-black shadow-md" : "text-neutral-400 hover:text-white"
               }`}
             >
-              Books & NCERT
+              <BookOpen className="w-3.5 h-3.5" />
+              Standard Textbooks ({dynamicBooks.length})
             </button>
           </div>
         </div>
@@ -514,20 +459,32 @@ export default function LibraryPage() {
                     <>
                       <button
                         type="button"
-                        onClick={() => handleLaunchSubjectPractice(book)}
-                        className="w-full py-3 bg-amber-600/90 hover:bg-amber-500 text-neutral-950 font-black uppercase text-xs tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                        onClick={() => {
+                          const targetBook: BookItem = {
+                            id: book.id,
+                            title: book.title,
+                            author: book.author,
+                            subject: book.subject || "General Studies",
+                            exam_type: (book.exam as string) || mode,
+                            category: book.category,
+                            total_pages: book.chapters || 1,
+                            pdf_url: `/api/books/${book.id}/pdf`
+                          };
+                          setActiveReadingBook(targetBook);
+                        }}
+                        className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black uppercase text-xs tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer shadow-amber-500/20"
                       >
-                        <Zap className="w-4 h-4" />
-                        Practice Subject Questions
+                        <BookOpen className="w-4 h-4" />
+                        Read Authentic PDF & AI Tutor
                       </button>
 
                       <button
                         type="button"
-                        onClick={() => setSelectedBook(book)}
+                        onClick={() => handleLaunchSubjectPractice(book)}
                         className="w-full py-2 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 hover:text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        <FileText className="w-3.5 h-3.5 text-neutral-400" />
-                        Read Syllabus Chapter
+                        <Zap className="w-3.5 h-3.5 text-amber-500" />
+                        Practice Subject Questions
                       </button>
                     </>
                   )}
@@ -537,8 +494,16 @@ export default function LibraryPage() {
           })}
         </div>
 
-        {/* Document Reader Modal */}
-        {selectedBook && (
+        {/* Authentic PDF Reader Modal with AI Tutor Sidecar */}
+        {activeReadingBook && (
+          <BookReaderModal
+            book={activeReadingBook}
+            onClose={() => setActiveReadingBook(null)}
+          />
+        )}
+
+        {/* Document Reader Fallback Modal */}
+        {selectedBook && !activeReadingBook && (
           <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl flex flex-col gap-4">
               <div className="flex justify-between items-center pb-4 border-b border-neutral-800">

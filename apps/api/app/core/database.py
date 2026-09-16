@@ -43,12 +43,16 @@ async_session_maker = async_sessionmaker(
     expire_on_commit=False
 )
 
+engine = async_engine
+
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """
     FastAPI dependency that yields an AsyncSession.
     """
     async with async_session_maker() as session:
         yield session
+
+get_session = get_async_session
 
 async def init_db():
     """
