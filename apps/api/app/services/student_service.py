@@ -37,15 +37,31 @@ class StudentService:
         exam_type: str,
         is_correct: bool,
         response_time: float,
-        confidence_level: int,
+        confidence_level: Optional[int] = None,
         difficulty_level: int = 3,  # Default to Medium (3)
         use_confidence: bool = True,
         use_irt: bool = True
     ) -> Dict[str, Any]:
         """
         Saves student attempt, updates BKT (IRT/confidence-weighted)/HLR, and logs trace metrics.
+        If confidence_level is omitted, implicitly infers confidence from response-time velocity.
         """
         now = datetime.utcnow()
+
+        # Infer implicit confidence from chronometric velocity if not explicitly reported
+        if confidence_level is None:
+            if is_correct:
+                if 15.0 <= response_time <= 45.0:
+                    confidence_level = 5  # High conviction / rapid recall
+                elif 45.0 < response_time <= 90.0:
+                    confidence_level = 4  # Standard analytical processing
+                else:
+                    confidence_level = 3  # Extended deliberation / hesitation
+            else:
+                if response_time < 20.0:
+                    confidence_level = 4  # Impulsive misconception / blindspot
+                else:
+                    confidence_level = 2  # Conceptual gap / unlearned
 
         # 1. Fetch current StudentMastery
         mastery_stmt = select(StudentMastery).where(

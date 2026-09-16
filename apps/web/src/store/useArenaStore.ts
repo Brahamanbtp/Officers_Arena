@@ -12,6 +12,7 @@ export interface IRTMetadata {
   paper?: string;
   source?: string;
   exam_type?: string;
+  book_reference?: string;
 }
 
 export interface QuestionImage {
@@ -41,12 +42,17 @@ export interface UserMockAnswer {
   selectedOption: string | null;
   confidence: number | null;
   markedForReview: boolean;
+  timeSpentSeconds?: number;
 }
 
 interface ArenaState {
   // Test Mode
   testMode: TestMode;
   setTestMode: (mode: TestMode) => void;
+
+  // Metacognitive Calibration Setting (Optional toggle)
+  enableConfidenceRating: boolean;
+  setEnableConfidenceRating: (enabled: boolean) => void;
 
   // Active question
   currentQuestion: Question | null;
@@ -67,6 +73,11 @@ interface ArenaState {
   showFeedback: boolean;
   feedbackExplanation: string | null;
   isCorrectResult: boolean | null;
+
+  // Item-level Response Time Chronometrics
+  questionTimes: Record<string, number>;
+  recordQuestionTime: (questionId: string, seconds: number) => void;
+  averageResponseTime: number;
 
   // Mock Test Mode State & OMR Grid
   mockQuestions: Question[];
@@ -93,7 +104,7 @@ interface ArenaState {
   // Mock Test Actions
   setMockQuestions: (questions: Question[]) => void;
   setActiveQuestionIndex: (index: number) => void;
-  recordMockAnswer: (index: number, option: string | null, confidence: number | null) => void;
+  recordMockAnswer: (index: number, option: string | null, confidence: number | null, timeSpent?: number) => void;
   toggleMarkForReview: (index: number) => void;
   submitMockTest: () => void;
   resetMockTest: () => void;
@@ -105,6 +116,9 @@ export const useArenaStore = create<ArenaState>()(
       testMode: "practice",
       setTestMode: (testMode) => set({ testMode }),
 
+      enableConfidenceRating: false, // Default to FALSE for frictionless fast answering
+      setEnableConfidenceRating: (enableConfidenceRating) => set({ enableConfidenceRating }),
+
       currentQuestion: null,
       sessionScore: 0,
       timer: 0,
@@ -113,7 +127,7 @@ export const useArenaStore = create<ArenaState>()(
       mode: "UPSC",
       selectedOption: null,
       confidence: null,
-      averageTopicTime: 60,
+      averageTopicTime: 48,
       masteryPercentage: 50.0,
       thetaDelta: 0.0,
       selectedSubject: "All",
@@ -122,6 +136,15 @@ export const useArenaStore = create<ArenaState>()(
       showFeedback: false,
       feedbackExplanation: null,
       isCorrectResult: null,
+
+      questionTimes: {},
+      averageResponseTime: 48,
+      recordQuestionTime: (questionId, seconds) => set((state) => {
+        const updated = { ...state.questionTimes, [questionId]: seconds };
+        const vals = Object.values(updated);
+        const avg = vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 48;
+        return { questionTimes: updated, averageResponseTime: avg };
+      }),
 
       mockQuestions: [],
       activeQuestionIndex: 0,
@@ -169,7 +192,8 @@ export const useArenaStore = create<ArenaState>()(
         thetaDelta: 0.0,
         showFeedback: false,
         feedbackExplanation: null,
-        isCorrectResult: null
+        isCorrectResult: null,
+        questionTimes: {}
       }),
 
       setMockQuestions: (mockQuestions) => {
@@ -179,7 +203,8 @@ export const useArenaStore = create<ArenaState>()(
             questionId: q.id,
             selectedOption: null,
             confidence: null,
-            markedForReview: false
+            markedForReview: false,
+            timeSpentSeconds: 0
           };
         });
         const calculatedSeconds = Math.max(300, Math.round(mockQuestions.length * 72));
@@ -189,7 +214,8 @@ export const useArenaStore = create<ArenaState>()(
           userAnswers: initialAnswers,
           isMockSubmitted: false,
           currentQuestion: mockQuestions[0] || null,
-          mockTimerLeft: calculatedSeconds
+          mockTimerLeft: calculatedSeconds,
+          questionTimes: {}
         });
       },
 
@@ -200,19 +226,21 @@ export const useArenaStore = create<ArenaState>()(
         confidence: state.userAnswers[activeQuestionIndex]?.confidence || null
       })),
 
-      recordMockAnswer: (index, option, confidence) => set((state) => {
+      recordMockAnswer: (index, option, confidence, timeSpent = 0) => set((state) => {
         const currentAns = state.userAnswers[index] || {
           questionId: state.mockQuestions[index]?.id || `q-${index}`,
           selectedOption: null,
           confidence: null,
-          markedForReview: false
+          markedForReview: false,
+          timeSpentSeconds: 0
         };
         const updated = {
           ...state.userAnswers,
           [index]: {
             ...currentAns,
             selectedOption: option !== null ? option : currentAns.selectedOption,
-            confidence: confidence !== null ? confidence : currentAns.confidence
+            confidence: confidence !== null ? confidence : currentAns.confidence,
+            timeSpentSeconds: timeSpent > 0 ? timeSpent : currentAns.timeSpentSeconds
           }
         };
         return {
@@ -227,7 +255,8 @@ export const useArenaStore = create<ArenaState>()(
           questionId: state.mockQuestions[index]?.id || `q-${index}`,
           selectedOption: null,
           confidence: null,
-          markedForReview: false
+          markedForReview: false,
+          timeSpentSeconds: 0
         };
         return {
           userAnswers: {
@@ -249,7 +278,8 @@ export const useArenaStore = create<ArenaState>()(
             questionId: q.id,
             selectedOption: null,
             confidence: null,
-            markedForReview: false
+            markedForReview: false,
+            timeSpentSeconds: 0
           };
         });
         const calculatedSeconds = Math.max(300, Math.round(state.mockQuestions.length * 72));
@@ -261,7 +291,8 @@ export const useArenaStore = create<ArenaState>()(
           selectedOption: null,
           confidence: null,
           timer: 0,
-          mockTimerLeft: calculatedSeconds
+          mockTimerLeft: calculatedSeconds,
+          questionTimes: {}
         };
       })
     }),
@@ -272,7 +303,8 @@ export const useArenaStore = create<ArenaState>()(
         testMode: state.testMode,
         sessionScore: state.sessionScore,
         masteryPercentage: state.masteryPercentage,
-        thetaDelta: state.thetaDelta
+        thetaDelta: state.thetaDelta,
+        enableConfidenceRating: state.enableConfidenceRating
       })
     }
   )

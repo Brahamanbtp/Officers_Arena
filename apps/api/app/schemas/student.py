@@ -9,7 +9,7 @@ class AttemptSubmitRequest(BaseModel):
     exam_type: str = Field(..., description="Exam type: UPSC or CDS")
     is_correct: bool = Field(..., description="Whether the answer was correct.")
     response_time: float = Field(..., description="Response time in seconds.")
-    confidence_level: int = Field(..., ge=1, le=5, description="Confidence level from 1 to 5.")
+    confidence_level: Optional[int] = Field(None, ge=1, le=5, description="Optional confidence level from 1 to 5.")
     difficulty_level: Optional[int] = Field(3, ge=1, le=5, description="IRT question difficulty level from 1 to 5.")
     use_confidence: Optional[bool] = Field(True, description="Whether to apply confidence BKT weighting.")
     use_irt: Optional[bool] = Field(True, description="Whether to apply IRT difficulty BKT weighting.")

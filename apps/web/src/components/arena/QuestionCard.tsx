@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useArenaStore } from "../../store/useArenaStore";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -16,7 +16,9 @@ import {
   Brain,
   Loader2,
   AlertTriangle,
-  Lightbulb
+  Clock,
+  Zap,
+  Sliders
 } from "lucide-react";
 import { MathRenderer } from "../shared/MathRenderer";
 import { QuestionRenderer } from "./QuestionRenderer";
@@ -42,12 +44,20 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
   const setActiveQuestionIndex = useArenaStore((state) => state.setActiveQuestionIndex);
   const recordMockAnswer = useArenaStore((state) => state.recordMockAnswer);
   const toggleMarkForReview = useArenaStore((state) => state.toggleMarkForReview);
+  
+  const enableConfidenceRating = useArenaStore((state) => state.enableConfidenceRating);
+  const setEnableConfidenceRating = useArenaStore((state) => state.setEnableConfidenceRating);
+  const recordQuestionTime = useArenaStore((state) => state.recordQuestionTime);
+  const questionTimes = useArenaStore((state) => state.questionTimes);
 
   const setSelectedOption = useArenaStore((state) => state.setSelectedOption);
   const setConfidence = useArenaStore((state) => state.setConfidence);
   const examMode = useAuthStore((state) => state.examMode);
 
-  // 4.2 Conceptual Error Analysis State
+  // Live Item-Level Chronometric Timer
+  const [itemTimeSeconds, setItemTimeSeconds] = useState<number>(0);
+
+  // Conceptual Error Analysis State
   const [errorAnalysis, setErrorAnalysis] = useState<{
     error_category: string;
     identified_gap: string;
@@ -55,9 +65,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
   } | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // Reset analysis on question change
+  // Reset timer on question change
   useEffect(() => {
     setErrorAnalysis(null);
+    setItemTimeSeconds(0);
+    const interval = setInterval(() => {
+      setItemTimeSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
   }, [currentQuestion?.id]);
 
   const handleAnalyzeMistake = async () => {
@@ -134,7 +149,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
 
   const handleSelectOption = (key: string) => {
     if (isMockMode) {
-      recordMockAnswer(activeQuestionIndex, key, confidence);
+      recordMockAnswer(activeQuestionIndex, key, confidence, itemTimeSeconds);
+      if (currentQuestion) {
+        recordQuestionTime(currentQuestion.id, itemTimeSeconds);
+      }
     } else {
       setSelectedOption(key);
     }
@@ -142,13 +160,24 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
 
   const handleSelectConfidence = (lvl: number) => {
     if (isMockMode) {
-      recordMockAnswer(activeQuestionIndex, selectedOption, lvl);
+      recordMockAnswer(activeQuestionIndex, selectedOption, lvl, itemTimeSeconds);
     } else {
       setConfidence(lvl);
     }
   };
 
-  const isReadyToSubmit = selectedOption !== null && confidence !== null && !showFeedback;
+  // Frictionless Submission: Selecting an option immediately allows submission!
+  const isReadyToSubmit = selectedOption !== null && !showFeedback;
+
+  const handleExecuteSubmit = () => {
+    if (!selectedOption) return;
+    if (currentQuestion) {
+      recordQuestionTime(currentQuestion.id, itemTimeSeconds);
+    }
+    // If confidence rating is skipped or disabled, pass default calibrated score (3)
+    const effectiveConfidence = confidence !== null ? confidence : 3;
+    onSubmit(selectedOption, effectiveConfidence);
+  };
 
   return (
     <AnimatePresence mode="wait">
@@ -158,11 +187,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
-        className="w-full bg-[#111111] border border-neutral-800 p-6 md:p-8 rounded-3xl shadow-2xl flex flex-col gap-6 relative select-none font-sans"
+        className="w-full bg-[#111111] border border-neutral-800 p-5 sm:p-7 md:p-8 rounded-3xl shadow-2xl flex flex-col gap-5 relative select-none font-sans"
       >
-        {/* Header Badge, Source Provenance & Topic */}
+        {/* Header Badge, Source Provenance & Live Item Chronometrics */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs border-b border-neutral-850 pb-4">
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-lg font-bold text-xs uppercase tracking-widest text-amber-400">
               {(currentQuestion.metadata as any)?.subject || `${examMode} Subject`}
             </span>
@@ -180,33 +209,55 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
                 {(currentQuestion.metadata as any)?.source || `${examMode} Official PYQ`}
               </span>
             )}
-
-            {/* Cognitive & IRT Difficulty Level */}
-            {(currentQuestion.metadata as any)?.difficulty && (
-              <span className="px-2.5 py-1 bg-neutral-900 border border-neutral-800 text-neutral-400 rounded-lg text-[11px] font-mono">
-                IRT θ: {(currentQuestion.metadata as any).difficulty}
-              </span>
-            )}
           </div>
 
-          {/* Mark for Review Button in Mock Mode */}
-          {isMockMode && (
-            <button
-              onClick={() => toggleMarkForReview(activeQuestionIndex)}
-              className={`px-3.5 py-1.5 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-                isMarked
-                  ? "bg-purple-500/20 border-purple-500/60 text-purple-200 shadow-md shadow-purple-500/10"
-                  : "bg-neutral-900 border-neutral-800 text-neutral-300 hover:text-white"
-              }`}
-            >
-              <Bookmark className={`w-4 h-4 ${isMarked ? "text-purple-400 fill-purple-400" : "text-neutral-400"}`} />
-              {isMarked ? "Marked for Review" : "Mark for Review"}
-            </button>
-          )}
+          <div className="flex items-center gap-2.5">
+            {/* Live Item Chronometric Speedometer */}
+            <div className="px-2.5 py-1 bg-neutral-950 border border-neutral-800 rounded-lg font-mono text-[11px] font-bold text-neutral-300 flex items-center gap-1.5" title="Time spent on this specific question">
+              <Clock className="w-3.5 h-3.5 text-amber-400" />
+              <span>{itemTimeSeconds}s</span>
+              <span className="text-[10px] text-neutral-500 font-normal">
+                {itemTimeSeconds < 20 ? "(Fast)" : itemTimeSeconds > 80 ? "(Deliberate)" : "(Optimal)"}
+              </span>
+            </div>
+
+            {/* Optional Metacognitive Calibration Toggle (Practice Mode) */}
+            {!isMockMode && (
+              <button
+                type="button"
+                onClick={() => setEnableConfidenceRating(!enableConfidenceRating)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider border transition-all flex items-center gap-1 cursor-pointer ${
+                  enableConfidenceRating 
+                    ? "bg-purple-500/20 text-purple-300 border-purple-500/40" 
+                    : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:text-neutral-300"
+                }`}
+                title="Toggle self-reported confidence calibration rating"
+              >
+                <Brain className="w-3 h-3" />
+                <span>Confidence Rating: {enableConfidenceRating ? "ON" : "OFF"}</span>
+              </button>
+            )}
+
+            {/* Mark for Review in Mock Mode */}
+            {isMockMode && (
+              <button
+                type="button"
+                onClick={() => toggleMarkForReview(activeQuestionIndex)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isMarked
+                    ? "bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-md"
+                    : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Bookmark className={`w-3.5 h-3.5 ${isMarked ? "text-purple-400 fill-purple-400" : "text-neutral-400"}`} />
+                <span>{isMarked ? "Marked" : "Review"}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Question Text & Visual Content */}
-        <div className="text-base text-neutral-100 font-medium leading-relaxed space-y-4">
+        <div className="text-sm md:text-base text-neutral-100 font-medium leading-relaxed space-y-3">
           <QuestionRenderer 
             text={currentQuestion.text} 
             imageUrls={(currentQuestion.images || []).reduce((acc, img) => {
@@ -234,8 +285,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
           )}
         </div>
 
-        {/* Options Group */}
-        <div className="grid grid-cols-1 gap-3.5 pt-2">
+        {/* Options Group (1-Click Selection) */}
+        <div className="grid grid-cols-1 gap-3 pt-1">
           {Object.entries(optionsMap).map(([key, value]) => {
             const isSelected = selectedOption === key;
             const isCorrect = key === currentQuestion.correct_answer;
@@ -263,17 +314,18 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
             return (
               <button
                 key={key}
+                type="button"
                 disabled={!isMockMode && showFeedback}
                 onClick={() => handleSelectOption(key)}
-                className={`p-4 rounded-2xl border text-sm md:text-base text-left flex items-center justify-between gap-4 transition-all duration-200 cursor-pointer ${borderStyle}`}
+                className={`p-3.5 sm:p-4 rounded-2xl border text-sm md:text-base text-left flex items-center justify-between gap-4 transition-all duration-200 cursor-pointer ${borderStyle}`}
               >
-                <div className="flex items-center gap-4">
-                  <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs border ${
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs border shrink-0 ${
                     isSelected ? "bg-amber-500 text-neutral-950 border-amber-400" : "bg-neutral-900 border-neutral-800 text-neutral-300"
                   }`}>
                     {key}
                   </span>
-                  <div className="text-neutral-200">
+                  <div className="text-neutral-200 text-xs sm:text-sm">
                     <MathRenderer content={value as string} inline />
                   </div>
                 </div>
@@ -283,29 +335,31 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
           })}
         </div>
 
-        {/* Metacognitive Confidence Rating */}
-        {selectedOption !== null && !showFeedback && (
+        {/* Optional Metacognitive Confidence Rating (Only shown when enabled by user) */}
+        {!isMockMode && enableConfidenceRating && selectedOption !== null && !showFeedback && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="pt-4 border-t border-neutral-850 space-y-3"
+            className="pt-3 border-t border-neutral-850 space-y-2.5"
           >
             <div className="flex items-center justify-between text-xs font-bold text-neutral-300 uppercase tracking-wider">
-              <span className="flex items-center gap-2 text-amber-400">
-                <HelpCircle className="w-4 h-4" /> Metacognitive Calibration
+              <span className="flex items-center gap-1.5 text-purple-400">
+                <HelpCircle className="w-4 h-4" /> Optional Metacognitive Calibration
               </span>
-              <span>How confident are you? {confidence !== null ? `(${confidence}/5)` : "(Select rating)"}</span>
+              <span className="text-[11px] text-neutral-400">
+                {confidence !== null ? `Confidence: ${confidence}/5` : "(Click to rate or submit directly)"}
+              </span>
             </div>
 
-            <div className="grid grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((lvl) => (
                 <button
                   key={lvl}
                   type="button"
                   onClick={() => handleSelectConfidence(lvl)}
-                  className={`py-2.5 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer ${
+                  className={`py-2 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer ${
                     confidence === lvl
-                      ? "bg-amber-500 border-amber-400 text-neutral-950 shadow-md font-black"
+                      ? "bg-purple-500 border-purple-400 text-neutral-950 shadow-md font-black"
                       : "bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-neutral-700"
                   }`}
                 >
@@ -316,15 +370,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
           </motion.div>
         )}
 
-        {/* REQUIREMENT 4.2: SOCRATIC INLINE CONCEPTUAL EXPLANATION & CONCEPTUAL ERROR ANALYSIS */}
+        {/* Practice Mode Socratic Inline Conceptual Explanation */}
         {!isMockMode && showFeedback && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-5 rounded-2xl border bg-neutral-950/90 border-neutral-800 space-y-4 shadow-xl mt-2"
+            className="p-4 sm:p-5 rounded-2xl border bg-neutral-950/90 border-neutral-800 space-y-3.5 shadow-xl mt-1"
           >
-            {/* Status Header & 4.2 "Analyze My Mistake" Action */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-850 pb-3 gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-850 pb-3 gap-2">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span className="text-xs font-black uppercase tracking-wider text-white">
@@ -340,7 +393,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
                   className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {isAnalyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
-                  {isAnalyzing ? "Analyzing..." : "Analyze My Mistake"}
+                  <span>{isAnalyzing ? "Analyzing..." : "Analyze My Mistake"}</span>
                 </button>
 
                 <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${
@@ -360,7 +413,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
               </p>
             </div>
 
-            {/* 4.2 Backend Conceptual Error Breakdown Result Box */}
+            {/* Conceptual Error Breakdown Result Box */}
             {errorAnalysis && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -395,21 +448,25 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
           </motion.div>
         )}
 
-        {/* Navigation & Submission Controls */}
-        <div className="pt-4 border-t border-neutral-850 flex items-center justify-between">
+        {/* Navigation & Frictionless Submission Controls */}
+        <div className="pt-3 border-t border-neutral-850 flex items-center justify-between">
           {isMockMode ? (
             <div className="flex items-center justify-between w-full gap-3">
               <button
+                type="button"
                 disabled={activeQuestionIndex === 0}
-                onClick={() => setActiveQuestionIndex(activeQuestionIndex - 1)}
-                className={`py-3.5 px-5 rounded-xl font-bold uppercase text-xs tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                onClick={() => {
+                  if (currentQuestion) recordQuestionTime(currentQuestion.id, itemTimeSeconds);
+                  setActiveQuestionIndex(activeQuestionIndex - 1);
+                }}
+                className={`py-3 px-4 sm:px-5 rounded-xl font-bold uppercase text-xs tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
                   activeQuestionIndex > 0
                     ? "bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-200"
                     : "bg-neutral-950 border border-neutral-900 text-neutral-600 cursor-not-allowed"
                 }`}
               >
                 <ArrowLeft className="w-4 h-4" />
-                Previous
+                <span>Prev</span>
               </button>
 
               <span className="text-xs font-mono text-neutral-300 font-bold">
@@ -417,15 +474,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
               </span>
 
               <button
+                type="button"
                 disabled={activeQuestionIndex === mockQuestions.length - 1}
-                onClick={() => setActiveQuestionIndex(activeQuestionIndex + 1)}
-                className={`py-3.5 px-5 rounded-xl font-bold uppercase text-xs tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                onClick={() => {
+                  if (currentQuestion) recordQuestionTime(currentQuestion.id, itemTimeSeconds);
+                  setActiveQuestionIndex(activeQuestionIndex + 1);
+                }}
+                className={`py-3 px-4 sm:px-5 rounded-xl font-bold uppercase text-xs tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
                   activeQuestionIndex < mockQuestions.length - 1
                     ? "bg-amber-600 hover:bg-amber-500 text-neutral-950 font-black shadow-lg"
                     : "bg-neutral-950 border border-neutral-900 text-neutral-600 cursor-not-allowed"
                 }`}
               >
-                Next
+                <span>Next</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -433,25 +494,27 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
             <>
               {!showFeedback ? (
                 <button
+                  type="button"
                   disabled={!isReadyToSubmit}
-                  onClick={() => selectedOption && confidence && onSubmit(selectedOption, confidence)}
-                  className={`w-full py-4 rounded-2xl font-black uppercase text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xl ${
+                  onClick={handleExecuteSubmit}
+                  className={`w-full py-3.5 sm:py-4 rounded-2xl font-black uppercase text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xl ${
                     isReadyToSubmit
                       ? "bg-amber-600 hover:bg-amber-500 text-neutral-950"
                       : "bg-neutral-900 text-neutral-500 border border-neutral-800 cursor-not-allowed"
                   }`}
                   style={isReadyToSubmit ? { boxShadow: "0 0 25px rgba(217,119,6,0.3)" } : {}}
                 >
-                  Submit Response
+                  <span>Submit Response</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={onNext}
-                  className="w-full py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-neutral-950 font-black uppercase text-xs tracking-wider rounded-2xl transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-neutral-950 font-black uppercase text-xs tracking-wider rounded-2xl transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer"
                   style={{ boxShadow: "0 0 25px rgba(217,119,6,0.3)" }}
                 >
-                  Next Calibrated Exhibit
+                  <span>Next Adaptive Question</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}
