@@ -334,23 +334,56 @@ export default function StrategistPage() {
                       Day {day.dayNumber}
                     </div>
 
-                    <div className="space-y-1">
-                      <h3 className="text-base font-bold text-white leading-snug">{day.dayTitle}</h3>
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-bold text-white leading-snug">{day.dayTitle}</h3>
+                        <span className={`px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md border flex-shrink-0 ${
+                          day.status === "active"
+                            ? "bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse"
+                            : "bg-neutral-900 text-neutral-400 border-neutral-800"
+                        }`}>
+                          {day.status === "active" ? "In Progress" : "Queued"}
+                        </span>
+                      </div>
+                      
                       <p className="text-xs text-amber-400 font-semibold">{day.focusArea}</p>
+                      
                       <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-400 pt-1">
                         <span className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5 text-neutral-500" /> {day.targetReading}</span>
                         <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-neutral-500" /> {day.practiceGoal}</span>
                       </div>
+
+                      {/* Action Launchpad for this Day */}
+                      <div className="flex items-center gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            window.location.href = `/library?search=${encodeURIComponent(day.focusArea.split("(")[0].trim())}`;
+                          }}
+                          className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/50 text-neutral-200 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                          Open Textbook
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const setSelectedSubject = useArenaStore.getState().setSelectedSubject;
+                            const setTestMode = useArenaStore.getState().setTestMode;
+                            const subj = day.focusArea.split("(")[0].trim();
+                            setSelectedSubject(subj);
+                            setTestMode("practice");
+                            window.location.href = `/arena?subject=${encodeURIComponent(subj)}`;
+                          }}
+                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 text-xs font-black uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow"
+                        >
+                          <Target className="w-3.5 h-3.5" />
+                          Launch Drill
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <span className={`px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider rounded-md border flex-shrink-0 ${
-                    day.status === "active"
-                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse"
-                      : "bg-neutral-900 text-neutral-400 border-neutral-800"
-                  }`}>
-                    {day.status === "active" ? "In Progress" : "Queued"}
-                  </span>
                 </motion.div>
               ))}
             </div>

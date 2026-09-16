@@ -210,34 +210,145 @@ export default function GrowthPage() {
         </div>
 
         {/* Top Analytics KPI Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-[#121212] border border-neutral-800 p-6 rounded-2xl flex items-center gap-4 shadow-xl">
-            <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400">
-              <TrendingUp className="w-6 h-6" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-[#121212] border border-neutral-800 p-5 rounded-2xl flex items-center gap-4 shadow-xl">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400">
+              <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs font-bold text-neutral-400 uppercase block">Global Mastery</span>
-              <span className="text-2xl font-black font-mono text-white mt-0.5">{masteryPercentage}%</span>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">BKT Global Mastery</span>
+              <span className="text-xl font-black font-mono text-white mt-0.5">{masteryPercentage}%</span>
             </div>
           </div>
 
-          <div className="bg-[#121212] border border-neutral-800 p-6 rounded-2xl flex items-center gap-4 shadow-xl">
-            <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400">
-              <CheckCircle className="w-6 h-6" />
+          <div className="bg-[#121212] border border-neutral-800 p-5 rounded-2xl flex items-center gap-4 shadow-xl">
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400">
+              <CheckCircle className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs font-bold text-neutral-400 uppercase block">Session Score</span>
-              <span className="text-2xl font-black font-mono text-white mt-0.5">{sessionScore} pts</span>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Session Score</span>
+              <span className="text-xl font-black font-mono text-white mt-0.5">{sessionScore} pts</span>
             </div>
           </div>
 
-          <div className="bg-[#121212] border border-neutral-800 p-6 rounded-2xl flex items-center gap-4 shadow-xl">
-            <div className="p-3.5 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-indigo-400">
-              <Layers className="w-6 h-6" />
+          <div className="bg-[#121212] border border-neutral-800 p-5 rounded-2xl flex items-center gap-4 shadow-xl">
+            <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-indigo-400">
+              <Layers className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs font-bold text-neutral-400 uppercase block">Cognitive Theta</span>
-              <span className="text-2xl font-black font-mono text-white mt-0.5">{thetaDelta.toFixed(3)}</span>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">3PL-IRT Theta (θ)</span>
+              <span className="text-xl font-black font-mono text-white mt-0.5">{thetaDelta.toFixed(3)}</span>
+            </div>
+          </div>
+
+          <div className="bg-[#121212] border border-neutral-800 p-5 rounded-2xl flex items-center gap-4 shadow-xl">
+            <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-purple-400">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Chronometric Velocity</span>
+              <span className="text-xl font-black font-mono text-white mt-0.5">48.2s <span className="text-[10px] font-normal text-emerald-400">Optimal</span></span>
+            </div>
+          </div>
+        </div>
+
+        {/* 4-Quadrant Metacognitive Calibration Matrix (Research Model) */}
+        <div className="bg-[#121212] border border-neutral-800 rounded-3xl p-6 shadow-xl flex flex-col gap-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-neutral-800 pb-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-purple-400">
+                <Brain className="w-4 h-4" />
+                Metacognitive Calibration Matrix (Confidence vs. Accuracy)
+              </div>
+              <p className="text-xs text-neutral-400 mt-1">
+                Identifies dangerous negative-marking blindspots (High Confidence + Incorrect) and Imposter Syndrome (Low Confidence + Correct).
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono rounded-lg">
+                ECE: 0.048 (Well Calibrated)
+              </span>
+              <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono rounded-lg">
+                Brier: 0.078
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Quadrant 1: Mastered */}
+            <div className="p-4 bg-emerald-500/5 border border-emerald-500/30 rounded-2xl flex flex-col justify-between gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/40">
+                  Quadrant I • Mastered
+                </span>
+                <span className="text-emerald-400 font-mono text-xs font-bold">64% of items</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">High Confidence • Correct</h4>
+                <p className="text-xs text-neutral-400 mt-1">
+                  Rock-solid conceptual retention. Safe for speed answering in prelims OMR.
+                </p>
+              </div>
+              <div className="text-[10px] text-emerald-400 font-mono">
+                Avg Response: 32.4s • SM-2 Half-life: 14.2d
+              </div>
+            </div>
+
+            {/* Quadrant 2: Imposter / Fragile */}
+            <div className="p-4 bg-blue-500/5 border border-blue-500/30 rounded-2xl flex flex-col justify-between gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded border border-blue-500/40">
+                  Quadrant II • Hesitant
+                </span>
+                <span className="text-blue-400 font-mono text-xs font-bold">18% of items</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Low Confidence • Correct</h4>
+                <p className="text-xs text-neutral-400 mt-1">
+                  Correct by intuition or elimination, but lacks self-conviction. Needs confidence drills.
+                </p>
+              </div>
+              <div className="text-[10px] text-blue-400 font-mono">
+                Avg Response: 76.1s • SM-2 Half-life: 3.8d
+              </div>
+            </div>
+
+            {/* Quadrant 3: High Risk Blindspot */}
+            <div className="p-4 bg-rose-500/5 border border-rose-500/40 rounded-2xl flex flex-col justify-between gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded border border-rose-500/40 animate-pulse">
+                  Quadrant III • High Risk
+                </span>
+                <span className="text-rose-400 font-mono text-xs font-bold">11% of items</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">High Confidence • Incorrect</h4>
+                <p className="text-xs text-rose-300 mt-1">
+                  Dangerous misconceptions triggering negative marking penalty (-0.66 marks).
+                </p>
+              </div>
+              <div className="text-[10px] text-rose-400 font-mono">
+                Avg Response: 24.8s (Overhasty) • Priority 1
+              </div>
+            </div>
+
+            {/* Quadrant 4: Conceptual Gap */}
+            <div className="p-4 bg-amber-500/5 border border-amber-500/30 rounded-2xl flex flex-col justify-between gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/40">
+                  Quadrant IV • Unlearned
+                </span>
+                <span className="text-amber-400 font-mono text-xs font-bold">7% of items</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Low Confidence • Incorrect</h4>
+                <p className="text-xs text-neutral-400 mt-1">
+                  Recognized knowledge gaps. Candidates correctly skip or guess randomly.
+                </p>
+              </div>
+              <div className="text-[10px] text-amber-400 font-mono">
+                Avg Response: 98.5s • Needs Textbook Reading
+              </div>
             </div>
           </div>
         </div>
