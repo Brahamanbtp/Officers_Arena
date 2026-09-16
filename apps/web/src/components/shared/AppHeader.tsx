@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BrainCircuit, Activity, BookOpen, TrendingUp, Sparkles, Moon, Sun, ChevronDown } from "lucide-react";
+import { BrainCircuit, Activity, BookOpen, TrendingUp, Sparkles, Moon, Sun, ChevronDown, PenTool } from "lucide-react";
 import { useArenaStore } from "@/src/store/useArenaStore";
 import { useAuthStore } from "@/src/store/useAuthStore";
 
@@ -93,8 +93,20 @@ export const AppHeader: React.FC = () => {
           </Link>
 
           <Link
+            href="/mains"
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              pathname === "/mains" 
+                ? "bg-amber-600 text-neutral-950 shadow-md font-black" 
+                : `${isLight ? "text-neutral-700 hover:text-neutral-950" : "text-neutral-300 hover:text-white"}`
+            }`}
+          >
+            <PenTool className="w-4 h-4 text-amber-400" />
+            Mains AES
+          </Link>
+
+          <Link
             href="/library"
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               isLibraryActive 
                 ? "bg-amber-600 text-neutral-950 shadow-md font-black" 
                 : `${isLight ? "text-neutral-700 hover:text-neutral-950" : "text-neutral-300 hover:text-white"}`
