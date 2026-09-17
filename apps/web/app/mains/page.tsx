@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { AppHeader } from "@/src/components/shared/AppHeader";
+import { AppFooter } from "@/src/components/shared/AppFooter";
 import { GuestWarningBanner } from "@/src/components/auth/GuestWarningBanner";
 import { MathMarkdown } from "@/src/components/shared/MathMarkdown";
 import {
@@ -128,8 +129,8 @@ export default function MainsEvaluationPage() {
   const [selectedPaper, setSelectedPaper] = useState("ALL");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   
-  // Input Method: "typed" vs "ocr" (Handwritten sheet photo)
-  const [inputMode, setInputMode] = useState<"typed" | "ocr">("typed");
+  // Input Method: "ocr" (Handwritten sheet photo) is default for physical authentic practice
+  const [inputMode, setInputMode] = useState<"typed" | "ocr">("ocr");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -801,6 +802,7 @@ export default function MainsEvaluationPage() {
 
         </div>
       </main>
+      <AppFooter />
     </div>
   );
 }

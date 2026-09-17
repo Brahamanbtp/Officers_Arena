@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppHeader } from "@/src/components/shared/AppHeader";
+import { AppFooter } from "@/src/components/shared/AppFooter";
 import { GuestWarningBanner } from "@/src/components/auth/GuestWarningBanner";
 import { 
   BookOpen, 
@@ -634,9 +635,7 @@ function LibraryContent() {
         </div>
       )}
 
-      <footer className="border-t border-neutral-800 py-4 text-center text-xs tracking-widest uppercase font-bold text-neutral-400 bg-neutral-900/60">
-        Officers Arena &copy; 2026 | VERIFIED CANONICAL REPOSITORY
-      </footer>
+      <AppFooter />
     </div>
   );
 }

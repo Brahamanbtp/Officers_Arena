@@ -66,12 +66,11 @@ export const AppHeader: React.FC = () => {
   const isLight = theme === "light";
 
   const navItems = [
-    { label: "Arena", href: "/arena", icon: Activity, active: pathname === "/" || pathname === "/arena" },
-    { label: "Mains AES", href: "/mains", icon: PenTool, active: pathname === "/mains", badge: "AI Grader" },
-    { label: "Library", href: "/library", icon: BookOpen, active: pathname === "/library" },
-    { label: "Growth", href: "/growth", icon: TrendingUp, active: pathname.startsWith("/growth") },
-    { label: "Research", href: "/research", icon: BrainCircuit, active: pathname === "/research", badge: "Sandbox" },
+    { label: "Daily Arena", href: "/arena", icon: Activity, active: pathname === "/arena", badge: "Live" },
+    { label: "Mains AES", href: "/mains", icon: PenTool, active: pathname === "/mains", badge: "OCR" },
     { label: "Strategist", href: "/strategist", icon: Sparkles, active: pathname === "/strategist" },
+    { label: "PYQ Library", href: "/library", icon: BookOpen, active: pathname === "/library" },
+    { label: "Growth", href: "/growth", icon: TrendingUp, active: pathname.startsWith("/growth") },
   ];
 
   const handleSwitchExam = (newMode: "UPSC" | "CDS") => {

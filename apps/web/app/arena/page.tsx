@@ -13,6 +13,7 @@ import { TestConfiguratorModal } from "@/src/components/arena/TestConfiguratorMo
 import { OmrSheet } from "@/src/components/arena/OmrSheet";
 import { Clock, Sliders, Sparkles, PenTool, LayoutTemplate } from "lucide-react";
 import { AppHeader } from "@/src/components/shared/AppHeader";
+import { AppFooter } from "@/src/components/shared/AppFooter";
 import { GuestWarningBanner } from "@/src/components/auth/GuestWarningBanner";
 import { generateQuestionBank } from "@/src/utils/mockQuestionBank";
 
@@ -228,9 +229,7 @@ function ArenaContent() {
         onClose={() => setIsConfiguratorOpen(false)}
       />
 
-      <footer className="border-t border-neutral-800 py-4 text-center text-xs tracking-widest uppercase font-bold text-neutral-400 bg-neutral-900/60">
-        Officers Arena &copy; 2026 | ADAPTIVE EXAMINATION ENGINE
-      </footer>
+      <AppFooter />
     </div>
   );
 }
