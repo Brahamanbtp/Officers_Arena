@@ -227,7 +227,7 @@ async def evaluate_mains_answer_async(
             time_taken_seconds=req.time_taken_seconds,
             db=db
         )
-        return eval_result.model_dump() if hasattr(eval_result, "model_dump") else eval_result.dict()
+        return eval_result.model_dump()
 
     task_manager.spawn_background_task(task_id, _run_eval)
     return {

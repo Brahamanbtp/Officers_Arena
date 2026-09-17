@@ -26,14 +26,20 @@ class TaskManager:
     Decouples heavy LLM/OCR and calibration workloads from synchronous HTTP cycles,
     preventing 504 Gateway Timeouts under high concurrency.
     """
-    _instance = None
+    _instance: Optional["TaskManager"] = None
 
-    def __new__(cls):
+    def __new__(cls) -> "TaskManager":
         if cls._instance is None:
             cls._instance = super(TaskManager, cls).__new__(cls)
-            cls._instance._tasks: Dict[str, Dict[str, Any]] = {}
+            cls._instance._tasks = {}
             cls._instance._lock = asyncio.Lock()
         return cls._instance
+
+    def __init__(self):
+        if not hasattr(self, "_tasks"):
+            self._tasks: Dict[str, Dict[str, Any]] = {}
+        if not hasattr(self, "_lock"):
+            self._lock: asyncio.Lock = asyncio.Lock()
 
     async def create_task(self, task_type: str = "generic") -> str:
         task_id = f"task_{uuid.uuid4().hex[:12]}"
