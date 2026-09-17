@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { AppHeader } from "@/src/components/shared/AppHeader";
+import { AppFooter } from "@/src/components/shared/AppFooter";
 import { GuestWarningBanner } from "@/src/components/auth/GuestWarningBanner";
 import { useArenaStore } from "@/src/store/useArenaStore";
 import { 
@@ -11,7 +13,11 @@ import {
   Brain, 
   BookOpen, 
   RefreshCw, 
-  Send
+  Send,
+  AlertTriangle,
+  ArrowRight,
+  ShieldCheck,
+  Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { MathMarkdown } from "@/src/components/shared/MathMarkdown";
@@ -304,6 +310,89 @@ export default function StrategistPage() {
           </button>
         </div>
 
+        {/* TOP 3 PRIORITY LEAKS TO PLUG THIS WEEK */}
+        <div className="bg-[#121212] border border-neutral-800 rounded-3xl p-6 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <h2 className="text-sm font-black uppercase tracking-wider text-white">
+                Top 3 Priority Error Leaks (Actionable This Week)
+              </h2>
+            </div>
+            <span className="text-[11px] font-mono text-neutral-400">
+              Derived from Option Tracing & Response Latency
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-neutral-900/70 border border-neutral-850 hover:border-amber-500/40 rounded-2xl flex flex-col justify-between gap-3 transition-all">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-amber-400 font-bold uppercase">Leak #1 • Polity</span>
+                  <span className="text-red-400 font-bold">42% Error Rate</span>
+                </div>
+                <h4 className="text-sm font-bold text-white leading-snug">
+                  Governor Discretionary Powers (Art. 163 vs 356)
+                </h4>
+                <p className="text-xs text-neutral-400">
+                  Target: <em>M. Laxmikanth Chapter 30</em>
+                </p>
+              </div>
+              <Link
+                href="/arena?autoStart=true&count=5&subject=Polity&mode=practice"
+                className="w-full py-2 px-3 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 font-mono cursor-pointer"
+              >
+                <span>Plug Leak (5 Qs)</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="p-4 bg-neutral-900/70 border border-neutral-850 hover:border-purple-500/40 rounded-2xl flex flex-col justify-between gap-3 transition-all">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-purple-400 font-bold uppercase">Leak #2 • History</span>
+                  <span className="text-red-400 font-bold">38% Error Rate</span>
+                </div>
+                <h4 className="text-sm font-bold text-white leading-snug">
+                  1930–1942 Round Table & Mission Chronology
+                </h4>
+                <p className="text-xs text-neutral-400">
+                  Target: <em>Spectrum Modern History Ch. 21-24</em>
+                </p>
+              </div>
+              <Link
+                href="/arena?autoStart=true&count=5&subject=History&mode=practice"
+                className="w-full py-2 px-3 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 font-mono cursor-pointer"
+              >
+                <span>Plug Leak (5 Qs)</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="p-4 bg-neutral-900/70 border border-neutral-850 hover:border-emerald-500/40 rounded-2xl flex flex-col justify-between gap-3 transition-all">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-emerald-400 font-bold uppercase">Leak #3 • Economy</span>
+                  <span className="text-red-400 font-bold">35% Error Rate</span>
+                </div>
+                <h4 className="text-sm font-bold text-white leading-snug">
+                  Monetary Transmission & Repo Spread (EBLR)
+                </h4>
+                <p className="text-xs text-neutral-400">
+                  Target: <em>Ramesh Singh Ch. 7</em>
+                </p>
+              </div>
+              <Link
+                href="/arena?autoStart=true&count=5&subject=Economy&mode=practice"
+                className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-neutral-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 font-mono cursor-pointer"
+              >
+                <span>Plug Leak (5 Qs)</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* 7-Day Roadmap Cards & AI Advisor Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
@@ -444,9 +533,7 @@ export default function StrategistPage() {
 
       </main>
 
-      <footer className="border-t border-neutral-800 py-4 text-center text-xs tracking-widest uppercase font-bold text-neutral-400 bg-neutral-900/60">
-        Officers Arena &copy; 2026 | AUTONOMOUS STRATEGIC AI ADVISOR
-      </footer>
+      <AppFooter />
     </div>
   );
 }

@@ -66,11 +66,11 @@ export const AppHeader: React.FC = () => {
   const isLight = theme === "light";
 
   const navItems = [
-    { label: "Daily Arena", href: "/arena", icon: Activity, active: pathname === "/arena", badge: "Live" },
+    { label: "Daily Mission", href: "/", icon: Activity, active: pathname === "/", badge: "Today" },
+    { label: "Prelims Arena", href: "/arena", icon: Activity, active: pathname === "/arena" },
     { label: "Mains AES", href: "/mains", icon: PenTool, active: pathname === "/mains", badge: "OCR" },
     { label: "Strategist", href: "/strategist", icon: Sparkles, active: pathname === "/strategist" },
-    { label: "PYQ Library", href: "/library", icon: BookOpen, active: pathname === "/library" },
-    { label: "Growth", href: "/growth", icon: TrendingUp, active: pathname.startsWith("/growth") },
+    { label: "PYQ Vault", href: "/library", icon: BookOpen, active: pathname === "/library" },
   ];
 
   const handleSwitchExam = (newMode: "UPSC" | "CDS") => {
@@ -86,7 +86,7 @@ export const AppHeader: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
         
         {/* Logo & Brand */}
-        <Link href="/arena" className="flex items-center gap-2.5 group flex-shrink-0">
+        <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
           <div className="p-2 bg-gradient-to-tr from-amber-500 to-amber-600 rounded-xl shadow-md group-hover:scale-105 transition-all">
             <BrainCircuit className="w-5 h-5 text-neutral-950" />
           </div>

@@ -107,6 +107,62 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* MASTER 1-CLICK ACTION HERO: Start Today's 18-Min Mission */}
+        <div className="bg-gradient-to-br from-[#161616] via-[#121212] to-[#0d0d0d] border border-amber-500/40 hover:border-amber-500/70 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-6 transition-all">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-xs font-black rounded-lg uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  Primary Daily Directive
+                </span>
+                <span className="text-xs font-mono text-neutral-400">
+                  Estimated Time: <strong>18 Minutes</strong>
+                </span>
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                Today&apos;s High-Yield Mission
+              </h1>
+
+              <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans">
+                The system has pre-calculated your exact daily dosage: <strong>10 Current Affairs Prelims PYQs</strong> + <strong>5 Weakness Scalpel Questions (Modern History)</strong> + <strong>1 Handwritten Mains Answer</strong>.
+              </p>
+            </div>
+
+            {/* Master Action Button */}
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <Link
+                href="/arena?autoStart=true&count=10&mode=practice"
+                className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:shadow-[0_0_40px_rgba(245,158,11,0.5)] flex items-center justify-center gap-3 cursor-pointer group"
+              >
+                <span>START TODAY&apos;S MISSION</span>
+                <ArrowRight className="w-5 h-5 text-neutral-950 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Prelims Cutoff Predictor Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-neutral-800/80 font-mono text-xs">
+            <div className="p-3 bg-neutral-900/60 border border-neutral-850 rounded-xl space-y-0.5">
+              <span className="text-[10px] text-neutral-500 uppercase">Predicted Prelims Score</span>
+              <div className="text-base sm:text-lg font-black text-white font-mono">104.5 / 200</div>
+            </div>
+            <div className="p-3 bg-neutral-900/60 border border-neutral-850 rounded-xl space-y-0.5">
+              <span className="text-[10px] text-neutral-500 uppercase">Official 2024 Cutoff</span>
+              <div className="text-base sm:text-lg font-black text-neutral-300 font-mono">96.0 Marks</div>
+            </div>
+            <div className="p-3 bg-neutral-900/60 border border-neutral-850 rounded-xl space-y-0.5">
+              <span className="text-[10px] text-emerald-400 uppercase">Safe Safety Margin</span>
+              <div className="text-base sm:text-lg font-black text-emerald-400 font-mono">+8.5 Marks</div>
+            </div>
+            <div className="p-3 bg-neutral-900/60 border border-neutral-850 rounded-xl space-y-0.5">
+              <span className="text-[10px] text-amber-400 uppercase">Fatigue Reduction</span>
+              <div className="text-base sm:text-lg font-black text-amber-300 font-mono">-76% Questions</div>
+            </div>
+          </div>
+        </div>
+
         {/* HERO SECTION: The 3 Core Daily Rituals of an Officer Aspirant */}
         <div>
           <div className="flex items-center justify-between pb-3">

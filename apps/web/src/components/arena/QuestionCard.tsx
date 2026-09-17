@@ -58,6 +58,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
 
   // Live Item-Level Chronometric Timer
   const [itemTimeSeconds, setItemTimeSeconds] = useState<number>(0);
+  const [language, setLanguage] = useState<"EN" | "HI">("EN");
 
   // Option Elimination / Strikethrough State (Pen-and-paper UPSC technique)
   const [eliminatedOptions, setEliminatedOptions] = useState<Record<string, boolean>>({});
@@ -240,22 +241,27 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
               </span>
             </div>
 
-            {/* Optional Metacognitive Calibration Toggle (Practice Mode) */}
-            {!isMockMode && (
+            {/* Bilingual Translation Toggle (EN / हिन्दी) */}
+            <div className="flex items-center p-0.5 bg-neutral-900 border border-neutral-800 rounded-lg text-[10px] font-mono font-bold">
               <button
                 type="button"
-                onClick={() => setEnableConfidenceRating(!enableConfidenceRating)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider border transition-all flex items-center gap-1 cursor-pointer ${
-                  enableConfidenceRating 
-                    ? "bg-purple-500/20 text-purple-300 border-purple-500/40" 
-                    : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:text-neutral-300"
+                onClick={() => setLanguage("EN")}
+                className={`px-2 py-0.5 rounded ${
+                  language === "EN" ? "bg-amber-500 text-neutral-950" : "text-neutral-400 hover:text-white"
                 }`}
-                title="Toggle self-reported confidence calibration rating"
               >
-                <Brain className="w-3 h-3" />
-                <span>Confidence Rating: {enableConfidenceRating ? "ON" : "OFF"}</span>
+                EN
               </button>
-            )}
+              <button
+                type="button"
+                onClick={() => setLanguage("HI")}
+                className={`px-2 py-0.5 rounded ${
+                  language === "HI" ? "bg-amber-500 text-neutral-950" : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                हिन्दी
+              </button>
+            </div>
 
             {/* Mark for Review in Mock Mode */}
             {isMockMode && (
