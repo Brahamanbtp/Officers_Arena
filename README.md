@@ -55,25 +55,27 @@
 
 ```mermaid
 flowchart TD
-    subgraph Data & Taxonomies
-        A[Official Exam Papers 2011-2026] -->|PyMuPDF + Gemini Vision AI| B[(Supabase PostgreSQL Database)]
-        C[Canonical Authority Textbooks] -->|Vector Chunking + Embeddings| D[(pgvector 1536d HNSW Vault)]
-        E[287 Syllabus Taxonomy Nodes] -->|Foreign Key Mapping| B
+    subgraph DataLayer ["Data & Canonical Taxonomies"]
+        A["Official Exam Papers (2011-2026)"] -->|"PyMuPDF + Gemini Vision AI"| B[("Supabase PostgreSQL Database")]
+        C["Canonical Authority Textbooks"] -->|"Vector Chunking & Embeddings"| D[("pgvector 1536d HNSW Vault")]
+        E["287 Syllabus Taxonomy Nodes"] -->|"Foreign Key Mapping"| B
     end
 
-    subgraph FastAPI Psychometric Engine
-        B -->|SQLModel AsyncSession| F[Adaptive Arena Service]
-        F -->|3PL / 2PL IRT Model| G[Student Ability θ Estimation]
-        F -->|5-Param BKT Model| H[Subtopic Mastery Vector]
-        F -->|SM-2 / HLR Engine| I[Spaced Repetition Priority Queue]
-        F -->|Atomic Batch API| J[/submit-batch Endpoint]
+    subgraph BackendCore ["FastAPI Psychometric Engine"]
+        B -->|"SQLModel AsyncSession"| F["Adaptive Arena Service"]
+        F -->|"3PL / 2PL IRT Model"| G["Student Latent Ability (theta)"]
+        F -->|"5-Parameter BKT Model"| H["Subtopic Mastery Vector"]
+        F -->|"SM-2 / HLR Engine"| I["Spaced Repetition Priority Queue"]
+        F -->|"Atomic Batch API"| J["Batch Submission Handler"]
     end
 
-    subgraph Next.js 14 Web Command Center
-        G & H & I -->|REST & SSE Streams| K[App Router /arena /growth /strategist /library /mains]
-        K -->|OMR Palette & Chronometrics| J
-        K -->|GraphRAG Inquiries| L[Google Gemini 3.5 Flash Tutor]
-        D -->|Top-k Similarity| L
+    subgraph FrontendApp ["Next.js 14 Web Command Center"]
+        G -->|"REST & SSE Telemetry"| K["App Router UI (/arena, /growth, /strategist, /library, /mains)"]
+        H -->|"BKT State Vectors"| K
+        I -->|"Review Tasks"| K
+        K -->|"OMR Palette & Telemetry"| J
+        K -->|"GraphRAG Queries"| L["Google Gemini 3.5 Flash Tutor"]
+        D -->|"Top-k Context Retrieval"| L
     end
 ```
 
