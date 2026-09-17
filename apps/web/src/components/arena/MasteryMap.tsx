@@ -21,8 +21,9 @@ const DEFAULT_CDS_MASTERY: Record<string, number> = {
   "Mathematics": 70.0
 };
 
-export const MasteryMap: React.FC<MasteryMapProps> = ({ userId = "student_999" }) => {
+export const MasteryMap: React.FC<MasteryMapProps> = ({ userId }) => {
   const mode = useArenaStore((state) => state.mode);
+  const resolvedUserId = userId || (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
   const [data, setData] = useState<Record<string, number>>(
     mode === "CDS" ? DEFAULT_CDS_MASTERY : DEFAULT_UPSC_MASTERY
   );
@@ -32,7 +33,7 @@ export const MasteryMap: React.FC<MasteryMapProps> = ({ userId = "student_999" }
     const fetchMastery = async () => {
       const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
       try {
-        const res = await fetch(`${apiEndpoint}/api/v1/arena/mastery-map?user_id=${userId}`);
+        const res = await fetch(`${apiEndpoint}/api/v1/arena/mastery-map?user_id=${resolvedUserId}`);
         if (res.ok) {
           const body = await res.json();
           if (body.mastery_map && Object.keys(body.mastery_map).length > 0) {

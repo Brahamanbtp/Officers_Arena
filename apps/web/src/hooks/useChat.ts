@@ -6,7 +6,8 @@ export interface Message {
   sources?: any[];
 }
 
-export const useChat = (questionId: string, userId: string = "student_999") => {
+export const useChat = (questionId: string, userId?: string) => {
+  const effectiveUserId = userId || (typeof window !== "undefined" ? (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id") || "guest_cadet") : "guest_cadet");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +21,7 @@ export const useChat = (questionId: string, userId: string = "student_999") => {
 
     try {
       const res = await fetch(
-        `/api/v1/tutor/chat?question_id=${questionId}&user_id=${userId}&message=${encodeURIComponent(text)}`,
+        `/api/v1/tutor/chat?question_id=${questionId}&user_id=${effectiveUserId}&message=${encodeURIComponent(text)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" }
@@ -73,7 +74,7 @@ export const useChat = (questionId: string, userId: string = "student_999") => {
     } finally {
       setLoading(false);
     }
-  }, [questionId, userId]);
+  }, [questionId, effectiveUserId]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

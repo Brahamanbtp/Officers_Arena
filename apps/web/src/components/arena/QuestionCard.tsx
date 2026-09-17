@@ -23,6 +23,7 @@ import {
 import { MathRenderer } from "../shared/MathRenderer";
 import { QuestionRenderer } from "./QuestionRenderer";
 import { MapViewer } from "../shared/MapViewer";
+import { getEffectiveUserId } from "../../lib/authUtils";
 
 interface QuestionCardProps {
   onSubmit: (optionId: string, confidence: number) => void;
@@ -88,7 +89,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: "student_999",
+          user_id: getEffectiveUserId(),
           question_id: validQuestionId,
           user_answer: selectedOption || "A"
         })

@@ -85,8 +85,9 @@ export const useAdaptiveTest = () => {
 
   const startTest = useCallback(async () => {
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const userId = (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
     try {
-      const response = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=student_999&exam_type=${mode}&subject=${selectedSubject}`);
+      const response = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=${userId}&exam_type=${mode}&subject=${selectedSubject}`);
       if (response.ok) {
         const qData = await response.json();
         setQuestion(qData);
@@ -120,8 +121,9 @@ export const useAdaptiveTest = () => {
   const loadNextQuestion = useCallback(async () => {
     setTransitioning(true);
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const userId = (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
     try {
-      const nextRes = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=student_999&exam_type=${mode}&subject=${selectedSubject}`);
+      const nextRes = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=${userId}&exam_type=${mode}&subject=${selectedSubject}`);
       if (nextRes.ok) {
         const nextQ = await nextRes.json();
         setQuestion(nextQ);
@@ -145,6 +147,7 @@ export const useAdaptiveTest = () => {
 
     setTransitioning(true);
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const userId = (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
 
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentQuestion.id);
     const validQuestionId = isUUID ? currentQuestion.id : "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
@@ -156,7 +159,7 @@ export const useAdaptiveTest = () => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          user_id: "student_999",
+          user_id: userId,
           question_id: validQuestionId,
           selected_option: optionId,
           response_time: timeTaken,

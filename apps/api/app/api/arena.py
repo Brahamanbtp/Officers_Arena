@@ -35,6 +35,34 @@ class SubmitResponseResult(BaseModel):
     predicted_score: float
     accuracy_margin: float
 
+class BatchItemAnswer(BaseModel):
+    question_id: uuid.UUID
+    selected_option: Optional[str] = None
+    confidence_level: Optional[int] = 3
+    response_time: Optional[float] = 45.0
+
+class SubmitBatchRequest(BaseModel):
+    user_id: str
+    exam_type: str
+    paper_name: Optional[str] = "Mock Test"
+    answers: List[BatchItemAnswer]
+    total_time_seconds: Optional[float] = 0.0
+
+class SubmitBatchResult(BaseModel):
+    total_items: int
+    attempted: int
+    correct_count: int
+    incorrect_count: int
+    unattempted_count: int
+    raw_score: float
+    penalty: float
+    net_score: float
+    max_marks: float
+    cutoff_cleared: bool
+    new_theta: float
+    theta_delta: float
+    mastery_percentage: float
+
 from fastapi.responses import FileResponse
 from app.models.database import QuestionImages
 
@@ -96,13 +124,21 @@ async def next_question(
         log_res = await db.execute(log_stmt)
         answered_ids = set(log_res.scalars().all())
 
-        # 3. Query candidates
+        # 3. Query candidates with SQL-level filtering & limit
         q_stmt = select(Questions).where(Questions.exam_type == exam_type)
+        if answered_ids:
+            q_stmt = q_stmt.where(col(Questions.id).notin_(list(answered_ids)))
+        if student_state.is_adaptive and student_state.total_answered >= 5:
+            theta_min = student_state.theta - 1.5
+            theta_max = student_state.theta + 1.5
+            q_stmt = q_stmt.where(col(Questions.difficulty_b).between(theta_min, theta_max))
+        q_stmt = q_stmt.limit(100)
         q_res = await db.execute(q_stmt)
-        candidates: List[Questions] = [q for q in q_res.scalars().all() if q.id not in answered_ids]
+        candidates: List[Questions] = list(q_res.scalars().all())
 
         if not candidates:
-            q_res = await db.execute(q_stmt)
+            fallback_stmt = select(Questions).where(Questions.exam_type == exam_type).limit(100)
+            q_res = await db.execute(fallback_stmt)
             candidates = list(q_res.scalars().all())
             if not candidates:
                 raise HTTPException(status_code=404, detail="No questions available for this exam type.")
@@ -346,7 +382,8 @@ async def submit_response(
         srs_meta.due_date = now + timedelta(days=new_interval)
         db.add(srs_meta)
 
-        # 7. Bayesian Knowledge Tracing (BKT) Update
+        # 7. Bayesian Knowledge Tracing (BKT) Update with Subject Fallback
+        topic_name = None
         if question.subtopic_id:
             from app.models.student_stats import UserActivityLog
             activity_log = UserActivityLog(
@@ -359,43 +396,46 @@ async def submit_response(
             syllabus_stmt = select(Syllabus).where(Syllabus.id == question.subtopic_id)
             syllabus_res = await db.execute(syllabus_stmt)
             syllabus = syllabus_res.scalars().first()
-            
             if syllabus:
                 topic_name = syllabus.name
-                
-                # Fetch or create TopicMastery
-                tm_stmt = select(TopicMastery).where(
-                    TopicMastery.user_id == request.user_id,
-                    TopicMastery.topic_name == topic_name
+        
+        if not topic_name and question.subject:
+            topic_name = question.subject
+
+        if topic_name:
+            # Fetch or create TopicMastery
+            tm_stmt = select(TopicMastery).where(
+                TopicMastery.user_id == request.user_id,
+                TopicMastery.topic_name == topic_name
+            )
+            tm_res = await db.execute(tm_stmt)
+            topic_mastery = tm_res.scalars().first()
+            
+            if not topic_mastery:
+                topic_mastery = TopicMastery(
+                    user_id=request.user_id,
+                    topic_name=topic_name,
+                    p_mastery=0.15,
+                    p_transit=0.10
                 )
-                tm_res = await db.execute(tm_stmt)
-                topic_mastery = tm_res.scalars().first()
-                
-                if not topic_mastery:
-                    topic_mastery = TopicMastery(
-                        user_id=request.user_id,
-                        topic_name=topic_name,
-                        p_mastery=0.15,
-                        p_transit=0.10
-                    )
-                    db.add(topic_mastery)
-                    await db.flush()
-                
-                # Map difficulty_b to 1-5 difficulty_level
-                diff_b = question.difficulty_b if question.difficulty_b is not None else 0.0
-                difficulty_level = round(3.0 + diff_b)
-                difficulty_level = max(1, min(5, difficulty_level))
-                
-                # Perform BKT update
-                bkt = BKTProcessor(p_init=0.15, p_transit=topic_mastery.p_transit)
-                updated_p, _, _ = bkt.update_mastery(
-                    p_prev=topic_mastery.p_mastery,
-                    is_correct=is_correct,
-                    confidence_level=request.confidence_level,
-                    difficulty_level=difficulty_level
-                )
-                topic_mastery.p_mastery = updated_p
                 db.add(topic_mastery)
+                await db.flush()
+            
+            # Map difficulty_b to 1-5 difficulty_level
+            diff_b = question.difficulty_b if question.difficulty_b is not None else 0.0
+            difficulty_level = round(3.0 + diff_b)
+            difficulty_level = max(1, min(5, difficulty_level))
+            
+            # Perform BKT update
+            bkt = BKTProcessor(p_init=0.15, p_transit=topic_mastery.p_transit)
+            updated_p, _, _ = bkt.update_mastery(
+                p_prev=topic_mastery.p_mastery,
+                is_correct=is_correct,
+                confidence_level=request.confidence_level,
+                difficulty_level=difficulty_level
+            )
+            topic_mastery.p_mastery = updated_p
+            db.add(topic_mastery)
 
         await db.commit()
 
@@ -426,6 +466,208 @@ async def submit_response(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Response submission failed: {str(e)}")
+
+
+@router.post(
+    "/api/v1/arena/submit-batch",
+    response_model=SubmitBatchResult,
+    summary="Submit complete Mock Test attempt batch with atomic DB persistence",
+    description="Logs candidate performance for all mock items, updates Bayesian knowledge tracing (BKT), recalculates Expected A Posteriori (EAP) Theta, updates Spaced Repetition (SRS), and returns full official marking results."
+)
+async def submit_batch(
+    request: SubmitBatchRequest,
+    db: AsyncSession = Depends(get_async_session)
+):
+    try:
+        if not request.answers:
+            raise HTTPException(status_code=400, detail="Answer list cannot be empty.")
+
+        now = datetime.now(timezone.utc)
+        exam_type = request.exam_type or "UPSC"
+
+        # Marking constants
+        mark_per_correct = 2.0 if exam_type == "UPSC" else 0.83
+        penalty_per_incorrect = 0.66 if exam_type == "UPSC" else 0.27
+        cutoff_pct = 50.0 if exam_type == "UPSC" else 42.0
+
+        # Fetch all target questions in one query
+        q_ids = [a.question_id for a in request.answers]
+        q_stmt = select(Questions).where(col(Questions.id).in_(q_ids))
+        q_res = await db.execute(q_stmt)
+        questions_map = {q.id: q for q in q_res.scalars().all()}
+
+        # Fetch or initialize StudentState
+        state_stmt = select(StudentState).where(StudentState.user_id == request.user_id)
+        state_res = await db.execute(state_stmt)
+        student_state = state_res.scalars().first()
+        if not student_state:
+            student_state = StudentState(user_id=request.user_id, theta=0.0, total_answered=0, is_adaptive=True)
+            db.add(student_state)
+            await db.flush()
+
+        old_theta = student_state.theta
+
+        correct_count = 0
+        incorrect_count = 0
+        unattempted_count = 0
+
+        irt_params = []
+        irt_responses = []
+
+        # Process each answered item
+        for ans in request.answers:
+            q = questions_map.get(ans.question_id)
+            if not q:
+                continue
+
+            sel = ans.selected_option.strip() if ans.selected_option else None
+            conf = ans.confidence_level or 3
+            resp_time = ans.response_time or 45.0
+
+            if not sel:
+                unattempted_count += 1
+                continue
+
+            is_corr = (sel == q.correct_answer.strip())
+            if is_corr:
+                correct_count += 1
+            else:
+                incorrect_count += 1
+
+            # Log PerformanceLog
+            log = PerformanceLog(
+                user_id=request.user_id,
+                question_id=q.id,
+                is_correct=is_corr,
+                response_time=resp_time,
+                confidence_level=conf
+            )
+            db.add(log)
+
+            # Accumulate IRT parameters for Theta estimation
+            a = q.discrimination_a if q.discrimination_a is not None else 1.0
+            b = q.difficulty_b if q.difficulty_b is not None else 0.0
+            c = q.guessing_c if q.guessing_c is not None else 0.25
+            irt_params.append((a, b, c))
+            irt_responses.append(1 if is_corr else 0)
+
+            # Update SRS item
+            srs_stmt = select(SRSMetadata).where(
+                SRSMetadata.user_id == request.user_id,
+                SRSMetadata.question_id == q.id
+            )
+            srs_res = await db.execute(srs_stmt)
+            srs_meta = srs_res.scalars().first()
+
+            quality = SRSEngine.calculate_sm2_quality(is_corr, conf)
+            if not srs_meta:
+                srs_meta = SRSMetadata(
+                    user_id=request.user_id,
+                    question_id=q.id,
+                    stability=2.0,
+                    difficulty=3.0,
+                    interval=1.0,
+                    due_date=now,
+                    last_review=now
+                )
+                db.add(srs_meta)
+                await db.flush()
+
+            new_interval, new_stability, new_difficulty = SRSEngine.update_sm2_repetition(
+                quality=quality,
+                repetition_count=1 if srs_meta.interval <= 1.0 else 2,
+                interval=srs_meta.interval,
+                ease_factor=srs_meta.stability
+            )
+            srs_meta.interval = new_interval
+            srs_meta.stability = new_stability
+            srs_meta.difficulty = new_difficulty
+            srs_meta.last_review = now
+            srs_meta.due_date = now + timedelta(days=new_interval)
+            db.add(srs_meta)
+
+            # BKT Topic update
+            t_name = q.subject or "General Studies"
+            if q.subtopic_id:
+                syl_stmt = select(Syllabus).where(Syllabus.id == q.subtopic_id)
+                syl_res = await db.execute(syl_stmt)
+                syl = syl_res.scalars().first()
+                if syl:
+                    t_name = syl.name
+
+            tm_stmt = select(TopicMastery).where(
+                TopicMastery.user_id == request.user_id,
+                TopicMastery.topic_name == t_name
+            )
+            tm_res = await db.execute(tm_stmt)
+            topic_mastery = tm_res.scalars().first()
+
+            if not topic_mastery:
+                topic_mastery = TopicMastery(
+                    user_id=request.user_id,
+                    topic_name=t_name,
+                    p_mastery=0.15,
+                    p_transit=0.10
+                )
+                db.add(topic_mastery)
+                await db.flush()
+
+            diff_level = max(1, min(5, round(3.0 + (q.difficulty_b or 0.0))))
+            bkt = BKTProcessor(p_init=0.15, p_transit=topic_mastery.p_transit)
+            updated_p, _, _ = bkt.update_mastery(
+                p_prev=topic_mastery.p_mastery,
+                is_correct=is_corr,
+                confidence_level=conf,
+                difficulty_level=diff_level
+            )
+            topic_mastery.p_mastery = updated_p
+            db.add(topic_mastery)
+
+        # Update student global Theta via IRT EAP
+        if irt_params:
+            new_theta = IRTEngine.estimate_theta_eap(old_theta, irt_params, irt_responses)
+            student_state.theta = new_theta
+            student_state.total_answered += len(irt_params)
+            student_state.last_updated = now
+            db.add(student_state)
+        else:
+            new_theta = old_theta
+
+        await db.commit()
+
+        # Score computations
+        raw_score = correct_count * mark_per_correct
+        penalty = incorrect_count * penalty_per_incorrect
+        net_score = max(0.0, raw_score - penalty)
+        max_marks = len(request.answers) * mark_per_correct
+        cutoff_marks = max_marks * (cutoff_pct / 100.0)
+        cutoff_cleared = net_score >= cutoff_marks
+
+        theta_delta = new_theta - old_theta
+        mastery_pct = max(0.0, min(100.0, ((new_theta + 4.0) / 8.0) * 100.0))
+
+        return SubmitBatchResult(
+            total_items=len(request.answers),
+            attempted=correct_count + incorrect_count,
+            correct_count=correct_count,
+            incorrect_count=incorrect_count,
+            unattempted_count=unattempted_count,
+            raw_score=round(raw_score, 2),
+            penalty=round(penalty, 2),
+            net_score=round(net_score, 2),
+            max_marks=round(max_marks, 2),
+            cutoff_cleared=cutoff_cleared,
+            new_theta=round(new_theta, 4),
+            theta_delta=round(theta_delta, 4),
+            mastery_percentage=round(mastery_pct, 2)
+        )
+
+    except HTTPException as he:
+        await db.rollback()
+        raise he
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Batch test submission failed: {str(e)}")
 
 @router.get(
     "/api/v1/arena/explain/{question_id}",

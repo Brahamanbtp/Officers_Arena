@@ -16,7 +16,7 @@ import { useStrategist, TopicDetail } from "../../../hooks/useStrategist";
 import { TopicDeepDive } from "./TopicDeepDive";
 
 export const StrategistDashboard: React.FC = () => {
-  const { plan, loading, error, hours, setHours, mode, setMode, refreshStrategy } = useStrategist("student_999", 4.0, "UPSC");
+  const { plan, loading, error, hours, setHours, mode, setMode, refreshStrategy } = useStrategist(undefined, 4.0, "UPSC");
   const [selectedTopic, setSelectedTopic] = useState<TopicDetail | null>(null);
   const [isDeepDiveOpen, setIsDeepDiveOpen] = useState(false);
 

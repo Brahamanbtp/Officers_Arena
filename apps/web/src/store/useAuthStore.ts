@@ -51,7 +51,7 @@ export const useAuthStore = create<AuthState>()(
 
         // 2. Global Target Persistence: Sync target_exam with backend database
         const currentUser = get().user;
-        const userId = currentUser ? currentUser.id : "student_999";
+        const userId = currentUser ? currentUser.id : (typeof window !== "undefined" ? (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id") || "guest_cadet") : "guest_cadet");
         const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
         try {

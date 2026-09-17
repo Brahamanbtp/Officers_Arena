@@ -108,9 +108,10 @@ export default function GrowthPage() {
   const fetchSRSData = async (isManualClick = false) => {
     setIsLoading(true);
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const userId = (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
     try {
       // 1. Fetch SRS Memory Queue
-      const srsRes = await fetch(`${apiEndpoint}/api/v1/arena/srs/dashboard?user_id=student_999`);
+      const srsRes = await fetch(`${apiEndpoint}/api/v1/arena/srs/dashboard?user_id=${userId}`);
       if (srsRes.ok) {
         const srsData = await srsRes.json();
         if (srsData.due_questions && srsData.due_questions.length > 0) {
@@ -131,7 +132,7 @@ export default function GrowthPage() {
       }
 
       // 2. Fetch BKT Mastery Map
-      const masteryRes = await fetch(`${apiEndpoint}/api/v1/arena/mastery-map?user_id=student_999`);
+      const masteryRes = await fetch(`${apiEndpoint}/api/v1/arena/mastery-map?user_id=${userId}`);
       if (masteryRes.ok) {
         const mData = await masteryRes.json();
         if (mData.mastery_map) {
@@ -438,7 +439,7 @@ export default function GrowthPage() {
 
           {/* Right Column: BKT Radar Chart Mastery Map */}
           <div className="flex flex-col gap-4">
-            <MasteryMap userId="student_999" />
+            <MasteryMap />
 
             <div className="bg-[#121212] border border-neutral-800 rounded-3xl p-6 shadow-xl flex flex-col gap-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-neutral-200">

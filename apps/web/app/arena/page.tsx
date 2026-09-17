@@ -157,7 +157,7 @@ function ArenaContent() {
                   {isMock ? (
                     <QuestionPalette onSubmitTest={submitMockTest} />
                   ) : (
-                    <MasteryMap userId="student_999" />
+                    <MasteryMap />
                   )}
                 </div>
 

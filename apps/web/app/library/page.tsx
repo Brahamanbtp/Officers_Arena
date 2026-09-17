@@ -27,6 +27,7 @@ import { useArenaStore } from "@/src/store/useArenaStore";
 import { generateQuestionBank } from "@/src/utils/mockQuestionBank";
 import { toast } from "sonner";
 import { BookReaderModal, BookItem } from "@/src/components/library/BookReaderModal";
+import { getEffectiveUserId } from "@/src/lib/authUtils";
 
 interface LibraryItem {
   id: string;
@@ -251,7 +252,7 @@ function LibraryContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: "student_999",
+          user_id: getEffectiveUserId(),
           question_id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
           query: searchQuery
         })

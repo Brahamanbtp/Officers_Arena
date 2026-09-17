@@ -59,6 +59,7 @@ interface ArenaState {
   sessionScore: number;
   timer: number;
   mockTimerLeft: number; // Global countdown timer for Full Mock mode
+  mockExamEndTime: number | null; // Wall-clock timestamp to avoid background tab throttling
   isTransitioning: boolean;
   mode: ThemeMode;
   selectedOption: string | null;
@@ -171,10 +172,18 @@ export const useArenaStore = create<ArenaState>()(
       incrementScore: (by) => set((state) => ({ sessionScore: state.sessionScore + by })),
       tickTimer: () => set((state) => ({ timer: state.timer + 1 })),
       resetTimer: () => set({ timer: 0 }),
-      setMockTimerLeft: (mockTimerLeft) => set({ mockTimerLeft }),
-      tickMockTimerLeft: () => set((state) => ({ 
-        mockTimerLeft: Math.max(0, state.mockTimerLeft - 1) 
-      })),
+      mockExamEndTime: null as number | null,
+      setMockTimerLeft: (mockTimerLeft) => set({ 
+        mockTimerLeft, 
+        mockExamEndTime: Date.now() + mockTimerLeft * 1000 
+      }),
+      tickMockTimerLeft: () => set((state) => {
+        if (state.mockExamEndTime) {
+          const remaining = Math.max(0, Math.floor((state.mockExamEndTime - Date.now()) / 1000));
+          return { mockTimerLeft: remaining };
+        }
+        return { mockTimerLeft: Math.max(0, state.mockTimerLeft - 1) };
+      }),
       setSelectedOption: (selectedOption) => set({ selectedOption }),
       setConfidence: (confidence) => set({ confidence }),
       setAverageTopicTime: (averageTopicTime) => set({ averageTopicTime }),
@@ -215,6 +224,7 @@ export const useArenaStore = create<ArenaState>()(
           isMockSubmitted: false,
           currentQuestion: mockQuestions[0] || null,
           mockTimerLeft: calculatedSeconds,
+          mockExamEndTime: Date.now() + calculatedSeconds * 1000,
           questionTimes: {}
         });
       },
@@ -269,7 +279,42 @@ export const useArenaStore = create<ArenaState>()(
         };
       }),
 
-      submitMockTest: () => set({ isMockSubmitted: true }),
+      submitMockTest: async () => {
+        set({ isMockSubmitted: true });
+        const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const userId = useAuthStore.getState().user?.id || (typeof window !== "undefined" ? localStorage.getItem("oa_guest_id") : null) || "guest_student";
+        const state = useArenaStore.getState();
+
+        const answersList = Object.values(state.userAnswers).map((ans) => ({
+          question_id: ans.questionId,
+          selected_option: ans.selectedOption,
+          confidence_level: ans.confidence || 3,
+          response_time: ans.timeSpentSeconds || 45.0
+        }));
+
+        try {
+          const res = await fetch(`${apiEndpoint}/api/v1/arena/submit-batch`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: userId,
+              exam_type: state.mode,
+              paper_name: `${state.mode} Full Mock Test`,
+              answers: answersList,
+              total_time_seconds: 0.0
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            set({
+              masteryPercentage: data.mastery_percentage,
+              thetaDelta: data.theta_delta
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to persist mock test batch submission:", err);
+        }
+      },
 
       resetMockTest: () => set((state) => {
         const resetAnswers: Record<number, UserMockAnswer> = {};
@@ -292,6 +337,7 @@ export const useArenaStore = create<ArenaState>()(
           confidence: null,
           timer: 0,
           mockTimerLeft: calculatedSeconds,
+          mockExamEndTime: Date.now() + calculatedSeconds * 1000,
           questionTimes: {}
         };
       })

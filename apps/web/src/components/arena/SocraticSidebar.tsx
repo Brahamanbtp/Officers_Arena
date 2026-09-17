@@ -14,6 +14,7 @@ import {
   User,
   Brain
 } from "lucide-react";
+import { getEffectiveUserId } from "../../lib/authUtils";
 
 interface SocraticSidebarProps {
   isOpen: boolean;
@@ -89,7 +90,7 @@ export const SocraticSidebar: React.FC<SocraticSidebarProps> = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: "student_999",
+          user_id: getEffectiveUserId(),
           question_id: validQuestionId,
           message: userPrompt
         })

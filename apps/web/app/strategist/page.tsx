@@ -171,14 +171,17 @@ export default function StrategistPage() {
 
   useEffect(() => {
     setPlan(mode === "CDS" ? CDS_7_DAY_PLAN : UPSC_7_DAY_PLAN);
+    // Auto-generate personalized plan on mount using active BKT twin state
+    handleGeneratePlan();
   }, [mode]);
 
   const handleGeneratePlan = async () => {
     setIsGenerating(true);
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const userId = (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
 
     try {
-      const res = await fetch(`${apiEndpoint}/api/v1/intelligence/dashboard-summary?user_id=student_999&exam_type=${mode}`);
+      const res = await fetch(`${apiEndpoint}/api/v1/intelligence/dashboard-summary?user_id=${userId}&exam_type=${mode}`);
       if (res.ok) {
         const data = await res.json();
         if (data.student_gap && data.student_gap.length > 0) {
@@ -209,12 +212,14 @@ export default function StrategistPage() {
     setChatMessages((prev) => [...prev, { role: "user", text: userText }]);
 
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const userId = (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
+
     try {
       const res = await fetch(`${apiEndpoint}/api/v1/tutor/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: "student_999",
+          user_id: userId,
           message: userText
         })
       });

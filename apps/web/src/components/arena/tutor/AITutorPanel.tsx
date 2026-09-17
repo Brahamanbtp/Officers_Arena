@@ -19,6 +19,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
 import { useChat } from "../../../hooks/useChat";
+import { getEffectiveUserId } from "../../../lib/authUtils";
 
 interface SourceCitation {
   id: string;
@@ -46,9 +47,10 @@ export const AITutorPanel: React.FC<AITutorPanelProps> = ({
   userAnswer,
   correctAnswer,
   examType,
-  userId = "student_999",
+  userId,
   currentTopicId
 }) => {
+  const effectiveUserId = userId || (typeof window !== "undefined" ? getEffectiveUserId() : "guest_cadet");
   const [explanation, setExplanation] = useState<string>("");
   const [sources, setSources] = useState<SourceCitation[]>([]);
   const [errorAnalysis, setErrorAnalysis] = useState<{
@@ -57,7 +59,7 @@ export const AITutorPanel: React.FC<AITutorPanelProps> = ({
     recommendation: string;
   } | null>(null);
   
-  const { messages: chatMessages, sendMessage, clearMessages, loading: chatLoading } = useChat(questionId, userId);
+  const { messages: chatMessages, sendMessage, clearMessages, loading: chatLoading } = useChat(questionId, effectiveUserId);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"tutor" | "chat">("tutor");
@@ -69,7 +71,7 @@ export const AITutorPanel: React.FC<AITutorPanelProps> = ({
   const fetchExplanation = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/v1/tutor/explain?question_id=${questionId}&user_id=${userId}`, {
+      const res = await fetch(`/api/v1/tutor/explain?question_id=${questionId}&user_id=${effectiveUserId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });
@@ -94,7 +96,7 @@ export const AITutorPanel: React.FC<AITutorPanelProps> = ({
       return;
     }
     try {
-      const res = await fetch(`/api/v1/tutor/analyze-error?question_id=${questionId}&user_answer=${userAnswer}&user_id=${userId}`, {
+      const res = await fetch(`/api/v1/tutor/analyze-error?question_id=${questionId}&user_answer=${userAnswer}&user_id=${effectiveUserId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });

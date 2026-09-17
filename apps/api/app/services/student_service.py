@@ -83,8 +83,22 @@ class StudentService:
             subtopic_node = subtopic_res.scalars().first()
             
             if subtopic_node:
+                parent_id_to_check = subtopic_node.parent_id
                 parent_name = self.DEPENDENCY_MAP.get(subtopic_node.name)
-                if parent_name:
+                
+                # Dynamic Prerequisite Graph Traversal via parent_id or explicit dependency map
+                if parent_id_to_check:
+                    parent_stmt = select(StudentMastery).where(
+                        StudentMastery.user_id == user_id,
+                        StudentMastery.subtopic_id == parent_id_to_check,
+                        StudentMastery.exam_type == exam_type
+                    )
+                    parent_res = await self.db.execute(parent_stmt)
+                    parent_mastery = parent_res.scalars().first()
+                    if parent_mastery and parent_mastery.mastery_score > 0.60:
+                        p_init_boost = min(0.15, round((parent_mastery.mastery_score - 0.5) * 0.2, 3))
+                        logger.info(f"Hierarchical Prerequisite Boost (+{p_init_boost}) applied to {subtopic_node.name} from parent_id {parent_id_to_check}.")
+                elif parent_name:
                     # Query parent subtopic mastery score for this user
                     parent_stmt = select(StudentMastery).join(
                         Syllabus, col(StudentMastery.subtopic_id) == col(Syllabus.id)

@@ -41,7 +41,8 @@ export interface DailyPlan {
   nudge_message?: string;
 }
 
-export const useStrategist = (userId: string = "student_999", initialHours: number = 4.0, examType: string = "UPSC") => {
+export const useStrategist = (userId?: string, initialHours: number = 4.0, examType: string = "UPSC") => {
+  const effectiveUserId = userId || (typeof window !== "undefined" ? (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id") || "guest_cadet") : "guest_cadet");
   const [hours, setHours] = useState<number>(initialHours);
   const [mode, setMode] = useState<string>(examType);
   const [plan, setPlan] = useState<DailyPlan | null>(null);
@@ -52,7 +53,7 @@ export const useStrategist = (userId: string = "student_999", initialHours: numb
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/strategist/daily-plan?user_id=${userId}&hours=${hours}&exam_type=${mode}`);
+      const res = await fetch(`/api/v1/strategist/daily-plan?user_id=${effectiveUserId}&hours=${hours}&exam_type=${mode}`);
       if (res.ok) {
         const data = await res.json();
         setPlan(data);
@@ -64,7 +65,7 @@ export const useStrategist = (userId: string = "student_999", initialHours: numb
     } finally {
       setLoading(false);
     }
-  }, [userId, hours, mode]);
+  }, [effectiveUserId, hours, mode]);
 
   useEffect(() => {
     fetchPlan();

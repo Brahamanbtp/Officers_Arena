@@ -259,7 +259,7 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                     Cognitive Diagnostic Briefing
                   </div>
 
-                  <MasteryMap userId="student_999" />
+                  <MasteryMap />
 
                   <div className="p-4 bg-neutral-900/60 border border-neutral-800 rounded-2xl space-y-2">
                     <div className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
