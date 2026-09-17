@@ -1,13 +1,13 @@
 import uuid
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlmodel import select
+from sqlmodel import select, col, desc, asc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 
 from app.core.database import get_async_session
 from app.models.intelligence import TopicTrends, CostLogs
-from app.models.database import Syllabus
+from app.models.database import Syllabus, Questions
 from app.services.analytics_service import AnalyticsService
 from app.services.personalization_service import PersonalizationService
 from ml.exam_trends.drift_analyzer import TrendAnalyzer
@@ -49,9 +49,9 @@ async def expert_override(
 ):
     try:
         stmt = select(TopicTrends).where(
-            TopicTrends.topic_id == request.topic_id,
-            TopicTrends.year == request.year,
-            TopicTrends.exam_type == request.exam_type
+            col(TopicTrends.topic_id) == request.topic_id,
+            col(TopicTrends.year) == request.year,
+            col(TopicTrends.exam_type) == request.exam_type
         )
         res = await db.execute(stmt)
         trend = res.scalars().first()
@@ -69,7 +69,7 @@ async def expert_override(
         updated_priority = base_ps * trend.cross_exam_factor * request.expert_weight
         updated_priority = max(0.0, min(1.0, updated_priority))
         
-        sub_stmt = select(Syllabus).where(Syllabus.id == request.topic_id)
+        sub_stmt = select(Syllabus).where(col(Syllabus.id) == request.topic_id)
         sub_res = await db.execute(sub_stmt)
         sub_node = sub_res.scalars().first()
         topic_name = sub_node.name if sub_node else "Subtopic"
@@ -131,14 +131,14 @@ async def get_dashboard_summary(
     try:
         # 1. Fetch Priority Lists
         trend_stmt = select(TopicTrends).where(
-            TopicTrends.exam_type == exam_type
-        ).order_by(TopicTrends.year.desc())
+            col(TopicTrends.exam_type) == exam_type
+        ).order_by(col(TopicTrends.year).desc())
         trend_res = await db.execute(trend_stmt)
         trends = trend_res.scalars().all()
         
         # Batch load syllabus items for names
         topic_ids = list(set([t.topic_id for t in trends]))
-        syl_stmt = select(Syllabus).where(Syllabus.id.in_(topic_ids))
+        syl_stmt = select(Syllabus).where(col(Syllabus.id).in_(topic_ids))
         syl_res = await db.execute(syl_stmt)
         syl_map = {s.id: s.name for s in syl_res.scalars().all()}
         
@@ -191,9 +191,6 @@ async def get_dashboard_summary(
                 })
             
         # 4. Generate Real Historical Difficulty Complexity Gradient from Database Questions
-        from sqlmodel import func, col
-        from app.models.database import Questions
-        
         diff_stmt = (
             select(
                 Questions.year,
@@ -201,9 +198,9 @@ async def get_dashboard_summary(
                 func.avg(Questions.discrimination_a).label("avg_disc"),
                 func.count(Questions.id).label("count")
             )
-            .where(Questions.exam_type == exam_type, col(Questions.year).isnot(None))
+            .where(col(Questions.exam_type) == exam_type, col(Questions.year).isnot(None))
             .group_by(Questions.year)
-            .order_by(Questions.year.asc())
+            .order_by(col(Questions.year).asc())
         )
         diff_res = await db.execute(diff_stmt)
         diff_rows = diff_res.all()
