@@ -57,6 +57,7 @@ export default function ResearchSandboxPage() {
   // Dynamic Current Affairs Feed
   const [currentAffairs, setCurrentAffairs] = useState<any[]>([]);
   const [isLoadingAffairs, setIsLoadingAffairs] = useState(false);
+  const [isApiConnected, setIsApiConnected] = useState<boolean | null>(null);
 
   // Fetch live syllabus-linked current affairs
   useEffect(() => {
@@ -69,11 +70,13 @@ export default function ResearchSandboxPage() {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
             setCurrentAffairs(data);
+            setIsApiConnected(true);
             return;
           }
         }
+        setIsApiConnected(false);
       } catch {
-        // Fallback below
+        setIsApiConnected(false);
       } finally {
         setIsLoadingAffairs(false);
       }
@@ -215,13 +218,23 @@ export default function ResearchSandboxPage() {
         {/* Header Hero Bar */}
         <div className="bg-[#101010] border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2 z-10">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold rounded-lg uppercase tracking-wider flex items-center gap-1.5">
                 <Brain className="w-3.5 h-3.5 text-amber-400" />
                 M.Tech Research Suite & Dissertation Sandbox
               </span>
               <span className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold rounded-lg">
                 15,723 PYQs • 38 Textbooks (26,439 Pgs)
+              </span>
+              <span className={`px-2.5 py-1 text-xs font-mono font-bold rounded-lg flex items-center gap-1.5 ${
+                isApiConnected
+                  ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300"
+                  : isApiConnected === false
+                  ? "bg-amber-500/20 border border-amber-500/40 text-amber-300"
+                  : "bg-neutral-800 text-neutral-400"
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${isApiConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+                {isApiConnected ? "Microservice API Live" : "Offline Sandbox Mode"}
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">

@@ -10,7 +10,8 @@ import { QuestionPalette } from "@/src/components/arena/QuestionPalette";
 import { CommandDiagnosticReport } from "@/src/components/arena/CommandDiagnosticReport";
 import { MasteryMap } from "@/src/components/arena/MasteryMap";
 import { TestConfiguratorModal } from "@/src/components/arena/TestConfiguratorModal";
-import { Clock, Sliders, Sparkles } from "lucide-react";
+import { OmrSheet } from "@/src/components/arena/OmrSheet";
+import { Clock, Sliders, Sparkles, PenTool, LayoutTemplate } from "lucide-react";
 import { AppHeader } from "@/src/components/shared/AppHeader";
 import { GuestWarningBanner } from "@/src/components/auth/GuestWarningBanner";
 import { generateQuestionBank } from "@/src/utils/mockQuestionBank";
@@ -33,10 +34,14 @@ function ArenaContent() {
   const setMockTimerLeft = useArenaStore((state) => state.setMockTimerLeft);
   const setSelectedSubject = useArenaStore((state) => state.setSelectedSubject);
   const activeQuestionIndex = useArenaStore((state) => state.activeQuestionIndex);
+  const setActiveQuestionIndex = useArenaStore((state) => state.setActiveQuestionIndex);
+  const userAnswers = useArenaStore((state) => state.userAnswers);
+  const recordMockAnswer = useArenaStore((state) => state.recordMockAnswer);
   const isMockSubmitted = useArenaStore((state) => state.isMockSubmitted);
   const submitMockTest = useArenaStore((state) => state.submitMockTest);
 
   const [isConfiguratorOpen, setIsConfiguratorOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"card" | "omr">("card");
 
   // Handle URL Auto-Start parameters (from Strategist, Library, or Growth launches)
   useEffect(() => {
@@ -96,8 +101,8 @@ function ArenaContent() {
       <main className="flex-grow max-w-6xl w-full mx-auto p-6 flex flex-col gap-6">
         <div className="flex flex-col gap-6">
 
-          {/* Clean Sub-Bar: Backup Configure Setup Action */}
-          <div className="flex items-center justify-between gap-4 p-4 bg-[#121212] border border-neutral-800 rounded-2xl shadow-lg">
+          {/* Clean Sub-Bar: Backup Configure Setup Action & OMR View Toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-[#121212] border border-neutral-800 rounded-2xl shadow-lg">
             <div className="flex items-center gap-3">
               <h2 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
@@ -108,8 +113,37 @@ function ArenaContent() {
               </span>
             </div>
 
-            {/* Configure Setup button */}
+            {/* View Mode Toggle (Card vs Physical OMR Sheet) in Mock Mode */}
             <div className="flex items-center gap-3">
+              {isMock && (
+                <div className="flex items-center p-1 bg-neutral-900 border border-neutral-800 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("card")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      viewMode === "card"
+                        ? "bg-amber-500 text-neutral-950 shadow-sm"
+                        : "text-neutral-400 hover:text-white"
+                    }`}
+                  >
+                    <LayoutTemplate className="w-3.5 h-3.5" />
+                    Card View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("omr")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      viewMode === "omr"
+                        ? "bg-amber-500 text-neutral-950 shadow-sm"
+                        : "text-neutral-400 hover:text-white"
+                    }`}
+                  >
+                    <PenTool className="w-3.5 h-3.5" />
+                    Physical OMR
+                  </button>
+                </div>
+              )}
+
               <div className="text-xs font-bold text-neutral-300 font-mono hidden md:block">
                 {isMock ? (
                   <span className="text-amber-400 flex items-center gap-1.5">
@@ -124,10 +158,10 @@ function ArenaContent() {
               <button
                 type="button"
                 onClick={() => setIsConfiguratorOpen(true)}
-                className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-neutral-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md flex items-center gap-2 cursor-pointer"
               >
                 <Sliders className="w-4 h-4 text-neutral-950" />
-                Change Setup
+                Setup
               </button>
             </div>
           </div>
@@ -144,13 +178,33 @@ function ArenaContent() {
             >
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 
-                {/* Left Column: Question Card */}
-                <div className="flex flex-col gap-6 lg:col-span-2 w-full">
+              {/* Left Column: Question Card or Full Physical OMR Sheet */}
+              <div className="flex flex-col gap-6 lg:col-span-2 w-full">
+                {viewMode === "omr" && isMock ? (
+                  <OmrSheet
+                    totalQuestions={mockQuestions.length}
+                    currentQuestionIndex={activeQuestionIndex}
+                    selectedAnswers={Object.fromEntries(
+                      Object.entries(userAnswers).map(([k, v]) => [Number(k), v?.selectedOption || ""])
+                    )}
+                    markedForReview={Object.fromEntries(
+                      Object.entries(userAnswers).map(([k, v]) => [Number(k), Boolean(v?.markedForReview)])
+                    )}
+                    onSelectBubble={(qIdx, optKey) => {
+                      recordMockAnswer(qIdx, optKey, null, 1);
+                    }}
+                    onNavigateQuestion={(qIdx) => {
+                      setActiveQuestionIndex(qIdx);
+                    }}
+                    isMockMode={isMock}
+                  />
+                ) : (
                   <QuestionCard
                     onSubmit={handleSubmitPractice}
                     onNext={handleNextPractice}
                   />
-                </div>
+                )}
+              </div>
 
                 {/* Right Column: OMR Grid in Mock Mode or Mastery Map in Practice Mode */}
                 <div className="flex flex-col gap-6 lg:col-span-1 lg:sticky lg:top-24">

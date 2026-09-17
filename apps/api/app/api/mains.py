@@ -198,3 +198,41 @@ async def evaluate_handwritten_mains_answer(
         transcribed_text=transcribed_text,
         evaluation=evaluation
     )
+
+@router.post("/evaluate-async", status_code=202)
+async def evaluate_mains_answer_async(
+    req: EvaluateAnswerRequest,
+    db: AsyncSession = Depends(get_async_session)
+):
+    """
+    Asynchronous non-blocking UPSC Mains evaluation endpoint.
+    Prevents HTTP 504 gateway timeouts on heavy LLM calls under load.
+    Returns 202 Accepted with task_id to poll via GET /api/v1/tasks/{task_id}.
+    """
+    from app.core.task_manager import task_manager, TaskStatus
+    
+    if len(req.student_answer.strip().split()) < 15:
+        raise HTTPException(
+            status_code=400,
+            detail="Answer is too short to evaluate. Please write at least 15 words."
+        )
+
+    task_id = await task_manager.create_task(task_type="mains_evaluation")
+
+    async def _run_eval(tid: str):
+        eval_result = await MainsEvaluationService.evaluate_answer(
+            question_text=req.question_text,
+            student_answer=req.student_answer,
+            max_marks=req.max_marks,
+            time_taken_seconds=req.time_taken_seconds,
+            db=db
+        )
+        return eval_result.model_dump() if hasattr(eval_result, "model_dump") else eval_result.dict()
+
+    task_manager.spawn_background_task(task_id, _run_eval)
+    return {
+        "task_id": task_id,
+        "status": TaskStatus.PENDING,
+        "poll_url": f"/api/v1/tasks/{task_id}",
+        "message": "Answer submitted for asynchronous evaluation."
+    }

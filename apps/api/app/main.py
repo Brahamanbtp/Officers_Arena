@@ -16,6 +16,8 @@ from app.api.ingestion import router as ingestion_router
 from app.api.books import router as books_router
 from app.api.mains import router as mains_router
 from app.core.adaptive_engine import router as adaptive_engine_router
+from app.core.task_manager import router as task_router
+from app.api.calibration import router as calibration_router
 from app.core.database import init_db
 
 @asynccontextmanager
@@ -62,6 +64,8 @@ app.include_router(ingestion_router)
 app.include_router(books_router)
 app.include_router(mains_router)
 app.include_router(adaptive_engine_router)
+app.include_router(task_router)
+app.include_router(calibration_router)
 
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 if os.path.exists(static_dir):

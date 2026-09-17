@@ -277,6 +277,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
 
         {/* Question Text & Visual Content */}
         <div className="text-sm md:text-base text-neutral-100 font-medium leading-relaxed space-y-3">
+          {/* UPSC 2023-2026 Pairwise Trap Detection Banner */}
+          {/only one pair|only two pairs|all three pairs|none of the pairs|how many of the pairs/i.test(
+            currentQuestion.text + " " + JSON.stringify(currentQuestion.options || {})
+          ) && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-2.5 text-xs text-amber-300">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <strong className="font-bold text-amber-300 font-mono">UPSC Pairwise Format (2023–2026 Trend): </strong>
+                <span>Standard option elimination does not work here. You must independently determine the truth value of each statement pair.</span>
+              </div>
+            </div>
+          )}
+
           <QuestionRenderer 
             text={currentQuestion.text} 
             imageUrls={(currentQuestion.images || []).reduce((acc, img) => {
