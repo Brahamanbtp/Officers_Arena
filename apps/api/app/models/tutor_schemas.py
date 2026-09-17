@@ -15,6 +15,7 @@ class TutorResponse(BaseModel):
     suggested_next_steps: List[str]
 
 class ErrorAnalysis(BaseModel):
+    misconception_tag: Optional[str] = Field(default=None, description="Option Tracing cognitive trap taxonomy tag")
     error_category: str  # "Calculation" | "Formula" | "Conceptual" | "Factual"
     identified_gap: str
     recommendation: str

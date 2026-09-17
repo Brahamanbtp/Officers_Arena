@@ -18,7 +18,8 @@ import {
   AlertTriangle,
   Clock,
   Zap,
-  Sliders
+  Sliders,
+  Ban
 } from "lucide-react";
 import { MathRenderer } from "../shared/MathRenderer";
 import { QuestionRenderer } from "./QuestionRenderer";
@@ -58,23 +59,40 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
   // Live Item-Level Chronometric Timer
   const [itemTimeSeconds, setItemTimeSeconds] = useState<number>(0);
 
-  // Conceptual Error Analysis State
+  // Option Elimination / Strikethrough State (Pen-and-paper UPSC technique)
+  const [eliminatedOptions, setEliminatedOptions] = useState<Record<string, boolean>>({});
+
+  // Conceptual Error Analysis State (Option Tracing)
   const [errorAnalysis, setErrorAnalysis] = useState<{
+    misconception_tag?: string;
     error_category: string;
     identified_gap: string;
     recommendation: string;
   } | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // Reset timer on question change
+  // Reset timer & elimination on question change
   useEffect(() => {
     setErrorAnalysis(null);
+    setEliminatedOptions({});
     setItemTimeSeconds(0);
     const interval = setInterval(() => {
       setItemTimeSeconds((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
   }, [currentQuestion?.id]);
+
+  const toggleEliminateOption = (e: React.MouseEvent, key: string) => {
+    e.stopPropagation();
+    setEliminatedOptions((prev) => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+    // If currently selected, deselect
+    if (selectedOption === key) {
+      setSelectedOption(null);
+    }
+  };
 
   const handleAnalyzeMistake = async () => {
     if (!currentQuestion || isAnalyzing) return;
@@ -286,11 +304,12 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
           )}
         </div>
 
-        {/* Options Group (1-Click Selection) */}
+        {/* Options Group (1-Click Selection + Option Elimination Strikethrough Tool) */}
         <div className="grid grid-cols-1 gap-3 pt-1">
           {Object.entries(optionsMap).map(([key, value]) => {
             const isSelected = selectedOption === key;
             const isCorrect = key === currentQuestion.correct_answer;
+            const isEliminated = Boolean(eliminatedOptions[key]);
 
             let borderStyle = "border-neutral-800 bg-[#0a0a0a] text-neutral-200 hover:border-neutral-700";
             let iconElement = null;
@@ -306,6 +325,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
               } else {
                 borderStyle = "border-neutral-850 bg-[#0a0a0a]/50 text-neutral-400 opacity-60";
               }
+            } else if (isEliminated) {
+              borderStyle = "border-neutral-900 bg-neutral-950/70 text-neutral-500 opacity-40";
             } else if (isSelected) {
               // In Mock Mode OR Practice Mode before feedback:
               borderStyle = "border-amber-500 bg-amber-500/10 text-amber-300 font-bold shadow-lg";
@@ -313,25 +334,45 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
             }
 
             return (
-              <button
-                key={key}
-                type="button"
-                disabled={!isMockMode && showFeedback}
-                onClick={() => handleSelectOption(key)}
-                className={`p-3.5 sm:p-4 rounded-2xl border text-sm md:text-base text-left flex items-center justify-between gap-4 transition-all duration-200 cursor-pointer ${borderStyle}`}
-              >
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs border shrink-0 ${
-                    isSelected ? "bg-amber-500 text-neutral-950 border-amber-400" : "bg-neutral-900 border-neutral-800 text-neutral-300"
-                  }`}>
-                    {key}
-                  </span>
-                  <div className="text-neutral-200 text-xs sm:text-sm">
-                    <MathRenderer content={value as string} inline />
+              <div key={key} className="relative flex items-center group">
+                <button
+                  type="button"
+                  disabled={(!isMockMode && showFeedback) || isEliminated}
+                  onClick={() => handleSelectOption(key)}
+                  className={`w-full p-3.5 sm:p-4 rounded-2xl border text-sm md:text-base text-left flex items-center justify-between gap-4 transition-all duration-200 cursor-pointer ${borderStyle} ${
+                    isEliminated ? "line-through cursor-not-allowed" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3 sm:gap-4 pr-10">
+                    <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs border shrink-0 ${
+                      isEliminated ? "bg-neutral-900 border-neutral-850 text-neutral-600 line-through" :
+                      isSelected ? "bg-amber-500 text-neutral-950 border-amber-400" : "bg-neutral-900 border-neutral-800 text-neutral-300"
+                    }`}>
+                      {key}
+                    </span>
+                    <div className={`text-neutral-200 text-xs sm:text-sm ${isEliminated ? "line-through text-neutral-500" : ""}`}>
+                      <MathRenderer content={value as string} inline />
+                    </div>
                   </div>
-                </div>
-                {iconElement}
-              </button>
+                  {iconElement}
+                </button>
+
+                {/* Option Elimination (Strikethrough) Action Button */}
+                {(!showFeedback || isMockMode) && (
+                  <button
+                    type="button"
+                    onClick={(e) => toggleEliminateOption(e, key)}
+                    title={isEliminated ? `Restore Option ${key}` : `Eliminate Option ${key} (UPSC Strikethrough)`}
+                    className={`absolute right-3 p-1.5 rounded-lg border transition-all cursor-pointer ${
+                      isEliminated
+                        ? "bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30"
+                        : "bg-neutral-900/80 text-neutral-500 border-neutral-800 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:border-red-500/40"
+                    }`}
+                  >
+                    <Ban className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
@@ -419,18 +460,23 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                className="p-4 bg-amber-500/5 border border-amber-500/30 rounded-2xl space-y-2 text-xs"
+                className="p-4 bg-amber-500/5 border border-amber-500/30 rounded-2xl space-y-2.5 text-xs"
               >
-                <div className="flex items-center justify-between text-amber-400 font-black uppercase tracking-wider">
+                <div className="flex flex-wrap items-center justify-between text-amber-400 font-black uppercase tracking-wider gap-2">
                   <span className="flex items-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-amber-400" />
                     Cognitive Error Diagnosis: {errorAnalysis.error_category}
                   </span>
+                  {errorAnalysis.misconception_tag && (
+                    <span className="px-2.5 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-black rounded-lg">
+                      Option Tracing: {errorAnalysis.misconception_tag}
+                    </span>
+                  )}
                 </div>
                 <div className="text-neutral-300 leading-relaxed">
                   <strong className="text-white">Identified Gap: </strong> {errorAnalysis.identified_gap}
                 </div>
-                <div className="text-amber-300/90 font-mono text-[11px] leading-relaxed pt-1 border-t border-amber-500/20">
+                <div className="text-amber-300/90 font-mono text-[11px] leading-relaxed pt-1.5 border-t border-amber-500/20">
                   <strong className="text-amber-400">Actionable Remediation: </strong> {errorAnalysis.recommendation}
                 </div>
               </motion.div>

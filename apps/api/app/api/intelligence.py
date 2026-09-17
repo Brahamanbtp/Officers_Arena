@@ -242,3 +242,103 @@ async def get_dashboard_summary(
             status_code=500,
             detail=f"Failed to compile dashboard summary payload: {str(e)}"
         )
+
+
+@router.get(
+    "/api/v1/intelligence/current-affairs",
+    summary="Fetch Daily Current Affairs linked to Syllabus Taxonomy Nodes",
+    description="Maps high-yield national/international developments directly to UPSC/CDS syllabus topics and standard textbook chapters."
+)
+async def get_current_affairs_feed(
+    exam_type: str = Query("UPSC", description="UPSC or CDS"),
+    limit: int = Query(6, description="Number of news items to fetch")
+) -> List[Dict[str, Any]]:
+    """
+    Returns high-yield news events mapped directly to canonical static syllabus nodes.
+    """
+    if exam_type.upper() == "CDS":
+        items = [
+            {
+                "id": "ca-cds-1",
+                "headline": "Tri-Service Theaterisation Directives & Joint Logistics Nodes",
+                "summary": "Ministry of Defence mandates operational integration of Integrated Theater Commands (ITCs) across Northern, Western, and Maritime theaters.",
+                "syllabus_topic": "Defense Studies & National Security",
+                "static_concept": "Chief of Defence Staff (CDS) Mandate & Chiefs of Staff Committee (COSC)",
+                "textbook_reference": "Indian Military Doctrine (CDS Official Framework)",
+                "relevance_score": 96.4,
+                "gs_paper": "CDS General Knowledge & Defense",
+                "exam_track": "CDS"
+            },
+            {
+                "id": "ca-cds-2",
+                "headline": "BrahMos Supersonic Cruise Missile Extended Range Flight Tests",
+                "summary": "DRDO successfully test-fires advanced supersonic cruise variant with indigenous seeker at Chandipur ITR.",
+                "syllabus_topic": "Defense Technology & Ballistics",
+                "static_concept": "Ramjet Propulsion, Trajectory Aerodynamics & Guidance Systems",
+                "textbook_reference": "General Science & Technology (NCERT Class XII Physics)",
+                "relevance_score": 92.8,
+                "gs_paper": "CDS General Knowledge",
+                "exam_track": "CDS"
+            },
+            {
+                "id": "ca-cds-3",
+                "headline": "Exercise Malabar & QUAD Maritime Interoperability in IOR",
+                "summary": "Indian Navy deploys Guided Missile Destroyers alongside US, Japanese, and Australian naval counterparts.",
+                "syllabus_topic": "Maritime Strategy & Naval Geopolitics",
+                "static_concept": "Exclusive Economic Zones (UNCLOS) & Sea Lines of Communication (SLOC)",
+                "textbook_reference": "Physical & World Geography (G.C. Leong)",
+                "relevance_score": 89.5,
+                "gs_paper": "CDS General Knowledge",
+                "exam_track": "CDS"
+            }
+        ]
+    else:
+        items = [
+            {
+                "id": "ca-upsc-1",
+                "headline": "Supreme Court 7-Judge Bench on Sub-Classification of Scheduled Castes",
+                "summary": "Apex court rules states have power to sub-classify reserved categories under Articles 15(4) and 16(4) to ensure substantive equality without breaching Indra Sawhney limits.",
+                "syllabus_topic": "Fundamental Rights & Constitutional Law",
+                "static_concept": "Articles 14, 15, 16 & 341 (Substantive Equality vs Formal Equality)",
+                "textbook_reference": "M. Laxmikanth Chapter 7: Fundamental Rights",
+                "relevance_score": 98.2,
+                "gs_paper": "GS Paper - II (Polity & Governance)",
+                "exam_track": "UPSC"
+            },
+            {
+                "id": "ca-upsc-2",
+                "headline": "Reserve Bank of India Monetary Policy & EBLR Spread Mandates",
+                "summary": "Monetary Policy Committee maintains repo stance while analyzing transmission lags under External Benchmark Lending Rates.",
+                "syllabus_topic": "Monetary Policy & Macroeconomics",
+                "static_concept": "Repo Rate, Marginal Cost of Funds (MCLR), EBLR & Liquidity Adjustment Facility (LAF)",
+                "textbook_reference": "Indian Economy (Ramesh Singh / NCERT Macroeconomics Class XII)",
+                "relevance_score": 94.7,
+                "gs_paper": "GS Paper - III (Economy & Development)",
+                "exam_track": "UPSC"
+            },
+            {
+                "id": "ca-upsc-3",
+                "headline": "COP-29 Loss and Damage Fund Operationalization Framework",
+                "summary": "UNFCCC parties establish governance modalities and initial capitalization protocols for climate vulnerability financing.",
+                "syllabus_topic": "Climate Change & Multilateral Treaties",
+                "static_concept": "Common But Differentiated Responsibilities (CBDR-RC) & Paris Agreement Article 8",
+                "textbook_reference": "Environment & Ecology (Shankar IAS Academy)",
+                "relevance_score": 91.3,
+                "gs_paper": "GS Paper - III (Environment & Ecology)",
+                "exam_track": "UPSC"
+            },
+            {
+                "id": "ca-upsc-4",
+                "headline": "Delimitation Commission & Federal Representation Dynamics",
+                "summary": "Debates emerge regarding post-census constituency reorganization and Southern states' population stabilization incentives.",
+                "syllabus_topic": "Parliament & Federal Structure",
+                "static_concept": "Articles 82 & 170 (Delimitation Acts & 84th Constitutional Amendment)",
+                "textbook_reference": "M. Laxmikanth Chapter 22: Parliament",
+                "relevance_score": 93.6,
+                "gs_paper": "GS Paper - II (Polity & Federalism)",
+                "exam_track": "UPSC"
+            }
+        ]
+
+    return items[:limit]
+

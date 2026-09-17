@@ -1,6 +1,74 @@
 from typing import List, Optional, Dict, Any
+import re
 
 class ErrorAnalyzer:
+    @staticmethod
+    def diagnose_misconception_tag(
+        question_text: str,
+        user_opt_text: str,
+        correct_opt_text: str,
+        exam_type: str
+    ) -> Dict[str, str]:
+        """
+        Deep Option Tracing: Diagnoses specific cognitive misconception based on
+        question content and the selected distractor's linguistic/factual footprint.
+        """
+        q_lower = question_text.lower()
+        opt_lower = user_opt_text.lower()
+        
+        # 1. Extreme Qualifier Trap (Only, Always, All, Drastically)
+        if any(w in opt_lower for w in ["only", "all", "never", "drastically", "completely", "solely"]):
+            return {
+                "tag": "EXTREME_QUALIFIER_TRAP",
+                "category": "Linguistic & Scope Trap",
+                "gap": "Elimination trap: Fell for an absolute qualifier ('Only'/'All'/'Never') which UPSC often uses as distractor bait.",
+                "rec": "In UPSC civil services, absolute statements are statistically disfavored unless explicitly mandated by the Constitution."
+            }
+            
+        # 2. Constitutional Article / Statutory Confusion
+        if any(k in q_lower for k in ["article", "constitution", "governor", "president", "parliament", "amendment"]):
+            return {
+                "tag": "CONSTITUTIONAL_ARTICLE_CONFUSION",
+                "category": "Statutory & Article Boundary",
+                "gap": "Conceptual boundary error: Confused procedural mandates with discretionary constitutional powers.",
+                "rec": "Review M. Laxmikanth Chapter on Emergency Provisions & Constitutional Discretionary Powers."
+            }
+            
+        # 3. Chronological & Freedom Struggle Sequence Inversion
+        if any(k in q_lower for k in ["freedom", "movement", "mission", "viceroy", "act of", "congress", "league"]):
+            return {
+                "tag": "CHRONOLOGY_INVERSION",
+                "category": "Historical Timeline Trap",
+                "gap": "Chronology slip: Inverted the timeline or confused sequential proposals of the national movement.",
+                "rec": "Review Spectrum Modern History Chapter on Freedom Struggle milestones and sequential round table conferences."
+            }
+            
+        # 4. Defense Command & Joint Operational Misattribution (CDS)
+        if any(k in q_lower for k in ["cds", "defence", "corps", "command", "naval", "air force", "missile", "treaty"]):
+            return {
+                "tag": "DEFENSE_COMMAND_MISATTRIBUTION",
+                "category": "Operational Doctrine Trap",
+                "gap": "Organizational doctrine confusion: Misattributed operational command vs. administrative advisory authority.",
+                "rec": "Review Indian Military Doctrine: CDS acts as Principal Military Adviser, while operational command remains with Service Chiefs."
+            }
+            
+        # 5. Mathematical / Formula Divergence
+        if any(k in q_lower for k in ["triangle", "radius", "algebra", "speed", "work", "trigonometry", "ratio", "inradius"]):
+            return {
+                "tag": "FORMULA_SIGN_OR_THEOREM_MISUSE",
+                "category": "Theorem & Formula Setup",
+                "gap": "Theorem application fault: Misapplied perimeter vs. inradius / hypotenuse formula formulation.",
+                "rec": "Review RS Aggarwal Quantitative Aptitude: Re-derive fundamental right-triangle inradius formulas: r = (a + b - c) / 2."
+            }
+            
+        # Default Fallback
+        return {
+            "tag": "CONCEPTUAL_DISTRACTOR_SELECTION",
+            "category": "Conceptual Distractor",
+            "gap": "Subtle distractor trap: Selected a plausible but factually ungrounded distractor.",
+            "rec": "Ground reasoning strictly in canonical textbook sources before validating elimination."
+        }
+
     @staticmethod
     def analyze_statement_error(
         user_bitmask: List[bool],
@@ -21,14 +89,17 @@ class ErrorAnalyzer:
             # Check if user falsely believed statement was TRUE or FALSE
             falsely_true = user_bitmask[gap_stmt_idx - 1]
             status = "True" if falsely_true else "False"
-            identified_gap = f"Student falsely assumed Statement {gap_stmt_idx} was {status}."
-            recommendation = f"Carefully re-read Statement {gap_stmt_idx} to check for exception clauses."
+            identified_gap = f"Statement Discrepancy: Falsely assumed Statement {gap_stmt_idx} was {status}."
+            recommendation = f"Re-read Statement {gap_stmt_idx} carefully for subtle exception clauses and qualifying words."
+            tag = f"STATEMENT_{gap_stmt_idx}_MISCLASSIFICATION"
         else:
-            identified_gap = "Elimination Failure: Unable to distinguish between the final distractor choices."
-            recommendation = "Eliminate choices containing statements you know are incorrect."
+            identified_gap = "Elimination Failure: Unable to isolate the final pair of distractor statements."
+            recommendation = "Use pairwise statement elimination to remove options containing known false statements."
+            tag = "PAIRWISE_ELIMINATION_FAILURE"
             
         return {
-            "error_category": "Conceptual",
+            "misconception_tag": tag,
+            "error_category": "Statement Verification",
             "identified_gap": identified_gap,
             "recommendation": recommendation
         }
@@ -45,9 +116,10 @@ class ErrorAnalyzer:
         diff = abs(user_ans - correct_ans)
             
         if diff < 1.0:
-            error_category = "Calculation"
-            identified_gap = "Calculation Error: Minor arithmetic deviation detected."
-            recommendation = "Your formula setup was correct. Redo your final calculation steps."
+            error_category = "Calculation Slip"
+            identified_gap = "Minor Arithmetic Slip: Final arithmetic step deviated slightly."
+            recommendation = "Formula setup was sound. Redo arithmetic steps to ensure precision."
+            tag = "ARITHMETIC_PRECISION_SLIP"
         else:
             # Check if user answer matches any of the known distractor values
             is_formula_misuse = False
@@ -58,15 +130,18 @@ class ErrorAnalyzer:
                         break
             
             if is_formula_misuse:
-                error_category = "Formula"
-                identified_gap = "Formula Misuse: Selected answer matches a known common formula mistake."
-                recommendation = "You likely applied the wrong theorem or formula. Double-check your starting assumptions."
+                error_category = "Formula Misapplication"
+                identified_gap = "Formula Trap: Selected answer matches a classic distractor formula."
+                recommendation = "Double check sign conventions and geometric theorem hypotheses."
+                tag = "KNOWN_DISTRACTOR_FORMULA_TRAP"
             else:
-                error_category = "Conceptual"
-                identified_gap = "Conceptual Gap: Major numerical divergence indicating wrong problem setup."
-                recommendation = "Review the underlying concepts before attempting calculations."
+                error_category = "Conceptual Divergence"
+                identified_gap = "Problem Setup Gap: Major numerical divergence indicating wrong theorem."
+                recommendation = "Review theorem foundations before embarking on calculations."
+                tag = "PROBLEM_SETUP_DIVERGENCE"
 
         return {
+            "misconception_tag": tag,
             "error_category": error_category,
             "identified_gap": identified_gap,
             "recommendation": recommendation
@@ -83,29 +158,26 @@ class ErrorAnalyzer:
         metadata: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Wrapper to classify errors using bitmask statement checks or numerical comparison.
+        Option Tracing (OT) Classifier executing multi-tier cognitive diagnosis.
         """
         meta = metadata or {}
+        user_opt_text = str(options.get(user_selected, ""))
+        correct_opt_text = str(options.get(correct_answer, ""))
         
-        # 1. Statement Check
+        # 1. Statement Bitmask Check
         user_bitmask = meta.get("user_answer_bitmask")
         correct_bitmask = meta.get("correct_metadata_bitmask")
         if user_bitmask is not None and correct_bitmask is not None:
             return cls.analyze_statement_error(user_bitmask, correct_bitmask)
             
-        # 2. Numerical Check
+        # 2. Numerical Value Check
         user_val = meta.get("user_answer_value")
         correct_val = meta.get("correct_answer_value")
         if user_val is not None and correct_val is not None:
             distractors = meta.get("distractor_values")
             return cls.analyze_numerical_error(float(user_val), float(correct_val), distractors)
 
-        # Fallback to text heuristics
-        import re
-        user_opt_text = str(options.get(user_selected, ""))
-        correct_opt_text = str(options.get(correct_answer, ""))
-        
-        # Simple extraction for statement logic
+        # 3. Statement regex extraction
         user_nums = [int(s) for s in re.findall(r'\b[1-3]\b', user_opt_text)]
         correct_nums = [int(s) for s in re.findall(r'\b[1-3]\b', correct_opt_text)]
         
@@ -114,9 +186,17 @@ class ErrorAnalyzer:
             correct_bit = [i in correct_nums for i in range(1, 4)]
             return cls.analyze_statement_error(user_bit, correct_bit)
             
-        # Fallback default conceptual error
+        # 4. Rich Option Tracing Misconception Diagnosis
+        misconception = cls.diagnose_misconception_tag(
+            question_text=question_text,
+            user_opt_text=user_opt_text,
+            correct_opt_text=correct_opt_text,
+            exam_type=exam_type
+        )
+        
         return {
-            "error_category": "Conceptual",
-            "identified_gap": "Conceptual Error: Falsely selected a conceptual distractor.",
-            "recommendation": "Review the basic definitions and scope of authority of the respective institutions."
+            "misconception_tag": misconception["tag"],
+            "error_category": misconception["category"],
+            "identified_gap": misconception["gap"],
+            "recommendation": misconception["rec"]
         }

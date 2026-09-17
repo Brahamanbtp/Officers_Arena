@@ -216,6 +216,7 @@ async def analyze_error(
         )
 
         return ErrorAnalysis(
+            misconception_tag=diagnosis.get("misconception_tag"),
             error_category=diagnosis["error_category"],
             identified_gap=diagnosis["identified_gap"],
             recommendation=diagnosis["recommendation"]
