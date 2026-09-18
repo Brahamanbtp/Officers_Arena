@@ -201,7 +201,7 @@ async def list_mains_questions(
     results: List[Dict[str, Any]] = list(CANONICAL_MAINS_REPOSITORY)
 
     if paper and paper != "ALL":
-        p_up = str(paper).upper()
+        p_up = paper.upper()
         
         def matches_filter(item: Dict[str, Any]) -> bool:
             subj = str(item.get("subject", "")).lower()
@@ -215,7 +215,7 @@ async def list_mains_questions(
                 return ("paper - iv" in subj or "paper-4" in subj or "paper 4" in subj or "gs4" in subj or "gs-4" in subj or "ethics" in subj or "integrity" in subj or "probity" in subj or "case study" in subj)
             elif p_up in ["ESSAY", "ESSAYS"]:
                 return "essay" in subj
-            return str(paper).lower() in subj
+            return paper.lower() in subj
 
         results = [q for q in results if matches_filter(q)]
 

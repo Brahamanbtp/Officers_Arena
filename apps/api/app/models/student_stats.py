@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from sqlmodel import SQLModel, Field
-from sqlalchemy import Index, DateTime
+from sqlalchemy import Index, Column, DateTime
 
 class StudentAttempt(SQLModel, table=True):
     __tablename__ = "student_attempts"  # type: ignore
@@ -28,8 +28,7 @@ class StudentAttempt(SQLModel, table=True):
     confidence_level: int = Field(nullable=False)  # Scale from 1 to 5
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        nullable=False
+        sa_column=Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     )
     # Advanced Schema Evolution Fields
     difficulty_weight: float = Field(default=1.0, nullable=False)  # IRT weight
@@ -58,8 +57,7 @@ class StudentMastery(SQLModel, table=True):
     half_life: float = Field(default=1.0, nullable=False)  # Spaced repetition half-life in days
     last_practiced: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        nullable=False
+        sa_column=Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     )
     stability_factor: float = Field(default=2.0, nullable=False)
     # Advanced Schema Evolution Fields
@@ -68,7 +66,10 @@ class StudentMastery(SQLModel, table=True):
     # Volatility Monitor Fields
     is_fragile: bool = Field(default=False, nullable=False, index=True)
     needs_deep_review: bool = Field(default=False, nullable=False, index=True)
-    last_alert_sent: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True), nullable=True)
+    last_alert_sent: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
 
 class MetacognitiveStats(SQLModel, table=True):
     __tablename__ = "metacognitive_stats"  # type: ignore
@@ -97,8 +98,7 @@ class StudentState(SQLModel, table=True):
     total_answered: int = Field(default=0, nullable=False)
     last_updated: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        nullable=False
+        sa_column=Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     )
     is_adaptive: bool = Field(default=True, nullable=False)
 
@@ -116,8 +116,7 @@ class PerformanceLog(SQLModel, table=True):
     confidence_level: int = Field(nullable=False)
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        nullable=False
+        sa_column=Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     )
 
 class SRSMetadata(SQLModel, table=True):
@@ -134,14 +133,11 @@ class SRSMetadata(SQLModel, table=True):
     interval: float = Field(default=1.0, nullable=False)  # Interval in days
     due_date: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        index=True,
-        nullable=False
+        sa_column=Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True, nullable=False)
     )
     last_review: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        nullable=False
+        sa_column=Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     )
 
 class TopicMastery(SQLModel, table=True):
@@ -167,8 +163,7 @@ class UserActivityLog(SQLModel, table=True):
     topic_id: uuid.UUID = Field(foreign_key="syllabus.id", index=True, nullable=False)
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        nullable=False
+        sa_column=Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     )
 
 class TutorChatSession(SQLModel, table=True):
@@ -183,6 +178,5 @@ class TutorChatSession(SQLModel, table=True):
     messages: str = Field(default="[]", nullable=False)  # JSON-serialized list of messages
     last_updated: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        nullable=False
+        sa_column=Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     )
