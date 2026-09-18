@@ -396,16 +396,16 @@ export default function MainsEvaluationPage() {
     if (paperKey === "ALL") return true;
     const s = subjectStr.toLowerCase();
     if (paperKey === "GS1") {
-      return s.includes("gs1") || s.includes("gs-1") || s.includes("gs 1") || s.includes("paper - i") || s.includes("paper-1") || s.includes("paper 1") || s.includes("history") || s.includes("geography") || s.includes("society") || s.includes("art & culture");
+      return (s.includes("paper - i (") || s.includes("paper-1") || s.includes("paper 1") || s.includes("gs1") || s.includes("gs-1") || s.includes("art & culture") || s.includes("history") || s.includes("geography") || s.includes("society")) && !s.includes("paper - ii") && !s.includes("paper - iii") && !s.includes("paper - iv");
     }
     if (paperKey === "GS2") {
-      return s.includes("gs2") || s.includes("gs-2") || s.includes("gs 2") || s.includes("paper - ii") || s.includes("paper-2") || s.includes("paper 2") || s.includes("polity") || s.includes("governance") || s.includes("constitution") || s.includes("international relations");
+      return (s.includes("paper - ii") || s.includes("paper-2") || s.includes("paper 2") || s.includes("gs2") || s.includes("gs-2") || s.includes("polity") || s.includes("governance") || s.includes("constitution") || s.includes("judiciary") || s.includes("international relations")) && !s.includes("paper - iii");
     }
     if (paperKey === "GS3") {
-      return s.includes("gs3") || s.includes("gs-3") || s.includes("gs 3") || s.includes("paper - iii") || s.includes("paper-3") || s.includes("paper 3") || s.includes("economy") || s.includes("environment") || s.includes("security") || s.includes("science") || s.includes("disaster");
+      return s.includes("paper - iii") || s.includes("paper-3") || s.includes("paper 3") || s.includes("gs3") || s.includes("gs-3") || s.includes("economy") || s.includes("environment") || s.includes("security") || s.includes("science") || s.includes("disaster");
     }
     if (paperKey === "GS4") {
-      return s.includes("gs4") || s.includes("gs-4") || s.includes("gs 4") || s.includes("paper - iv") || s.includes("paper-4") || s.includes("paper 4") || s.includes("ethics") || s.includes("integrity") || s.includes("aptitude");
+      return s.includes("paper - iv") || s.includes("paper-4") || s.includes("paper 4") || s.includes("gs4") || s.includes("gs-4") || s.includes("ethics") || s.includes("integrity") || s.includes("probity") || s.includes("case study") || s.includes("aptitude");
     }
     if (paperKey === "Essay") {
       return s.includes("essay");

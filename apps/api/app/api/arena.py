@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 
 from app.core.database import get_async_session
+from app.core.utils import resolve_user_uuid
 from app.models.database import Questions, Syllabus
 from app.models.student_stats import StudentState, PerformanceLog, SRSMetadata, TopicMastery
 from ml.irt_engine import IRTEngine
@@ -108,19 +109,20 @@ async def next_question(
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
+        user_uuid = resolve_user_uuid(user_id)
         # 1. Fetch student state
-        state_stmt = select(StudentState).where(StudentState.user_id == user_id)
+        state_stmt = select(StudentState).where(StudentState.user_id == user_uuid)
         state_res = await db.execute(state_stmt)
         student_state = state_res.scalars().first()
 
         if not student_state:
-            student_state = StudentState(user_id=user_id, theta=0.0, total_answered=0, is_adaptive=True)
+            student_state = StudentState(user_id=user_uuid, theta=0.0, total_answered=0, is_adaptive=True)
             db.add(student_state)
             await db.commit()
             await db.refresh(student_state)
 
         # 2. Get answered questions
-        log_stmt = select(PerformanceLog.question_id).where(PerformanceLog.user_id == user_id)
+        log_stmt = select(PerformanceLog.question_id).where(PerformanceLog.user_id == user_uuid)
         log_res = await db.execute(log_stmt)
         answered_ids = set(log_res.scalars().all())
 
@@ -290,9 +292,11 @@ async def submit_response(
         # 2. Check correctness
         is_correct = (request.selected_option.strip() == question.correct_answer.strip())
 
+        user_uuid = resolve_user_uuid(request.user_id)
+
         # 3. Log Performance
         log = PerformanceLog(
-            user_id=request.user_id,
+            user_id=user_uuid,
             question_id=request.question_id,
             is_correct=is_correct,
             response_time=request.response_time,
@@ -302,12 +306,12 @@ async def submit_response(
         await db.flush()
 
         # 4. Get Student State
-        state_stmt = select(StudentState).where(StudentState.user_id == request.user_id)
+        state_stmt = select(StudentState).where(StudentState.user_id == user_uuid)
         state_res = await db.execute(state_stmt)
         student_state = state_res.scalars().first()
 
         if not student_state:
-            student_state = StudentState(user_id=request.user_id, theta=0.0, total_answered=0, is_adaptive=True)
+            student_state = StudentState(user_id=user_uuid, theta=0.0, total_answered=0, is_adaptive=True)
             db.add(student_state)
             await db.flush()
 
@@ -317,7 +321,7 @@ async def submit_response(
         history_stmt = (
             select(PerformanceLog, Questions)
             .join(Questions, col(PerformanceLog.question_id) == col(Questions.id))
-            .where(PerformanceLog.user_id == request.user_id)
+            .where(PerformanceLog.user_id == user_uuid)
             .order_by(col(PerformanceLog.timestamp).desc())
             .limit(5)
         )
@@ -346,7 +350,7 @@ async def submit_response(
 
         # 6. Update Spaced Repetition Metadata
         srs_stmt = select(SRSMetadata).where(
-            SRSMetadata.user_id == request.user_id,
+            SRSMetadata.user_id == user_uuid,
             SRSMetadata.question_id == request.question_id
         )
         srs_res = await db.execute(srs_stmt)
@@ -357,7 +361,7 @@ async def submit_response(
 
         if not srs_meta:
             srs_meta = SRSMetadata(
-                user_id=request.user_id,
+                user_id=user_uuid,
                 question_id=request.question_id,
                 stability=2.0,
                 difficulty=3.0,
@@ -490,6 +494,8 @@ async def submit_batch(
         penalty_per_incorrect = 0.66 if exam_type == "UPSC" else 0.27
         cutoff_pct = 50.0 if exam_type == "UPSC" else 42.0
 
+        user_uuid = resolve_user_uuid(request.user_id)
+
         # Fetch all target questions in one query
         q_ids = [a.question_id for a in request.answers]
         q_stmt = select(Questions).where(col(Questions.id).in_(q_ids))
@@ -497,11 +503,11 @@ async def submit_batch(
         questions_map = {q.id: q for q in q_res.scalars().all()}
 
         # Fetch or initialize StudentState
-        state_stmt = select(StudentState).where(StudentState.user_id == request.user_id)
+        state_stmt = select(StudentState).where(StudentState.user_id == user_uuid)
         state_res = await db.execute(state_stmt)
         student_state = state_res.scalars().first()
         if not student_state:
-            student_state = StudentState(user_id=request.user_id, theta=0.0, total_answered=0, is_adaptive=True)
+            student_state = StudentState(user_id=user_uuid, theta=0.0, total_answered=0, is_adaptive=True)
             db.add(student_state)
             await db.flush()
 
@@ -536,7 +542,7 @@ async def submit_batch(
 
             # Log PerformanceLog
             log = PerformanceLog(
-                user_id=request.user_id,
+                user_id=user_uuid,
                 question_id=q.id,
                 is_correct=is_corr,
                 response_time=resp_time,
@@ -553,7 +559,7 @@ async def submit_batch(
 
             # Update SRS item
             srs_stmt = select(SRSMetadata).where(
-                SRSMetadata.user_id == request.user_id,
+                SRSMetadata.user_id == user_uuid,
                 SRSMetadata.question_id == q.id
             )
             srs_res = await db.execute(srs_stmt)
@@ -562,7 +568,7 @@ async def submit_batch(
             quality = SRSEngine.calculate_sm2_quality(is_corr, conf)
             if not srs_meta:
                 srs_meta = SRSMetadata(
-                    user_id=request.user_id,
+                    user_id=user_uuid,
                     question_id=q.id,
                     stability=2.0,
                     difficulty=3.0,
@@ -681,6 +687,7 @@ async def explain_question(
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
+        user_uuid = resolve_user_uuid(user_id)
         # 1. Fetch Question
         q_stmt = select(Questions).where(Questions.id == question_id)
         q_res = await db.execute(q_stmt)
@@ -691,7 +698,7 @@ async def explain_question(
         # 2. Fetch last attempt
         attempt_stmt = (
             select(PerformanceLog)
-            .where(PerformanceLog.user_id == user_id, PerformanceLog.question_id == question_id)
+            .where(PerformanceLog.user_id == user_uuid, PerformanceLog.question_id == question_id)
             .order_by(col(PerformanceLog.timestamp).desc())
         )
         attempt_res = await db.execute(attempt_stmt)
@@ -701,7 +708,7 @@ async def explain_question(
             selected_option = "Incorrect Choice" if not attempt.is_correct else question.correct_answer
 
         # 3. Fetch Student State
-        state_stmt = select(StudentState).where(StudentState.user_id == user_id)
+        state_stmt = select(StudentState).where(StudentState.user_id == user_uuid)
         state_res = await db.execute(state_stmt)
         student_state = state_res.scalars().first()
         theta = student_state.theta if student_state else 0.0
@@ -762,7 +769,8 @@ async def get_session_report(
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
-        state_stmt = select(StudentState).where(StudentState.user_id == user_id)
+        user_uuid = resolve_user_uuid(user_id)
+        state_stmt = select(StudentState).where(StudentState.user_id == user_uuid)
         state_res = await db.execute(state_stmt)
         student_state = state_res.scalars().first()
         if not student_state:
@@ -772,7 +780,7 @@ async def get_session_report(
         stmt = (
             select(PerformanceLog, Questions)
             .join(Questions, col(PerformanceLog.question_id) == col(Questions.id))
-            .where(PerformanceLog.user_id == user_id)
+            .where(PerformanceLog.user_id == user_uuid)
             .order_by(col(PerformanceLog.timestamp).asc())
         )
         res = await db.execute(stmt)
@@ -852,10 +860,11 @@ async def srs_dashboard(
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
+        user_uuid = resolve_user_uuid(user_id)
         stmt = (
             select(SRSMetadata, Questions)
             .join(Questions, col(SRSMetadata.question_id) == col(Questions.id))
-            .where(SRSMetadata.user_id == user_id)
+            .where(SRSMetadata.user_id == user_uuid)
         )
         res = await db.execute(stmt)
         rows = res.all()
@@ -907,7 +916,7 @@ async def get_questions(
 ):
     try:
         stmt = select(Questions)
-        if exam_type and exam_type != "ALL":
+        if isinstance(exam_type, str) and exam_type != "ALL":
             stmt = stmt.where(Questions.exam_type == exam_type)
         if isinstance(year, int):
             stmt = stmt.where(Questions.year == year)
@@ -917,15 +926,15 @@ async def get_questions(
             stmt = stmt.where(col(Questions.subject).ilike(f"%{subject.strip()}%"))
         
         # Source & Book filtering
-        if book_id and book_id.strip():
+        if isinstance(book_id, str) and book_id.strip():
             try:
                 b_uuid = uuid.UUID(book_id.strip())
                 stmt = stmt.where(col(Questions.book_id) == b_uuid)
             except ValueError:
                 pass
-        elif source_filter == "BOOKS_ONLY":
+        elif isinstance(source_filter, str) and source_filter == "BOOKS_ONLY":
             stmt = stmt.where(col(Questions.source_type).in_(["TEXTBOOK_PRACTICE", "BOOK_PRACTICE", "BOOK_GROUNDED_AI"]))
-        elif source_filter == "PYQ_ONLY":
+        elif isinstance(source_filter, str) and source_filter == "PYQ_ONLY":
             stmt = stmt.where(col(Questions.source_type) == "OFFICIAL_PYQ")
         
         limit_val = limit if isinstance(limit, int) else 120

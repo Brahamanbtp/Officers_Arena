@@ -206,13 +206,13 @@ async def list_mains_questions(
         def matches_filter(item: Dict[str, Any]) -> bool:
             subj = str(item.get("subject", "")).lower()
             if p_up in ["GS1", "GS-1", "GS 1"]:
-                return any(term in subj for term in ["paper - i", "gs1", "art", "history", "geography", "society"])
+                return ("paper - i (" in subj or "paper-1" in subj or "paper 1" in subj or "gs1" in subj or "gs-1" in subj or "art & culture" in subj or "history" in subj or "geography" in subj or "society" in subj) and not any(other in subj for other in ["paper - ii", "paper - iii", "paper - iv"])
             elif p_up in ["GS2", "GS-2", "GS 2"]:
-                return any(term in subj for term in ["paper - ii", "gs2", "polity", "judiciary", "governance", "international"])
+                return ("paper - ii" in subj or "paper-2" in subj or "paper 2" in subj or "gs2" in subj or "gs-2" in subj or "polity" in subj or "judiciary" in subj or "governance" in subj or "international relations" in subj) and not any(other in subj for other in ["paper - iii"])
             elif p_up in ["GS3", "GS-3", "GS 3"]:
-                return any(term in subj for term in ["paper - iii", "gs3", "economy", "environment", "science", "security"])
+                return ("paper - iii" in subj or "paper-3" in subj or "paper 3" in subj or "gs3" in subj or "gs-3" in subj or "economy" in subj or "environment" in subj or "science" in subj or "security" in subj)
             elif p_up in ["GS4", "GS-4", "GS 4"]:
-                return any(term in subj for term in ["paper - iv", "gs4", "ethics", "integrity"])
+                return ("paper - iv" in subj or "paper-4" in subj or "paper 4" in subj or "gs4" in subj or "gs-4" in subj or "ethics" in subj or "integrity" in subj or "probity" in subj or "case study" in subj)
             elif p_up in ["ESSAY", "ESSAYS"]:
                 return "essay" in subj
             return str(paper).lower() in subj

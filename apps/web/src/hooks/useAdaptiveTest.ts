@@ -99,12 +99,11 @@ export const useAdaptiveTest = () => {
     }
     resetTimer();
   }, [setQuestion, resetTimer, mode, selectedSubject, getFallbackQuestion]);
-
   useEffect(() => {
     if (testMode === "mock") return;
 
     if (!currentQuestion) {
-      setQuestion(getFallbackQuestion(mode, selectedSubject));
+      startTest();
       return;
     }
 
@@ -114,9 +113,9 @@ export const useAdaptiveTest = () => {
                    currentQuestion.id.toLowerCase().startsWith("upsc") ? "UPSC" : null);
 
     if (qExam && qExam !== mode) {
-      setQuestion(getFallbackQuestion(mode, selectedSubject));
+      startTest();
     }
-  }, [mode, selectedSubject, setQuestion, getFallbackQuestion, currentQuestion, testMode]);
+  }, [mode, selectedSubject, startTest, currentQuestion, testMode]);
 
   const loadNextQuestion = useCallback(async () => {
     setTransitioning(true);

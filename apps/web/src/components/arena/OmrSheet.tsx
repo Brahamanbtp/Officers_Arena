@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, AlertCircle, Bookmark, RefreshCw, PenTool } from "lucide-react";
+import { useArenaStore } from "@/src/store/useArenaStore";
 
 interface OmrSheetProps {
   totalQuestions?: number;
@@ -25,6 +26,7 @@ export const OmrSheet: React.FC<OmrSheetProps> = ({
   onToggleReview,
   isMockMode = true
 }) => {
+  const mode = useArenaStore((state) => state.mode);
   const options = ["A", "B", "C", "D"];
   const questionsList = Array.from({ length: totalQuestions }, (_, i) => i + 1);
 
@@ -40,11 +42,11 @@ export const OmrSheet: React.FC<OmrSheetProps> = ({
           <div className="flex items-center gap-2">
             <PenTool className="w-5 h-5 text-amber-400" />
             <h3 className="text-base font-black text-white tracking-wide uppercase font-mono">
-              UPSC Prelims Physical OMR Sheet Emulator
+              {mode === "UPSC" ? "UPSC Civil Services Prelims OMR Sheet" : "CDS Defence Services Examination OMR Sheet"}
             </h3>
           </div>
           <p className="text-xs text-neutral-400 font-mono">
-            Optical Mark Recognition Simulation • Black Ballpoint Ink Mode • Negative Marking: -0.66 per error
+            Optical Mark Recognition Simulation • Black Ballpoint Ink Mode • Negative Marking: {mode === "UPSC" ? "-0.66" : "-0.27"} per error
           </p>
         </div>
 
