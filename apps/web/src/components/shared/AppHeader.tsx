@@ -16,7 +16,8 @@ import {
   Menu, 
   X,
   Compass,
-  FileCheck
+  FileCheck,
+  Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useArenaStore } from "@/src/store/useArenaStore";
@@ -69,6 +70,7 @@ export const AppHeader: React.FC = () => {
     { label: "Daily Mission", href: "/", icon: Activity, active: pathname === "/", badge: "Today" },
     { label: mode === "UPSC" ? "Prelims Arena" : "CDS Arena", href: "/arena", icon: Activity, active: pathname === "/arena" },
     ...(mode === "UPSC" ? [{ label: "Mains AES", href: "/mains", icon: PenTool, active: pathname === "/mains", badge: "OCR" }] : []),
+    { label: "Current Affairs", href: "/current-affairs", icon: Globe, active: pathname === "/current-affairs", badge: "Live" },
     { label: "Strategist", href: "/strategist", icon: Sparkles, active: pathname === "/strategist" },
     { label: "PYQ Vault", href: "/library", icon: BookOpen, active: pathname === "/library" },
   ];

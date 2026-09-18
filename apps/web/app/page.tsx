@@ -370,10 +370,10 @@ export default function HomePage() {
               </p>
             </div>
             <Link
-              href="/library"
+              href="/current-affairs"
               className="text-xs font-mono font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
             >
-              <span>Explore 15,723 PYQs</span>
+              <span>Explore Daily Intelligence Hub</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
