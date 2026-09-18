@@ -107,7 +107,7 @@ function ArenaContent() {
             <div className="flex items-center gap-3">
               <h2 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                The Adaptive Arena
+                {mode === "UPSC" ? "UPSC CSE Prelims Arena" : "CDS Written Exam Arena"}
               </h2>
               <span className="text-xs text-neutral-400 font-bold uppercase tracking-wider hidden sm:inline-block">
                 Mode: {isMock ? "Full Mock Session" : "Adaptive Practice"}

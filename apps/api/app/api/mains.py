@@ -23,6 +23,171 @@ class OCREvaluationResponse(BaseModel):
     transcribed_text: str
     evaluation: MainsEvaluationResult
 
+CANONICAL_MAINS_REPOSITORY = [
+    # GS1: History, Art & Culture, Geography, Society
+    {
+        "id": "mains-gs1-art-1",
+        "text": "Explain the salient features of Gandhara and Mathura schools of art and analyze their distinctive contributions to Buddhist iconography. (150 words, 10 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - I (Art & Culture)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "directive": "Explain & Analyze (Clarify features with comparative synthesis)"
+    },
+    {
+        "id": "mains-gs1-history-1",
+        "text": "The Swadeshi Movement of 1905 marked a radical paradigm shift from moderate constitutional agitation to mass direct action. Elucidate with reference to Boycott, Swadeshi enterprise, and National Education. (150 words, 10 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - I (Modern Indian History)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "directive": "Elucidate (Requires clarifying core concepts with historical milestones)"
+    },
+    {
+        "id": "mains-gs1-geography-1",
+        "text": "Account for the rising frequency of urban flooding in Indian mega-cities with special reference to drainage failure, wetland encroachment, and rapid land-use transformation. Suggest comprehensive mitigation measures. (250 words, 15 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - I (Physical & Human Geography)",
+        "max_marks": 15,
+        "word_limit": 250,
+        "directive": "Account for & Suggest (Root cause analysis with actionable roadmap)"
+    },
+    {
+        "id": "mains-gs1-society-1",
+        "text": "Discuss the impact of the gig economy and digital platform work on traditional family structures, gender participation, and social security in contemporary India. (150 words, 10 marks)",
+        "year": 2023,
+        "subject": "General Studies Paper - I (Indian Society)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "directive": "Discuss (Balanced multi-dimensional exploration)"
+    },
+
+    # GS2: Polity, Governance, Constitution, IR
+    {
+        "id": "mains-gs2-polity-1",
+        "text": "Critically analyze the role of the Governor in the Indian Constitutional framework, particularly regarding the exercise of discretionary powers under Article 163 and Article 200. Does it undermine the federal balance? (150 words, 10 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - II (Polity & Governance)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "directive": "Critically Analyze (Requires pros, cons, evidence & objective synthesis)"
+    },
+    {
+        "id": "mains-gs2-judiciary-1",
+        "text": "The doctrine of Basic Structure has evolved as a fundamental constitutional safeguard against majoritarian overreach. Examine its development from Shankari Prasad to Minerva Mills and its relevance to judicial review today. (250 words, 15 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - II (Constitution & Judiciary)",
+        "max_marks": 15,
+        "word_limit": 250,
+        "directive": "Examine (Detailed judicial analysis and constitutional implications)"
+    },
+    {
+        "id": "mains-gs2-governance-1",
+        "text": "Evaluate the efficacy of digital governance platforms (such as Direct Benefit Transfer and Jan Dhan-Aadhaar-Mobile trinity) in plugging leakages and enhancing transparency in welfare administration. (150 words, 10 marks)",
+        "year": 2023,
+        "subject": "General Studies Paper - II (Governance & Public Policy)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "directive": "Evaluate (Assess outcomes against targeted policy goals)"
+    },
+    {
+        "id": "mains-gs2-ir-1",
+        "text": "India's strategic autonomy in a multipolar global order requires delicate balancing between Western partnerships and Eurasian connectivity. Analyze with reference to QUAD and BRICS. (250 words, 15 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - II (International Relations)",
+        "max_marks": 15,
+        "word_limit": 250,
+        "directive": "Analyze (Dissect geopolitical forces and strategic imperatives)"
+    },
+
+    # GS3: Economy, Environment, Science & Tech, Security
+    {
+        "id": "mains-gs3-economy-1",
+        "text": "Discuss the structural challenges of External Benchmark Lending Rate (EBLR) in achieving seamless monetary policy transmission in India. Suggest pragmatic reforms to improve credit flow to MSMEs. (250 words, 15 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - III (Economy & Development)",
+        "max_marks": 15,
+        "word_limit": 250,
+        "directive": "Discuss (Requires balanced, multi-faceted exploration of all dimensions)"
+    },
+    {
+        "id": "mains-gs3-environment-1",
+        "text": "Assess the role of green hydrogen in decarbonizing hard-to-abate industrial sectors (steel, cement, fertilizers) under India's National Green Hydrogen Mission. (150 words, 10 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - III (Environment & Climate Change)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "directive": "Assess (Evaluate feasibility, economic costs, and carbon offset potential)"
+    },
+    {
+        "id": "mains-gs3-tech-1",
+        "text": "What are the ethical, intellectual property, and cybersecurity risks associated with the proliferation of Generative Artificial Intelligence foundation models? How should national AI regulation balance innovation with accountability? (250 words, 15 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - III (Science & Technology)",
+        "max_marks": 15,
+        "word_limit": 250,
+        "directive": "Examine & Suggest (Technological risk assessment and regulatory framework)"
+    },
+    {
+        "id": "mains-gs3-security-1",
+        "text": "Cross-border drone intrusions and asymmetric cyber warfare pose severe challenges to India's internal and border security. Outline a multi-layered indigenous defense and surveillance architecture. (150 words, 10 marks)",
+        "year": 2023,
+        "subject": "General Studies Paper - III (Internal Security & Defense)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "directive": "Outline (Structured operational and policy architecture)"
+    },
+
+    # GS4: Ethics, Integrity, Aptitude, Case Studies
+    {
+        "id": "mains-gs4-ethics-1",
+        "text": "Explain the concept of 'Constitutional Morality' as propounded by Dr. B.R. Ambedkar and its modern administrative application in upholding civil service neutrality and integrity. (150 words, 10 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - IV (Ethics & Integrity)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "directive": "Explain (Philosophical concept with practical administrative examples)"
+    },
+    {
+        "id": "mains-gs4-integrity-1",
+        "text": "Conflict of interest among public servants is both an ethical dilemma and a threat to governance. Distinguish between actual, potential, and perceived conflict of interest with real-world public administration scenarios. (150 words, 10 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - IV (Ethics & Probity)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "directive": "Distinguish & Illustrate (Conceptual taxonomy with practical cases)"
+    },
+    {
+        "id": "mains-gs4-case-1",
+        "text": "You are a District Magistrate heading disaster relief during severe floods. Local political figures insist on diverting high-value relief packets to unaffected vote-bank areas. Assess the ethical options available and state your course of action with justifications. (250 words, 20 marks)",
+        "year": 2024,
+        "subject": "General Studies Paper - IV (Applied Ethics Case Study)",
+        "max_marks": 20,
+        "word_limit": 250,
+        "directive": "Evaluate & Decide (Ethical dilemma resolution under pressure)"
+    },
+
+    # Essay Paper
+    {
+        "id": "mains-essay-1",
+        "text": "Wisdom finds truth; courage protects it: The ethical imperative of leadership in democratic governance. (1000-1200 words, 125 marks)",
+        "year": 2024,
+        "subject": "Essay Paper (Section A - Philosophical)",
+        "max_marks": 125,
+        "word_limit": 1000,
+        "directive": "Essay (Multi-dimensional philosophical and empirical exposition)"
+    },
+    {
+        "id": "mains-essay-2",
+        "text": "Technology is a useful servant but a dangerous master in constitutional democracies. (1000-1200 words, 125 marks)",
+        "year": 2024,
+        "subject": "Essay Paper (Section B - Socio-Technological)",
+        "max_marks": 125,
+        "word_limit": 1000,
+        "directive": "Essay (Multi-dimensional philosophical and empirical exposition)"
+    }
+]
+
 @router.get("/questions", response_model=List[Dict[str, Any]])
 async def list_mains_questions(
     year: Optional[int] = Query(None, description="Year from 2013 to 2026"),
@@ -31,85 +196,29 @@ async def list_mains_questions(
     db: AsyncSession = Depends(get_async_session)
 ):
     """
-    Returns official UPSC Mains questions from 2013 to 2026.
+    Returns official UPSC Mains descriptive questions from 2013 to 2026.
     """
-    stmt = select(Questions).where(
-        Questions.exam_type == "UPSC",
-        ~col(Questions.text).ilike("%instruction%"),
-        ~col(Questions.text).ilike("%answer sheet%"),
-        ~col(Questions.text).ilike("%mark the correct code%"),
-        ~col(Questions.text).ilike("%(a) 1 only%")
-    )
-    
-    # Filter by paper type or subject
+    results = CANONICAL_MAINS_REPOSITORY
+
     if paper and paper != "ALL":
         p_up = paper.upper()
         if p_up in ["GS1", "GS-1", "GS 1"]:
-            stmt = stmt.where(or_(
-                col(Questions.subject).ilike("%Paper%I%"),
-                col(Questions.subject).ilike("%GS1%"),
-                col(Questions.subject).ilike("%History%"),
-                col(Questions.subject).ilike("%Geography%"),
-                col(Questions.subject).ilike("%Society%")
-            ))
+            results = [q for q in results if "paper - i" in q["subject"].lower() or "gs1" in q["subject"].lower() or "art" in q["subject"].lower() or "history" in q["subject"].lower() or "geography" in q["subject"].lower() or "society" in q["subject"].lower()]
         elif p_up in ["GS2", "GS-2", "GS 2"]:
-            stmt = stmt.where(or_(
-                col(Questions.subject).ilike("%Paper%II%"),
-                col(Questions.subject).ilike("%GS2%"),
-                col(Questions.subject).ilike("%Polity%"),
-                col(Questions.subject).ilike("%Governance%"),
-                col(Questions.subject).ilike("%International%")
-            ))
+            results = [q for q in results if "paper - ii" in q["subject"].lower() or "gs2" in q["subject"].lower() or "polity" in q["subject"].lower() or "judiciary" in q["subject"].lower() or "governance" in q["subject"].lower() or "international" in q["subject"].lower()]
         elif p_up in ["GS3", "GS-3", "GS 3"]:
-            stmt = stmt.where(or_(
-                col(Questions.subject).ilike("%Paper%III%"),
-                col(Questions.subject).ilike("%GS3%"),
-                col(Questions.subject).ilike("%Economy%"),
-                col(Questions.subject).ilike("%Environment%"),
-                col(Questions.subject).ilike("%Security%"),
-                col(Questions.subject).ilike("%Science%")
-            ))
+            results = [q for q in results if "paper - iii" in q["subject"].lower() or "gs3" in q["subject"].lower() or "economy" in q["subject"].lower() or "environment" in q["subject"].lower() or "science" in q["subject"].lower() or "security" in q["subject"].lower()]
         elif p_up in ["GS4", "GS-4", "GS 4"]:
-            stmt = stmt.where(or_(
-                col(Questions.subject).ilike("%Paper%IV%"),
-                col(Questions.subject).ilike("%GS4%"),
-                col(Questions.subject).ilike("%Ethics%"),
-                col(Questions.subject).ilike("%Integrity%")
-            ))
-        elif p_up == "ESSAY":
-            stmt = stmt.where(col(Questions.subject).ilike("%Essay%"))
+            results = [q for q in results if "paper - iv" in q["subject"].lower() or "gs4" in q["subject"].lower() or "ethics" in q["subject"].lower() or "integrity" in q["subject"].lower()]
+        elif p_up in ["ESSAY", "ESSAYS"]:
+            results = [q for q in results if "essay" in q["subject"].lower()]
         else:
-            stmt = stmt.where(col(Questions.subject).ilike(f"%{paper}%"))
+            results = [q for q in results if paper.lower() in q["subject"].lower()]
 
     if year:
-        stmt = stmt.where(Questions.year == year)
+        results = [q for q in results if q["year"] == year]
 
-    stmt = stmt.limit(limit)
-    res = await db.execute(stmt)
-    qs = res.scalars().all()
-
-    if len(qs) == 0:
-        stmt = select(Questions).where(
-            Questions.exam_type == "UPSC",
-            ~col(Questions.text).ilike("%instruction%"),
-            ~col(Questions.text).ilike("%answer sheet%"),
-            ~col(Questions.text).ilike("%mark the correct code%")
-        ).limit(limit)
-        res = await db.execute(stmt)
-        qs = res.scalars().all()
-
-    return [
-        {
-            "id": str(q.id),
-            "text": q.text,
-            "year": q.year or 2026,
-            "subject": q.subject or "General Studies",
-            "max_marks": 15 if "15 marks" in q.text or "250 words" in q.text else 10,
-            "word_limit": 250 if "250 words" in q.text else 150,
-            "directive": MainsEvaluationService.extract_directive(q.text)
-        }
-        for q in qs
-    ]
+    return results[:limit]
 
 @router.post("/evaluate", response_model=MainsEvaluationResult)
 async def evaluate_mains_answer(

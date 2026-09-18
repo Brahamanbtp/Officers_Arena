@@ -84,8 +84,47 @@ interface MainsEvaluation {
 }
 
 const SAMPLE_MAINS_QUESTIONS: MainsQuestion[] = [
+  // GS1
   {
-    id: "mains-polity-1",
+    id: "mains-gs1-art-1",
+    text: "Explain the salient features of Gandhara and Mathura schools of art and analyze their distinctive contributions to Buddhist iconography. (150 words, 10 marks)",
+    year: 2024,
+    subject: "General Studies Paper - I (Art & Culture)",
+    max_marks: 10,
+    word_limit: 150,
+    directive: "Explain & Analyze (Clarify features with comparative synthesis)"
+  },
+  {
+    id: "mains-gs1-history-1",
+    text: "The Swadeshi Movement of 1905 marked a radical paradigm shift from moderate constitutional agitation to mass direct action. Elucidate with reference to Boycott, Swadeshi enterprise, and National Education. (150 words, 10 marks)",
+    year: 2024,
+    subject: "General Studies Paper - I (Modern Indian History)",
+    max_marks: 10,
+    word_limit: 150,
+    directive: "Elucidate (Requires clarifying core concepts with historical milestones)"
+  },
+  {
+    id: "mains-gs1-geography-1",
+    text: "Account for the rising frequency of urban flooding in Indian mega-cities with special reference to drainage failure, wetland encroachment, and rapid land-use transformation. Suggest comprehensive mitigation measures. (250 words, 15 marks)",
+    year: 2024,
+    subject: "General Studies Paper - I (Physical & Human Geography)",
+    max_marks: 15,
+    word_limit: 250,
+    directive: "Account for & Suggest (Root cause analysis with actionable roadmap)"
+  },
+  {
+    id: "mains-gs1-society-1",
+    text: "Discuss the impact of the gig economy and digital platform work on traditional family structures, gender participation, and social security in contemporary India. (150 words, 10 marks)",
+    year: 2023,
+    subject: "General Studies Paper - I (Indian Society)",
+    max_marks: 10,
+    word_limit: 150,
+    directive: "Discuss (Balanced multi-dimensional exploration)"
+  },
+
+  // GS2
+  {
+    id: "mains-gs2-polity-1",
     text: "Critically analyze the role of the Governor in the Indian Constitutional framework, particularly regarding the exercise of discretionary powers under Article 163 and Article 200. Does it undermine the federal balance? (150 words, 10 marks)",
     year: 2024,
     subject: "General Studies Paper - II (Polity & Governance)",
@@ -94,31 +133,100 @@ const SAMPLE_MAINS_QUESTIONS: MainsQuestion[] = [
     directive: "Critically Analyze (Requires pros, cons, evidence & objective synthesis)"
   },
   {
-    id: "mains-economy-1",
-    text: "Discuss the structural challenges of External Benchmark Lending Rate (EBLR) in achieving seamless monetary policy transmission in India. Suggest pragmatic reforms. (250 words, 15 marks)",
-    year: 2025,
+    id: "mains-gs2-judiciary-1",
+    text: "The doctrine of Basic Structure has evolved as a fundamental constitutional safeguard against majoritarian overreach. Examine its development from Shankari Prasad to Minerva Mills and its relevance to judicial review today. (250 words, 15 marks)",
+    year: 2024,
+    subject: "General Studies Paper - II (Constitution & Judiciary)",
+    max_marks: 15,
+    word_limit: 250,
+    directive: "Examine (Detailed judicial analysis and constitutional implications)"
+  },
+  {
+    id: "mains-gs2-governance-1",
+    text: "Evaluate the efficacy of digital governance platforms (such as Direct Benefit Transfer and Jan Dhan-Aadhaar-Mobile trinity) in plugging leakages and enhancing transparency in welfare administration. (150 words, 10 marks)",
+    year: 2023,
+    subject: "General Studies Paper - II (Governance & Public Policy)",
+    max_marks: 10,
+    word_limit: 150,
+    directive: "Evaluate (Assess outcomes against targeted policy goals)"
+  },
+
+  // GS3
+  {
+    id: "mains-gs3-economy-1",
+    text: "Discuss the structural challenges of External Benchmark Lending Rate (EBLR) in achieving seamless monetary policy transmission in India. Suggest pragmatic reforms to improve credit flow to MSMEs. (250 words, 15 marks)",
+    year: 2024,
     subject: "General Studies Paper - III (Economy & Development)",
     max_marks: 15,
     word_limit: 250,
     directive: "Discuss (Requires balanced, multi-faceted exploration of all dimensions)"
   },
   {
-    id: "mains-history-1",
-    text: "The Swadeshi Movement of 1905 marked a radical paradigm shift from moderate constitutional agitation to mass direct action. Elucidate with reference to Boycott and National Education. (150 words, 10 marks)",
-    year: 2023,
-    subject: "General Studies Paper - I (Modern Indian History)",
+    id: "mains-gs3-environment-1",
+    text: "Assess the role of green hydrogen in decarbonizing hard-to-abate industrial sectors (steel, cement, fertilizers) under India's National Green Hydrogen Mission. (150 words, 10 marks)",
+    year: 2024,
+    subject: "General Studies Paper - III (Environment & Climate Change)",
     max_marks: 10,
     word_limit: 150,
-    directive: "Elucidate (Requires clarifying core concepts with illustrative examples)"
+    directive: "Assess (Evaluate feasibility, economic costs, and carbon offset potential)"
   },
   {
-    id: "mains-ethics-1",
-    text: "Explain the concept of 'Constitutional Morality' as propounded by Dr. B.R. Ambedkar and its modern judicial application in upholding administrative integrity. (150 words, 10 marks)",
+    id: "mains-gs3-tech-1",
+    text: "What are the ethical, intellectual property, and cybersecurity risks associated with the proliferation of Generative Artificial Intelligence foundation models? How should national AI regulation balance innovation with accountability? (250 words, 15 marks)",
+    year: 2024,
+    subject: "General Studies Paper - III (Science & Technology)",
+    max_marks: 15,
+    word_limit: 250,
+    directive: "Examine & Suggest (Technological risk assessment and regulatory framework)"
+  },
+
+  // GS4
+  {
+    id: "mains-gs4-ethics-1",
+    text: "Explain the concept of 'Constitutional Morality' as propounded by Dr. B.R. Ambedkar and its modern administrative application in upholding civil service neutrality and integrity. (150 words, 10 marks)",
     year: 2024,
     subject: "General Studies Paper - IV (Ethics & Integrity)",
     max_marks: 10,
     word_limit: 150,
-    directive: "Examine (Requires detailed factual probe and underlying root causes)"
+    directive: "Explain (Philosophical concept with practical administrative examples)"
+  },
+  {
+    id: "mains-gs4-integrity-1",
+    text: "Conflict of interest among public servants is both an ethical dilemma and a threat to governance. Distinguish between actual, potential, and perceived conflict of interest with real-world public administration scenarios. (150 words, 10 marks)",
+    year: 2024,
+    subject: "General Studies Paper - IV (Ethics & Probity)",
+    max_marks: 10,
+    word_limit: 150,
+    directive: "Distinguish & Illustrate (Conceptual taxonomy with practical cases)"
+  },
+  {
+    id: "mains-gs4-case-1",
+    "text": "You are a District Magistrate heading disaster relief during severe floods. Local political figures insist on diverting high-value relief packets to unaffected vote-bank areas. Assess the ethical options available and state your course of action with justifications. (250 words, 20 marks)",
+    year: 2024,
+    subject: "General Studies Paper - IV (Applied Ethics Case Study)",
+    max_marks: 20,
+    word_limit: 250,
+    directive: "Evaluate & Decide (Ethical dilemma resolution under pressure)"
+  },
+
+  // Essay
+  {
+    id: "mains-essay-1",
+    text: "Wisdom finds truth; courage protects it: The ethical imperative of leadership in democratic governance. (1000-1200 words, 125 marks)",
+    year: 2024,
+    subject: "Essay Paper (Section A - Philosophical)",
+    max_marks: 125,
+    word_limit: 1000,
+    directive: "Essay (Multi-dimensional philosophical and empirical exposition)"
+  },
+  {
+    id: "mains-essay-2",
+    text: "Technology is a useful servant but a dangerous master in constitutional democracies. (1000-1200 words, 125 marks)",
+    year: 2024,
+    subject: "Essay Paper (Section B - Socio-Technological)",
+    max_marks: 125,
+    word_limit: 1000,
+    directive: "Essay (Multi-dimensional philosophical and empirical exposition)"
   }
 ];
 
@@ -152,20 +260,29 @@ export default function MainsEvaluationPage() {
     const fetchQuestions = async () => {
       const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
       try {
-        const res = await fetch(`${apiEndpoint}/api/v1/mains/questions?limit=50`);
+        const queryPaper = selectedPaper !== "ALL" ? `&paper=${selectedPaper}` : "";
+        const res = await fetch(`${apiEndpoint}/api/v1/mains/questions?limit=50${queryPaper}`);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
             setQuestions(data);
             setSelectedQuestion(data[0]);
+            return;
           }
         }
       } catch {
-        // Fallback to sample questions
+        // Fallback to local sample questions
+      }
+      const filteredFallback = selectedPaper === "ALL" 
+        ? SAMPLE_MAINS_QUESTIONS 
+        : SAMPLE_MAINS_QUESTIONS.filter(q => matchesPaper(q.subject, selectedPaper));
+      setQuestions(filteredFallback.length > 0 ? filteredFallback : SAMPLE_MAINS_QUESTIONS);
+      if (filteredFallback.length > 0) {
+        setSelectedQuestion(filteredFallback[0]);
       }
     };
     fetchQuestions();
-  }, []);
+  }, [selectedPaper]);
 
   // Timer interval
   useEffect(() => {

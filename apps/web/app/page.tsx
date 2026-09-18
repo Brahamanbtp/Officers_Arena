@@ -84,34 +84,14 @@ export default function HomePage() {
                 </span>
               </div>
               <h2 className="text-sm sm:text-base font-black text-white">
-                Daily Officer Command Hub • {mode === "UPSC" ? "UPSC Civil Services CSE 2026" : "Combined Defence Services (CDS II)"}
+                Daily Officer Command Hub • {mode === "UPSC" ? "UPSC Civil Services (CSE)" : "Combined Defence Services (CDS)"}
               </h2>
             </div>
           </div>
 
           <div className="flex items-center gap-3 font-mono text-xs">
-            <div className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-300">
-              Target: <strong className="text-amber-400">{mode === "UPSC" ? "Prelims May 2026" : "CDS Sept 2026"}</strong>
-            </div>
-            <div className="flex items-center p-1 bg-neutral-950 border border-neutral-800 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setMode("UPSC")}
-                className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                  mode === "UPSC" ? "bg-amber-500 text-neutral-950 shadow" : "text-neutral-400 hover:text-white"
-                }`}
-              >
-                UPSC
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("CDS")}
-                className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                  mode === "CDS" ? "bg-amber-500 text-neutral-950 shadow" : "text-neutral-400 hover:text-white"
-                }`}
-              >
-                CDS
-              </button>
+            <div className="px-3.5 py-1.5 bg-neutral-900/80 border border-neutral-800 rounded-xl text-neutral-300">
+              Next Goal: <strong className="text-amber-400">{mode === "UPSC" ? "UPSC CSE Prelims (Next Cycle)" : "CDS Examination (Next Cycle)"}</strong>
             </div>
           </div>
         </div>

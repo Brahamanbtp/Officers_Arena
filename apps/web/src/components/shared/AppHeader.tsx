@@ -67,8 +67,8 @@ export const AppHeader: React.FC = () => {
 
   const navItems = [
     { label: "Daily Mission", href: "/", icon: Activity, active: pathname === "/", badge: "Today" },
-    { label: "Prelims Arena", href: "/arena", icon: Activity, active: pathname === "/arena" },
-    { label: "Mains AES", href: "/mains", icon: PenTool, active: pathname === "/mains", badge: "OCR" },
+    { label: mode === "UPSC" ? "Prelims Arena" : "CDS Arena", href: "/arena", icon: Activity, active: pathname === "/arena" },
+    ...(mode === "UPSC" ? [{ label: "Mains AES", href: "/mains", icon: PenTool, active: pathname === "/mains", badge: "OCR" }] : []),
     { label: "Strategist", href: "/strategist", icon: Sparkles, active: pathname === "/strategist" },
     { label: "PYQ Vault", href: "/library", icon: BookOpen, active: pathname === "/library" },
   ];
