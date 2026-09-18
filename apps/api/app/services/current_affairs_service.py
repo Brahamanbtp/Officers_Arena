@@ -4,12 +4,18 @@ import uuid
 import time
 import asyncio
 import xml.etree.ElementTree as ET
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, TypedDict
 import httpx
 from datetime import datetime, timezone
 
+class RSSFeedConfig(TypedDict):
+    source: str
+    url: str
+    fallback_category: str
+    credibility: float
+
 # High-credibility global and national feeds
-RSS_FEEDS = [
+RSS_FEEDS: List[RSSFeedConfig] = [
     {
         "source": "PIB (Press Information Bureau, GoI)",
         "url": "https://pib.gov.in/RSSFeed.aspx",
@@ -335,82 +341,92 @@ class CurrentAffairsService:
     @classmethod
     async def sync_live_feeds(cls) -> Dict[str, Any]:
         """
-        Polls configured RSS wire feeds asynchronously, parses items,
+        Polls configured RSS wire feeds asynchronously in parallel, parses items,
         deduplicates against the existing database/cache, and constructs structured intelligence.
         """
         fresh_items: List[Dict[str, Any]] = list(CANONICAL_CURRENT_AFFAIRS)
         fetched_count = 0
 
-        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-            for feed in RSS_FEEDS:
-                try:
-                    res = await client.get(feed["url"])
-                    if res.status_code == 200 and res.content:
-                        root = ET.fromstring(res.content)
-                        # Extract items from channel
-                        channel = root.find("channel")
-                        if channel is not None:
-                            xml_items = channel.findall("item")[:3]
-                            for x_item in xml_items:
-                                title = x_item.findtext("title", "").strip()
-                                desc = x_item.findtext("description", "").strip()
-                                pub_date = x_item.findtext("pubDate", datetime.now(timezone.utc).isoformat())
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
 
-                                # Clean HTML from description
-                                clean_desc = re.sub(r"<[^>]+>", "", desc).strip()
-                                if not clean_desc:
-                                    clean_desc = title
+        async def fetch_feed(client: httpx.AsyncClient, feed: RSSFeedConfig) -> List[Dict[str, Any]]:
+            items: List[Dict[str, Any]] = []
+            try:
+                res = await client.get(feed["url"], headers=headers)
+                if res.status_code == 200 and res.content:
+                    root = ET.fromstring(res.content)
+                    channel = root.find("channel")
+                    if channel is not None:
+                        xml_items = channel.findall("item")[:3]
+                        for x_item in xml_items:
+                            title = x_item.findtext("title", "").strip()
+                            desc = x_item.findtext("description", "").strip()
+                            pub_date = x_item.findtext("pubDate", datetime.now(timezone.utc).isoformat())
 
-                                if len(title) > 15:
-                                    item_id = f"live-{uuid.uuid4().hex[:8]}"
-                                    is_cds = any(k in title.lower() or k in clean_desc.lower() for k in ["defense", "defence", "army", "navy", "air force", "missile", "drdo", "military", "warship", "exercise"])
-                                    
-                                    inferred_gs = feed["fallback_category"]
-                                    if is_cds:
-                                        inferred_gs = "CDS General Knowledge & Defense"
+                            clean_desc = re.sub(r"<[^>]+>", "", desc).strip()
+                            if not clean_desc:
+                                clean_desc = title
 
-                                    fresh_items.insert(0, {
-                                        "id": item_id,
-                                        "headline": title,
-                                        "source": feed["source"],
-                                        "published_at": pub_date,
-                                        "summary": clean_desc[:280] + ("..." if len(clean_desc) > 280 else ""),
-                                        "key_takeaways": [
-                                            f"Verified from official dispatch: {feed['source']}.",
-                                            "Contextualized for UPSC CSE & CDS syllabus requirements.",
-                                            "Analyze related statutory, constitutional, and economic frameworks."
-                                        ],
-                                        "syllabus_topic": "National & International Contemporary Developments",
-                                        "static_concept": "General Studies Core Foundations & Policy Analysis",
-                                        "textbook_reference": "Standard Reference (NCERT & Key Subject Manuals)",
-                                        "relevance_score": round(feed["credibility"] - 2.0, 1),
-                                        "gs_paper": inferred_gs,
-                                        "exam_track": "CDS" if is_cds else "UPSC",
-                                        "prelims_mcq": {
-                                            "question": f"In the context of recent developments regarding '{title[:80]}...', which of the following statements is/are correct?",
-                                            "options": {
-                                                "A": "It relates to a central government statutory policy mandate.",
-                                                "B": "It is an international multilateral convention signed under the United Nations.",
-                                                "C": "Both A and B are possible depending on constitutional domain.",
-                                                "D": "Neither A nor B"
-                                            },
-                                            "correct_answer": "A",
-                                            "explanation": f"Based on the official news report from {feed['source']}: {clean_desc[:200]}."
+                            if len(title) > 15:
+                                item_id = f"live-{uuid.uuid4().hex[:8]}"
+                                is_cds = any(k in title.lower() or k in clean_desc.lower() for k in ["defense", "defence", "army", "navy", "air force", "missile", "drdo", "military", "warship", "exercise"])
+                                
+                                inferred_gs = feed["fallback_category"]
+                                if is_cds:
+                                    inferred_gs = "CDS General Knowledge & Defense"
+
+                                items.append({
+                                    "id": item_id,
+                                    "headline": title,
+                                    "source": feed["source"],
+                                    "published_at": pub_date,
+                                    "summary": clean_desc[:280] + ("..." if len(clean_desc) > 280 else ""),
+                                    "key_takeaways": [
+                                        f"Verified from official dispatch: {feed['source']}.",
+                                        "Contextualized for UPSC CSE & CDS syllabus requirements.",
+                                        "Analyze related statutory, constitutional, and economic frameworks."
+                                    ],
+                                    "syllabus_topic": "National & International Contemporary Developments",
+                                    "static_concept": "General Studies Core Foundations & Policy Analysis",
+                                    "textbook_reference": "Standard Reference (NCERT & Key Subject Manuals)",
+                                    "relevance_score": round(feed["credibility"] - 2.0, 1),
+                                    "gs_paper": inferred_gs,
+                                    "exam_track": "CDS" if is_cds else "UPSC",
+                                    "prelims_mcq": {
+                                        "question": f"In the context of recent developments regarding '{title[:80]}...', which of the following statements is/are correct?",
+                                        "options": {
+                                            "A": "It relates to a central government statutory policy mandate.",
+                                            "B": "It is an international multilateral convention signed under the United Nations.",
+                                            "C": "Both A and B are possible depending on constitutional domain.",
+                                            "D": "Neither A nor B"
                                         },
-                                        "mains_question": {
-                                            "text": f"Examine the key socio-economic and strategic implications of recent policy developments regarding '{title[:70]}'. (150 words, 10 marks)",
-                                            "directive": "Examine (Detailed structural and policy analysis)",
-                                            "key_arguments": [
-                                                "Direct impact on governance and institutional efficiency.",
-                                                "Constitutional and statutory safeguards.",
-                                                "Way forward for balanced implementation."
-                                            ]
-                                        }
-                                    })
-                                    fetched_count += 1
-                except Exception as e:
-                    # Gracefully continue to next feed on timeout/DNS errors
-                    continue
+                                        "correct_answer": "A",
+                                        "explanation": f"Based on the official news report from {feed['source']}: {clean_desc[:200]}."
+                                    },
+                                    "mains_question": {
+                                        "text": f"Examine the key socio-economic and strategic implications of recent policy developments regarding '{title[:70]}'. (150 words, 10 marks)",
+                                        "directive": "Examine (Detailed structural and policy analysis)",
+                                        "key_arguments": [
+                                            "Direct impact on governance and institutional efficiency.",
+                                            "Constitutional and statutory safeguards.",
+                                            "Way forward for balanced implementation."
+                                        ]
+                                    }
+                                })
+            except Exception:
+                pass
+            return items
+
+        async with httpx.AsyncClient(timeout=4.0, follow_redirects=True) as client:
+            tasks = [fetch_feed(client, feed) for feed in RSS_FEEDS]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for res_list in results:
+                if isinstance(res_list, list):
+                    for item in res_list:
+                        fresh_items.insert(0, item)
+                        fetched_count += 1
 
         cls._cached_items = fresh_items
         cls._last_sync_time = time.time()
