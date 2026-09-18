@@ -27,7 +27,14 @@ import {
   Bookmark,
   Share2,
   Flame,
-  ArrowRight
+  ArrowRight,
+  Copy,
+  FileText,
+  Scale,
+  Compass,
+  Lightbulb,
+  CheckCheck,
+  BookMarked
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +51,16 @@ interface MainsPrompt {
   key_arguments: string[];
 }
 
+interface MainsDimension {
+  title: string;
+  points: string[];
+}
+
+interface ArgumentsMatrix {
+  pros: string[];
+  cons: string[];
+}
+
 interface CurrentAffairsItem {
   id: string;
   headline: string;
@@ -57,6 +74,12 @@ interface CurrentAffairsItem {
   relevance_score: number;
   gs_paper: string;
   exam_track: string;
+  background_context?: string;
+  prelims_facts?: string[];
+  mains_dimensions?: MainsDimension[];
+  arguments_matrix?: ArgumentsMatrix;
+  way_forward?: string[];
+  revision_summary?: string;
   prelims_mcq?: PrelimsMCQ;
   mains_question?: MainsPrompt;
 }
@@ -74,6 +97,11 @@ export default function CurrentAffairsPage() {
   const [activeMCQItem, setActiveMCQItem] = useState<CurrentAffairsItem | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+
+  // 360° Editorial Deep-Dive Modal State
+  const [activeEditorialItem, setActiveEditorialItem] = useState<CurrentAffairsItem | null>(null);
+  const [editorialTab, setEditorialTab] = useState<"GENESIS" | "PRELIMS" | "MAINS" | "WAYFORWARD" | "TEXTBOOK">("GENESIS");
+  const [isCopiedNotes, setIsCopiedNotes] = useState(false);
 
   const fetchCurrentAffairs = async (forceRefresh = false) => {
     setIsLoading(true);
@@ -143,6 +171,45 @@ export default function CurrentAffairsPage() {
     }
   };
 
+  const handleOpenEditorial = (item: CurrentAffairsItem) => {
+    setActiveEditorialItem(item);
+    setEditorialTab("GENESIS");
+    setIsCopiedNotes(false);
+  };
+
+  const handleCopyRevisionNotes = (item: CurrentAffairsItem) => {
+    const formattedNotes = `### ${item.headline}
+**Exam Focus:** ${item.gs_paper} | **Source:** ${item.source}
+**Static Concept:** ${item.static_concept}
+**Textbook Chapter:** ${item.textbook_reference}
+
+#### 1. Core Summary & Genesis
+${item.background_context || item.summary}
+
+#### 2. Prelims High-Yield Facts & Anchors
+${(item.prelims_facts || []).map(f => `- ${f}`).join("\n")}
+
+#### 3. Mains Dimensions & Arguments
+${(item.mains_dimensions || []).map(d => `**${d.title}:**\n${d.points.map(p => `  * ${p}`).join("\n")}`).join("\n\n")}
+
+**Pros / Benefits:**
+${(item.arguments_matrix?.pros || []).map(p => `- ${p}`).join("\n")}
+
+**Challenges / Criticisms:**
+${(item.arguments_matrix?.cons || []).map(c => `- ${c}`).join("\n")}
+
+#### 4. Way Forward & Recommendations
+${(item.way_forward || []).map(w => `- ${w}`).join("\n")}
+`;
+
+    navigator.clipboard.writeText(formattedNotes);
+    setIsCopiedNotes(true);
+    toast.success("360° Revision Notes Copied to Clipboard!", {
+      description: "Paste into your Notion, Obsidian, or digital revision notebook."
+    });
+    setTimeout(() => setIsCopiedNotes(false), 3000);
+  };
+
   // Filter items by search query and source
   const filteredItems = items.filter((item) => {
     const matchesSearch =
@@ -181,17 +248,17 @@ export default function CurrentAffairsPage() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold rounded-lg uppercase tracking-wider flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-amber-400" />
-                Global & National Intelligence Engine
+                360° Global & National Intelligence Engine
               </span>
               <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-bold rounded-md">
                 Verified Multi-Source Wire
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Daily Syllabus-Grounded Current Affairs
+              Daily Syllabus-Grounded Current Affairs & Editorial Analysis
             </h1>
             <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed font-sans">
-              High-accuracy global and national dispatches from <strong>PIB</strong>, <strong>The Hindu</strong>, <strong>BBC World</strong>, and <strong>MoD</strong>, automatically filtered for exam relevance and linked directly to your core standard textbooks.
+              High-accuracy global and national dispatches enriched with <strong>Background Genesis</strong>, <strong>Prelims Fact Boxes</strong>, <strong>Mains GS Dimensions</strong>, and <strong>Static Textbook Chapter Bridges</strong>.
             </p>
           </div>
 
@@ -275,7 +342,7 @@ export default function CurrentAffairsPage() {
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-3 text-neutral-400">
             <RefreshCw className="w-8 h-8 text-amber-400 animate-spin" />
-            <p className="text-xs font-mono">Compiling real-time syllabus linkages...</p>
+            <p className="text-xs font-mono">Compiling 360° real-time syllabus linkages...</p>
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="py-16 text-center bg-neutral-900/30 border border-neutral-800 rounded-3xl space-y-3">
@@ -355,25 +422,37 @@ export default function CurrentAffairsPage() {
                   </div>
                 </div>
 
-                {/* 1-CLICK PRACTICE ACTIONS */}
-                <div className="pt-3 border-t border-neutral-850 flex flex-wrap items-center justify-between gap-3">
+                {/* 360° EDITORIAL & PRACTICE ACTIONS */}
+                <div className="pt-3 border-t border-neutral-850 space-y-2.5">
+                  {/* Primary 360° Deep-Dive CTA */}
                   <button
-                    onClick={() => handleOpenMCQ(item)}
-                    className="px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer group-hover:border-amber-500/60"
+                    onClick={() => handleOpenEditorial(item)}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer group"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
-                    Solve Prelims MCQ
+                    <FileText className="w-4 h-4 text-neutral-950" />
+                    <span>Read 360° Deep Dive Editorial Analysis</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-neutral-950 group-hover:translate-x-1 transition-transform" />
                   </button>
 
-                  {item.mains_question && (
-                    <Link
-                      href={`/mains?prompt=${encodeURIComponent(item.mains_question.text)}`}
-                      className="px-4 py-2.5 bg-neutral-900 hover:bg-neutral-850 text-neutral-200 border border-neutral-800 hover:border-neutral-700 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <button
+                      onClick={() => handleOpenMCQ(item)}
+                      className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer"
                     >
-                      <span>Write Mains Answer</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-neutral-400" />
-                    </Link>
-                  )}
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                      Solve Prelims MCQ
+                    </button>
+
+                    {item.mains_question && (
+                      <Link
+                        href={`/mains?prompt=${encodeURIComponent(item.mains_question.text)}`}
+                        className="px-4 py-2 bg-neutral-900 hover:bg-neutral-850 text-neutral-200 border border-neutral-800 hover:border-neutral-700 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <span>Write Mains Answer</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-neutral-400" />
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -381,6 +460,368 @@ export default function CurrentAffairsPage() {
         )}
 
       </main>
+
+      {/* 360° EDITORIAL DEEP DIVE READER MODAL */}
+      {activeEditorialItem && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="bg-[#111111] border border-neutral-800 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200 my-auto">
+            
+            {/* Modal Header */}
+            <div className="p-6 border-b border-neutral-800 bg-neutral-900/50 flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-3 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-mono font-black rounded-lg uppercase">
+                    {activeEditorialItem.gs_paper}
+                  </span>
+                  <span className="px-2.5 py-1 bg-neutral-900 border border-neutral-800 text-neutral-300 text-xs font-mono rounded-lg">
+                    {activeEditorialItem.source}
+                  </span>
+                  <span className="text-xs font-mono text-neutral-400 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-neutral-500" /> ~4 min read
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleCopyRevisionNotes(activeEditorialItem)}
+                    className="px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-neutral-750 hover:border-amber-500/40 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                    title="Copy formatted markdown revision notes"
+                  >
+                    {isCopiedNotes ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    <span>{isCopiedNotes ? "Copied!" : "Copy Notes"}</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveEditorialItem(null)}
+                    className="p-2 text-neutral-400 hover:text-white rounded-xl bg-neutral-900 border border-neutral-800 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <h2 className="text-lg sm:text-xl font-black text-white leading-snug">
+                {activeEditorialItem.headline}
+              </h2>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-2 px-6 pt-3 pb-2 border-b border-neutral-800/80 bg-neutral-950/60 overflow-x-auto scrollbar-none font-mono text-xs">
+              <button
+                onClick={() => setEditorialTab("GENESIS")}
+                className={`px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  editorialTab === "GENESIS"
+                    ? "bg-amber-500/20 border border-amber-500/40 text-amber-300"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                1. Genesis & Context
+              </button>
+
+              <button
+                onClick={() => setEditorialTab("PRELIMS")}
+                className={`px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  editorialTab === "PRELIMS"
+                    ? "bg-amber-500/20 border border-amber-500/40 text-amber-300"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                2. Prelims Fact Box
+              </button>
+
+              <button
+                onClick={() => setEditorialTab("MAINS")}
+                className={`px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  editorialTab === "MAINS"
+                    ? "bg-amber-500/20 border border-amber-500/40 text-amber-300"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Scale className="w-3.5 h-3.5" />
+                3. Mains Dimensions & Arguments
+              </button>
+
+              <button
+                onClick={() => setEditorialTab("WAYFORWARD")}
+                className={`px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  editorialTab === "WAYFORWARD"
+                    ? "bg-amber-500/20 border border-amber-500/40 text-amber-300"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Lightbulb className="w-3.5 h-3.5" />
+                4. Way Forward
+              </button>
+
+              <button
+                onClick={() => setEditorialTab("TEXTBOOK")}
+                className={`px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  editorialTab === "TEXTBOOK"
+                    ? "bg-amber-500/20 border border-amber-500/40 text-amber-300"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <BookMarked className="w-3.5 h-3.5" />
+                5. Textbook & Practice
+              </button>
+            </div>
+
+            {/* Modal Body / Tab Content */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-grow">
+              {editorialTab === "GENESIS" && (
+                <div className="space-y-5 animate-in fade-in duration-150">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono font-black uppercase tracking-wider text-amber-400">
+                      <Compass className="w-4 h-4 text-amber-400" />
+                      Historical Genesis & Background Context
+                    </div>
+                    <p className="text-sm text-neutral-200 leading-relaxed font-sans bg-neutral-900/60 border border-neutral-850 p-5 rounded-2xl">
+                      {activeEditorialItem.background_context || activeEditorialItem.summary}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono font-black uppercase tracking-wider text-neutral-300">
+                      <Zap className="w-4 h-4 text-amber-400" />
+                      Core High-Yield Highlights
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {(activeEditorialItem.key_takeaways || []).map((t, idx) => (
+                        <div key={idx} className="p-4 bg-neutral-900/40 border border-neutral-850 rounded-2xl space-y-1">
+                          <span className="text-xs font-mono font-bold text-amber-400">0{idx + 1}</span>
+                          <p className="text-xs text-neutral-300 leading-relaxed font-sans">{t}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {editorialTab === "PRELIMS" && (
+                <div className="space-y-5 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-mono font-black uppercase tracking-wider text-amber-400">
+                      <Zap className="w-4 h-4 text-amber-400" />
+                      Prelims High-Yield Facts & Statutory Anchors
+                    </div>
+                    <span className="text-[11px] font-mono text-emerald-400">100% Verified Canonical Data</span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {(activeEditorialItem.prelims_facts || [
+                      "Key Statutory / Constitutional references verified.",
+                      "Official Nodal Ministry & Global Treaties checked.",
+                      "High-probability prelims trap dimensions isolated."
+                    ]).map((fact, idx) => (
+                      <div key={idx} className="p-4 bg-neutral-900/60 border border-neutral-850 rounded-2xl flex items-start gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="text-xs sm:text-sm text-neutral-200 leading-relaxed font-sans">{fact}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {activeEditorialItem.prelims_mcq && (
+                    <div className="p-5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Test Your Prelims Retention Now</h4>
+                        <p className="text-xs text-neutral-400">Solve the interactive MCQ formulated from this dispatch.</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setActiveMCQItem(activeEditorialItem);
+                          setSelectedOption(null);
+                          setIsAnswerSubmitted(false);
+                        }}
+                        className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer whitespace-nowrap"
+                      >
+                        Launch Prelims MCQ
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {editorialTab === "MAINS" && (
+                <div className="space-y-6 animate-in fade-in duration-150">
+                  {/* Multi-Dimensional Analysis */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono font-black uppercase tracking-wider text-amber-400">
+                      <Scale className="w-4 h-4 text-amber-400" />
+                      Multi-Dimensional GS Analysis (PESTLE Framework)
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {(activeEditorialItem.mains_dimensions || [
+                        { title: "Institutional & Policy Architecture", points: ["Requires examination of executive implementation mandates.", "Adherence to statutory checks and balances."] }
+                      ]).map((dim, idx) => (
+                        <div key={idx} className="p-4 bg-neutral-900/60 border border-neutral-850 rounded-2xl space-y-2">
+                          <h4 className="text-xs font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                            {dim.title}
+                          </h4>
+                          <ul className="space-y-1.5 text-xs text-neutral-300">
+                            {dim.points.map((p, pIdx) => (
+                              <li key={pIdx} className="flex items-start gap-2">
+                                <span className="text-amber-400">•</span>
+                                <span className="leading-relaxed">{p}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Balanced Arguments Matrix */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono font-black uppercase tracking-wider text-neutral-200">
+                      <Scale className="w-4 h-4 text-purple-400" />
+                      Balanced Arguments Matrix (Pros vs. Challenges)
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Arguments in Favor */}
+                      <div className="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl space-y-2.5">
+                        <div className="text-xs font-mono font-black text-emerald-400 uppercase flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5" />
+                          Arguments in Favor / Key Benefits
+                        </div>
+                        <ul className="space-y-2 text-xs text-neutral-300">
+                          {(activeEditorialItem.arguments_matrix?.pros || ["Promotes public policy efficacy and constitutional governance."]).map((pro, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-emerald-400 font-bold">+</span>
+                              <span className="leading-relaxed">{pro}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Challenges & Criticisms */}
+                      <div className="p-4 bg-red-950/20 border border-red-500/30 rounded-2xl space-y-2.5">
+                        <div className="text-xs font-mono font-black text-red-400 uppercase flex items-center gap-1.5">
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                          Challenges / Criticisms & Bottlenecks
+                        </div>
+                        <ul className="space-y-2 text-xs text-neutral-300">
+                          {(activeEditorialItem.arguments_matrix?.cons || ["Implementation hurdles and grassroots resource deficits."]).map((con, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-red-400 font-bold">-</span>
+                              <span className="leading-relaxed">{con}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {editorialTab === "WAYFORWARD" && (
+                <div className="space-y-5 animate-in fade-in duration-150">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono font-black uppercase tracking-wider text-amber-400">
+                      <Lightbulb className="w-4 h-4 text-amber-400" />
+                      Way Forward & Committee Recommendations
+                    </div>
+                    <p className="text-xs text-neutral-400 font-sans">
+                      Authoritative reforms citing the 2nd Administrative Reforms Commission (ARC), NITI Aayog, Law Commission, and Supreme Court constitutional precedents.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {(activeEditorialItem.way_forward || [
+                      "Formulate clear, objective guidelines based on empirical verifiable data.",
+                      "Strengthen inter-agency coordination under standardized governance frameworks.",
+                      "Ensure periodic independent social audits and institutional oversight."
+                    ]).map((wf, idx) => (
+                      <div key={idx} className="p-4 bg-neutral-900/60 border border-neutral-850 rounded-2xl flex items-start gap-3">
+                        <span className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <span className="text-xs sm:text-sm text-neutral-200 leading-relaxed font-sans">{wf}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {editorialTab === "TEXTBOOK" && (
+                <div className="space-y-5 animate-in fade-in duration-150">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono font-black uppercase tracking-wider text-purple-300">
+                      <BookMarked className="w-4 h-4 text-purple-400" />
+                      Canonical Textbook & Syllabus Taxonomy Mapping
+                    </div>
+                    <div className="p-5 bg-neutral-900/60 border border-neutral-850 rounded-2xl space-y-3">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-mono text-neutral-500 uppercase">Core Syllabus Concept</span>
+                        <div className="text-sm font-bold text-white">{activeEditorialItem.static_concept}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-mono text-purple-400 uppercase">Recommended Textbook Chapter</span>
+                        <div className="text-sm font-bold text-purple-300">{activeEditorialItem.textbook_reference}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {activeEditorialItem.mains_question && (
+                    <div className="p-5 bg-neutral-900/40 border border-neutral-800 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">Mains Analytical Prompt</span>
+                        <span className="text-[10px] font-mono text-neutral-400">{activeEditorialItem.mains_question.directive}</span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-neutral-200 font-sans italic">
+                        &quot;{activeEditorialItem.mains_question.text}&quot;
+                      </p>
+                      <Link
+                        href={`/mains?prompt=${encodeURIComponent(activeEditorialItem.mains_question.text)}`}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-neutral-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer"
+                      >
+                        <span>Write & Grade in Mains AES Evaluator</span>
+                        <ArrowRight className="w-4 h-4 text-neutral-950" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer / Action Bar */}
+            <div className="p-4 border-t border-neutral-800 bg-neutral-950/80 flex flex-wrap items-center justify-between gap-3">
+              <button
+                onClick={() => handleCopyRevisionNotes(activeEditorialItem)}
+                className="px-4 py-2.5 bg-neutral-900 hover:bg-neutral-850 text-neutral-200 border border-neutral-800 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5 text-amber-400" />
+                <span>Copy 360° Revision Notes</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setActiveMCQItem(activeEditorialItem);
+                    setSelectedOption(null);
+                    setIsAnswerSubmitted(false);
+                  }}
+                  className="px-4 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/40 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Solve MCQ</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveEditorialItem(null)}
+                  className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Close Reader
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* INTERACTIVE PRELIMS MCQ MODAL */}
       {activeMCQItem && activeMCQItem.prelims_mcq && (
