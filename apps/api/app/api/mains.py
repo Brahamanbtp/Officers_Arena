@@ -198,25 +198,29 @@ async def list_mains_questions(
     """
     Returns official UPSC Mains descriptive questions from 2013 to 2026.
     """
-    results = CANONICAL_MAINS_REPOSITORY
+    results: List[Dict[str, Any]] = list(CANONICAL_MAINS_REPOSITORY)
 
     if paper and paper != "ALL":
-        p_up = paper.upper()
-        if p_up in ["GS1", "GS-1", "GS 1"]:
-            results = [q for q in results if "paper - i" in q["subject"].lower() or "gs1" in q["subject"].lower() or "art" in q["subject"].lower() or "history" in q["subject"].lower() or "geography" in q["subject"].lower() or "society" in q["subject"].lower()]
-        elif p_up in ["GS2", "GS-2", "GS 2"]:
-            results = [q for q in results if "paper - ii" in q["subject"].lower() or "gs2" in q["subject"].lower() or "polity" in q["subject"].lower() or "judiciary" in q["subject"].lower() or "governance" in q["subject"].lower() or "international" in q["subject"].lower()]
-        elif p_up in ["GS3", "GS-3", "GS 3"]:
-            results = [q for q in results if "paper - iii" in q["subject"].lower() or "gs3" in q["subject"].lower() or "economy" in q["subject"].lower() or "environment" in q["subject"].lower() or "science" in q["subject"].lower() or "security" in q["subject"].lower()]
-        elif p_up in ["GS4", "GS-4", "GS 4"]:
-            results = [q for q in results if "paper - iv" in q["subject"].lower() or "gs4" in q["subject"].lower() or "ethics" in q["subject"].lower() or "integrity" in q["subject"].lower()]
-        elif p_up in ["ESSAY", "ESSAYS"]:
-            results = [q for q in results if "essay" in q["subject"].lower()]
-        else:
-            results = [q for q in results if paper.lower() in q["subject"].lower()]
+        p_up = str(paper).upper()
+        
+        def matches_filter(item: Dict[str, Any]) -> bool:
+            subj = str(item.get("subject", "")).lower()
+            if p_up in ["GS1", "GS-1", "GS 1"]:
+                return any(term in subj for term in ["paper - i", "gs1", "art", "history", "geography", "society"])
+            elif p_up in ["GS2", "GS-2", "GS 2"]:
+                return any(term in subj for term in ["paper - ii", "gs2", "polity", "judiciary", "governance", "international"])
+            elif p_up in ["GS3", "GS-3", "GS 3"]:
+                return any(term in subj for term in ["paper - iii", "gs3", "economy", "environment", "science", "security"])
+            elif p_up in ["GS4", "GS-4", "GS 4"]:
+                return any(term in subj for term in ["paper - iv", "gs4", "ethics", "integrity"])
+            elif p_up in ["ESSAY", "ESSAYS"]:
+                return "essay" in subj
+            return str(paper).lower() in subj
 
-    if year:
-        results = [q for q in results if q["year"] == year]
+        results = [q for q in results if matches_filter(q)]
+
+    if year is not None:
+        results = [q for q in results if q.get("year") == year]
 
     return results[:limit]
 
