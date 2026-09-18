@@ -37,6 +37,37 @@ export interface Question {
 export type ThemeMode = "UPSC" | "CDS";
 export type TestMode = "practice" | "mock";
 
+export interface ExamRule {
+  name: string;
+  positiveMarks: number;
+  negativeMarks: number;
+  defaultQuestions: number;
+  defaultDurationSeconds: number;
+  passingCutoff: number;
+  markingSummary: string;
+}
+
+export const EXAM_RULES: Record<ThemeMode, ExamRule> = {
+  UPSC: {
+    name: "UPSC Civil Services Prelims (GS-1)",
+    positiveMarks: 2.0,
+    negativeMarks: 0.66,
+    defaultQuestions: 100,
+    defaultDurationSeconds: 7200,
+    passingCutoff: 96.0,
+    markingSummary: "+2.0 / -0.66 per question"
+  },
+  CDS: {
+    name: "Combined Defence Services (CDS)",
+    positiveMarks: 0.833,
+    negativeMarks: 0.277,
+    defaultQuestions: 120,
+    defaultDurationSeconds: 7200,
+    passingCutoff: 105.0,
+    markingSummary: "+0.83 / -0.27 per question"
+  }
+};
+
 export interface UserMockAnswer {
   questionId: string;
   selectedOption: string | null;

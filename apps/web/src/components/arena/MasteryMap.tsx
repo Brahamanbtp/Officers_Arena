@@ -5,29 +5,15 @@ import { useArenaStore } from "../../store/useArenaStore";
 
 interface MasteryMapProps {
   userId?: string;
+  onStartDiagnostic?: () => void;
 }
 
-const DEFAULT_UPSC_MASTERY: Record<string, number> = {
-  "Indian Polity": 68.5,
-  "Modern History": 55.0,
-  "Geography": 72.0,
-  "General Science": 60.0,
-  "Economy": 65.0
-};
-
-const DEFAULT_CDS_MASTERY: Record<string, number> = {
-  "English": 62.0,
-  "General Knowledge": 58.5,
-  "Mathematics": 70.0
-};
-
-export const MasteryMap: React.FC<MasteryMapProps> = ({ userId }) => {
+export const MasteryMap: React.FC<MasteryMapProps> = ({ userId, onStartDiagnostic }) => {
   const mode = useArenaStore((state) => state.mode);
   const resolvedUserId = userId || (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
-  const [data, setData] = useState<Record<string, number>>(
-    mode === "CDS" ? DEFAULT_CDS_MASTERY : DEFAULT_UPSC_MASTERY
-  );
+  const [data, setData] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasAttempts, setHasAttempts] = useState(false);
 
   useEffect(() => {
     const fetchMastery = async () => {
@@ -38,51 +24,87 @@ export const MasteryMap: React.FC<MasteryMapProps> = ({ userId }) => {
           const body = await res.json();
           if (body.mastery_map && Object.keys(body.mastery_map).length > 0) {
             const raw = body.mastery_map;
-            if (mode === "CDS") {
-              const cdsMap = {
-                "English": raw["English"] ?? 62.0,
-                "General Knowledge": Math.round(
-                  ((raw["Defense Studies"] ?? 75.0) +
-                   (raw["Geography"] ?? 72.0) +
-                   (raw["General Science"] ?? 60.0) +
-                   (raw["Indian Polity"] ?? 68.5) +
-                   (raw["Modern History"] ?? 55.0)) / 5
-                ),
-                "Mathematics": Math.round(
-                  ((raw["Elementary Mathematics"] ?? 70.0) +
-                   (raw["Trigonometry"] ?? 65.0)) / 2
-                )
-              };
-              setData(cdsMap);
-            } else {
-              const upscMap = {
-                "Indian Polity": raw["Indian Polity"] ?? 68.5,
-                "Modern History": raw["Modern History"] ?? 55.0,
-                "Geography": raw["Geography"] ?? 72.0,
-                "Economy": raw["Economy"] ?? 65.0,
-                "General Science": raw["General Science"] ?? 60.0
-              };
-              setData(upscMap);
+            const values = Object.values(raw) as number[];
+            const nonZero = values.some(v => v > 0);
+            
+            if (nonZero) {
+              setHasAttempts(true);
+              if (mode === "CDS") {
+                setData({
+                  "English": raw["English"] ?? 0,
+                  "General Knowledge": Math.round(
+                    ((raw["Defense Studies"] ?? 0) +
+                     (raw["Geography"] ?? 0) +
+                     (raw["General Science"] ?? 0) +
+                     (raw["Indian Polity"] ?? 0) +
+                     (raw["Modern History"] ?? 0)) / 5
+                  ),
+                  "Mathematics": Math.round(
+                    ((raw["Elementary Mathematics"] ?? 0) +
+                     (raw["Trigonometry"] ?? 0)) / 2
+                  )
+                });
+              } else {
+                setData({
+                  "Indian Polity": raw["Indian Polity"] ?? 0,
+                  "Modern History": raw["Modern History"] ?? 0,
+                  "Geography": raw["Geography"] ?? 0,
+                  "Economy": raw["Economy"] ?? 0,
+                  "General Science": raw["General Science"] ?? 0
+                });
+              }
+              setLoading(false);
+              return;
             }
-            setLoading(false);
-            return;
           }
         }
       } catch (e) {
-        console.warn("Using baseline BKT mastery map fallback:", e);
+        console.warn("Error fetching live BKT mastery map:", e);
       }
       
-      setData(mode === "CDS" ? DEFAULT_CDS_MASTERY : DEFAULT_UPSC_MASTERY);
+      setHasAttempts(false);
+      setData(null);
       setLoading(false);
     };
     fetchMastery();
-  }, [userId, mode]);
+  }, [userId, mode, resolvedUserId]);
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-xs text-neutral-400 gap-2">
         <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
         Recalibrating Cognitive Twin (BKT Engine)...
+      </div>
+    );
+  }
+
+  if (!hasAttempts || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 bg-[#121212] border border-neutral-800 rounded-2xl shadow-xl text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl font-mono">
+          0%
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-xs font-black uppercase text-white tracking-wider">
+            Diagnostic Baseline Pending
+          </h3>
+          <p className="text-[11px] text-neutral-400 max-w-xs leading-relaxed">
+            No mock attempts recorded yet for {mode}. Take a 10-question sprint to map your live syllabus mastery.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (onStartDiagnostic) {
+              onStartDiagnostic();
+            } else if (typeof window !== "undefined") {
+              window.location.href = "/arena?autoStart=true&count=10&mode=practice";
+            }
+          }}
+          className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer"
+        >
+          Launch 10-Q Diagnostic
+        </button>
       </div>
     );
   }

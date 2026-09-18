@@ -23,7 +23,7 @@ import {
 import { AppHeader } from "@/src/components/shared/AppHeader";
 import { AppFooter } from "@/src/components/shared/AppFooter";
 import { GuestWarningBanner } from "@/src/components/auth/GuestWarningBanner";
-import { useArenaStore } from "@/src/store/useArenaStore";
+import { useArenaStore, EXAM_RULES } from "@/src/store/useArenaStore";
 
 export default function HomePage() {
   const router = useRouter();
@@ -31,8 +31,15 @@ export default function HomePage() {
   const setMode = useArenaStore((state) => state.setMode);
 
   // Daily dynamic stats
-  const [streakCount] = useState(6);
+  const [streakCount, setStreakCount] = useState(1);
   const [currentAffairsLinkages, setCurrentAffairsLinkages] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedStreak = parseInt(localStorage.getItem("oa_streak_count") || "1", 10);
+      setStreakCount(Math.max(1, isNaN(savedStreak) ? 1 : savedStreak));
+    }
+  }, []);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -52,6 +59,8 @@ export default function HomePage() {
     fetchNews();
   }, []);
 
+  const examRule = EXAM_RULES[mode] || EXAM_RULES.UPSC;
+
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#080808] text-neutral-100 selection:bg-amber-500 selection:text-neutral-950">
       <GuestWarningBanner />
@@ -68,7 +77,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-amber-400 font-mono">
-                  Active Mission Streak: {streakCount} Days
+                  Active Mission Streak: {streakCount} {streakCount === 1 ? "Day" : "Days"}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                   On Track
@@ -126,7 +135,11 @@ export default function HomePage() {
               </h1>
 
               <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans">
-                The system has pre-calculated your exact daily dosage: <strong>10 Current Affairs Prelims PYQs</strong> + <strong>5 Weakness Scalpel Questions (Modern History)</strong> + <strong>1 Handwritten Mains Answer</strong>.
+                {mode === "UPSC" ? (
+                  <>The system has pre-calculated your exact daily dosage: <strong>10 Current Affairs Prelims PYQs</strong> + <strong>5 Weakness Scalpel Questions (Modern History)</strong> + <strong>1 Handwritten Mains Answer</strong>.</>
+                ) : (
+                  <>The system has pre-calculated your exact daily dosage: <strong>10 High-Yield CDS PYQs</strong> + <strong>5 Weakness Scalpel Questions (Elementary Mathematics/English)</strong> + <strong>Speed Pacing Drills</strong>.</>
+                )}
               </p>
             </div>
 
@@ -142,23 +155,23 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Prelims Cutoff Predictor Bar */}
+          {/* Cutoff Predictor Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-neutral-800/80 font-mono text-xs">
             <div className="p-3 bg-neutral-900/60 border border-neutral-850 rounded-xl space-y-0.5">
-              <span className="text-[10px] text-neutral-500 uppercase">Predicted Prelims Score</span>
-              <div className="text-base sm:text-lg font-black text-white font-mono">104.5 / 200</div>
+              <span className="text-[10px] text-neutral-500 uppercase">Target Exam</span>
+              <div className="text-base sm:text-lg font-black text-white font-mono">{mode === "UPSC" ? "UPSC CSE GS-1" : "CDS II Exam"}</div>
             </div>
             <div className="p-3 bg-neutral-900/60 border border-neutral-850 rounded-xl space-y-0.5">
-              <span className="text-[10px] text-neutral-500 uppercase">Official 2024 Cutoff</span>
-              <div className="text-base sm:text-lg font-black text-neutral-300 font-mono">96.0 Marks</div>
+              <span className="text-[10px] text-neutral-500 uppercase">Cutoff Benchmark</span>
+              <div className="text-base sm:text-lg font-black text-neutral-300 font-mono">{examRule.passingCutoff} Marks</div>
             </div>
             <div className="p-3 bg-neutral-900/60 border border-neutral-850 rounded-xl space-y-0.5">
-              <span className="text-[10px] text-emerald-400 uppercase">Safe Safety Margin</span>
-              <div className="text-base sm:text-lg font-black text-emerald-400 font-mono">+8.5 Marks</div>
+              <span className="text-[10px] text-emerald-400 uppercase">Marking Scheme</span>
+              <div className="text-base sm:text-lg font-black text-emerald-400 font-mono">{examRule.markingSummary}</div>
             </div>
             <div className="p-3 bg-neutral-900/60 border border-neutral-850 rounded-xl space-y-0.5">
-              <span className="text-[10px] text-amber-400 uppercase">Fatigue Reduction</span>
-              <div className="text-base sm:text-lg font-black text-amber-300 font-mono">-76% Questions</div>
+              <span className="text-[10px] text-amber-400 uppercase">Adaptive Efficiency</span>
+              <div className="text-base sm:text-lg font-black text-amber-300 font-mono">-76% Fatigue</div>
             </div>
           </div>
         </div>
@@ -200,17 +213,17 @@ export default function HomePage() {
                 </h3>
 
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  10 curated questions dynamically mapped to today's current affairs and high-frequency PYQ concepts.
+                  10 curated questions dynamically mapped to {mode === "UPSC" ? "current affairs and high-frequency PYQ concepts." : "CDS high-frequency topics and grammar rules."}
                 </p>
 
                 <div className="p-3 bg-neutral-900/80 border border-neutral-850 rounded-2xl text-[11px] font-mono text-neutral-300 space-y-1">
                   <div className="flex items-center justify-between text-neutral-400">
                     <span>Syllabus Focus:</span>
-                    <strong className="text-white">Polity & Economy Linkages</strong>
+                    <strong className="text-white">{mode === "UPSC" ? "Polity & Economy Linkages" : "English & Elementary Maths"}</strong>
                   </div>
                   <div className="flex items-center justify-between text-neutral-400">
                     <span>Negative Marking:</span>
-                    <strong className="text-red-400">-0.66 marks enabled</strong>
+                    <strong className="text-red-400">-{examRule.negativeMarks} marks active</strong>
                   </div>
                 </div>
               </div>
