@@ -7,6 +7,10 @@ export interface StudentProfile {
   target_exam: ExamMode;
   target_year: number;
   daily_goal_hours: number;
+  daily_goal_questions?: number;
+  optional_subject?: string;
+  sound_enabled?: boolean;
+  theme_preference?: "dark" | "light";
   created_at?: string;
   updated_at?: string;
 }
