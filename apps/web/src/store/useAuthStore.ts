@@ -12,6 +12,8 @@ interface AuthState {
   // Actions
   setExamMode: (mode: ExamMode) => void;
   setUser: (user: StudentProfile | null) => void;
+  updateProfile: (data: Partial<StudentProfile>) => void;
+  logout: () => void;
   fetchProfile: (userId: string) => Promise<void>;
   updateGuestMastery: (topic: string, score: number) => void;
   updateGuestTheta: (delta: number) => void;
@@ -72,6 +74,27 @@ export const useAuthStore = create<AuthState>()(
         set({ user, isGuest: user === null });
       },
 
+      updateProfile: (data: Partial<StudentProfile>) => {
+        const currentUser = get().user;
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              ...data,
+              updated_at: new Date().toISOString()
+            }
+          });
+        }
+      },
+
+      logout: () => {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("oa_access_token");
+          localStorage.removeItem("oa_user_id");
+        }
+        set({ user: null, isGuest: true });
+      },
+
       fetchProfile: async (userId: string) => {
         const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
         const examMode = get().examMode;
@@ -87,6 +110,10 @@ export const useAuthStore = create<AuthState>()(
                 target_exam: (data.exam_type as ExamMode) || examMode,
                 target_year: 2026,
                 daily_goal_hours: 4,
+                optional_subject: "Polity / PSIR",
+                daily_goal_questions: 20,
+                sound_enabled: true,
+                theme_preference: "dark",
                 created_at: new Date().toISOString()
               },
               isGuest: false
