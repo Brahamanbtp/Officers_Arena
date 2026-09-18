@@ -12,8 +12,6 @@ interface AuthState {
   // Actions
   setExamMode: (mode: ExamMode) => void;
   setUser: (user: StudentProfile | null) => void;
-  updateProfile: (updates: Partial<StudentProfile>) => void;
-  logout: () => void;
   fetchProfile: (userId: string) => Promise<void>;
   updateGuestMastery: (topic: string, score: number) => void;
   updateGuestTheta: (delta: number) => void;
@@ -72,27 +70,6 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user: StudentProfile | null) => {
         set({ user, isGuest: user === null });
-      },
-
-      updateProfile: (updates: Partial<StudentProfile>) => {
-        const currentUser = get().user;
-        if (currentUser) {
-          set({
-            user: {
-              ...currentUser,
-              ...updates,
-              updated_at: new Date().toISOString()
-            }
-          });
-        }
-      },
-
-      logout: () => {
-        set({ user: null, isGuest: true });
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("oa_user_id");
-          localStorage.removeItem("oa_auth_token");
-        }
       },
 
       fetchProfile: async (userId: string) => {

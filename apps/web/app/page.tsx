@@ -18,15 +18,7 @@ import {
   Layers, 
   ShieldCheck,
   TrendingUp,
-  Award,
-  Globe2,
-  Compass,
-  FileText,
-  Keyboard,
-  ChevronRight,
-  BarChart3,
-  BookmarkCheck,
-  Activity
+  Award
 } from "lucide-react";
 import { AppHeader } from "@/src/components/shared/AppHeader";
 import { AppFooter } from "@/src/components/shared/AppFooter";
@@ -41,7 +33,6 @@ export default function HomePage() {
   // Daily dynamic stats
   const [streakCount, setStreakCount] = useState(1);
   const [currentAffairsLinkages, setCurrentAffairsLinkages] = useState<any[]>([]);
-  const [countdownDays, setCountdownDays] = useState(245);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -49,16 +40,6 @@ export default function HomePage() {
       setStreakCount(Math.max(1, isNaN(savedStreak) ? 1 : savedStreak));
     }
   }, []);
-
-  // Compute live days countdown to upcoming exam cycle
-  useEffect(() => {
-    // Target UPSC CSE Prelims target date ~ May 24, 2026 or CDS target date
-    const targetDate = mode === "UPSC" ? new Date("2026-05-24T09:30:00") : new Date("2026-09-06T09:00:00");
-    const today = new Date();
-    const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-    setCountdownDays(diffDays);
-  }, [mode]);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -87,9 +68,9 @@ export default function HomePage() {
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         
-        {/* Top Command Banner: Exam Selector + Live Countdown + Daily Streak */}
+        {/* Top Command Banner: Exam Selector + Countdown + Streak */}
         <div className="bg-[#121212] border border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-3">
             <div className="p-2.5 bg-amber-500/20 border border-amber-500/40 rounded-2xl text-amber-400">
               <Flame className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse" />
             </div>
@@ -99,36 +80,23 @@ export default function HomePage() {
                   Active Mission Streak: {streakCount} {streakCount === 1 ? "Day" : "Days"}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  Target Calibrated
+                  On Track
                 </span>
               </div>
               <h2 className="text-sm sm:text-base font-black text-white">
-                Officer Command Center • {mode === "UPSC" ? "UPSC Civil Services (CSE)" : "Combined Defence Services (CDS)"}
+                Daily Officer Command Hub • {mode === "UPSC" ? "UPSC Civil Services (CSE)" : "Combined Defence Services (CDS)"}
               </h2>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 font-mono text-xs">
-            <div className="px-3.5 py-1.5 bg-neutral-900/90 border border-neutral-800 rounded-xl text-neutral-300 flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 text-amber-400" />
-              <span>Target: <strong className="text-amber-400 font-bold">{countdownDays} Days</strong> Remaining</span>
+          <div className="flex items-center gap-3 font-mono text-xs">
+            <div className="px-3.5 py-1.5 bg-neutral-900/80 border border-neutral-800 rounded-xl text-neutral-300">
+              Next Goal: <strong className="text-amber-400">{mode === "UPSC" ? "UPSC CSE Prelims (Next Cycle)" : "CDS Examination (Next Cycle)"}</strong>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const event = new KeyboardEvent("keydown", { key: "k", ctrlKey: true });
-                window.dispatchEvent(event);
-              }}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
-            >
-              <Keyboard className="w-3.5 h-3.5 text-amber-400" />
-              <span>Quick Jump</span>
-              <kbd className="px-1 py-0.2 rounded bg-neutral-800 text-[10px] text-amber-400 font-bold">Ctrl+K</kbd>
-            </button>
           </div>
         </div>
 
-        {/* MASTER 1-CLICK ACTION HERO: Start Today's High-Yield Mission */}
+        {/* MASTER 1-CLICK ACTION HERO: Start Today's 18-Min Mission */}
         <div className="bg-gradient-to-br from-[#161616] via-[#121212] to-[#0d0d0d] border border-amber-500/40 hover:border-amber-500/70 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-6 transition-all">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
@@ -148,7 +116,7 @@ export default function HomePage() {
 
               <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans">
                 {mode === "UPSC" ? (
-                  <>The system has pre-calculated your exact daily dosage: <strong>10 Current Affairs Prelims PYQs</strong> + <strong>5 Weakness Scalpel Questions (Modern History & Polity)</strong> + <strong>1 Handwritten Mains Answer Evaluation</strong>.</>
+                  <>The system has pre-calculated your exact daily dosage: <strong>10 Current Affairs Prelims PYQs</strong> + <strong>5 Weakness Scalpel Questions (Modern History)</strong> + <strong>1 Handwritten Mains Answer</strong>.</>
                 ) : (
                   <>The system has pre-calculated your exact daily dosage: <strong>10 High-Yield CDS PYQs</strong> + <strong>5 Weakness Scalpel Questions (Elementary Mathematics/English)</strong> + <strong>Speed Pacing Drills</strong>.</>
                 )}
@@ -188,9 +156,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* HERO SECTION: The 3 Core Daily Rituals */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        {/* HERO SECTION: The 3 Core Daily Rituals of an Officer Aspirant */}
+        <div>
+          <div className="flex items-center justify-between pb-3">
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-400" />
@@ -202,7 +170,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
             
             {/* Ritual 1: 10-Min High-Yield Sprint */}
             <div className="bg-[#121212] border border-neutral-800 hover:border-amber-500/50 rounded-3xl p-6 flex flex-col justify-between gap-5 transition-all shadow-xl group relative overflow-hidden">
@@ -321,7 +289,7 @@ export default function HomePage() {
                 <div className="p-3 bg-neutral-900/80 border border-neutral-850 rounded-2xl text-[11px] font-mono text-neutral-300 space-y-1">
                   <div className="text-neutral-400 line-clamp-2">
                     <strong className="text-white font-sans">Today's GS-2 Question: </strong>
-                    &ldquo;Examine the discretionary powers of the Governor under Art. 163 in light of recent rulings.&rdquo;
+                    "Examine the discretionary powers of the Governor under Art. 163 in light of recent rulings."
                   </div>
                 </div>
               </div>
@@ -338,162 +306,52 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* COMPLETE BENTO GRID: All Officers Arena Command Modules */}
-        <div className="space-y-4 pt-2">
-          <div className="flex items-center justify-between">
+        {/* THE SUPERPOWER ADVANTAGE: Why Serious Aspirants Choose Officers Arena */}
+        <div className="bg-[#101010] border border-neutral-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-800 pb-4">
             <div>
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
-                Unified Ecosystem
+                The Officers Arena Advantage
               </span>
               <h2 className="text-lg sm:text-xl font-black text-white">
-                Officer Preparation Matrix
+                How We Eliminate 1.5 Hours of Daily Preparation Fatigue
               </h2>
             </div>
-            <span className="text-xs font-mono text-neutral-400 hidden sm:inline">
-              6 Integrated Modules &bull; Zero Fragmented Tools
+            <span className="text-xs font-mono text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30">
+              3PL IRT Adaptive Engine
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            
-            {/* Module 1: Prelims CAT Arena */}
-            <Link
-              href="/arena"
-              className="p-6 bg-[#121212] border border-neutral-800 hover:border-amber-500/50 rounded-3xl space-y-4 group transition-all shadow-xl flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center">
-                  <Flame className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-black text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
-                  <span>Prelims CAT Arena</span>
-                  <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
-                </h3>
-                <p className="text-xs text-neutral-400 leading-relaxed">
-                  3PL Item Response Theory test engine that adapts question difficulty in real time to calculate your true psychometric ability ($\theta$).
-                </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-5 bg-neutral-900/60 border border-neutral-800 rounded-2xl space-y-2">
+              <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                24-Item Adaptive Diagnostic
               </div>
-              <div className="pt-3 border-t border-neutral-850 flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                <span className="text-amber-400">24-Item Diagnostic</span>
-                <span>Timer & Pacing Control</span>
-              </div>
-            </Link>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Legacy apps force you to solve 100 repetitive questions. Our Fisher Information engine finds your exact ability level and weak spots in just <strong>24 smart questions</strong> (-76% fatigue).
+              </p>
+            </div>
 
-            {/* Module 2: Mains AES Evaluator */}
-            <Link
-              href="/mains"
-              className="p-6 bg-[#121212] border border-neutral-800 hover:border-blue-500/50 rounded-3xl space-y-4 group transition-all shadow-xl flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center">
-                  <PenTool className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-black text-white group-hover:text-blue-400 transition-colors flex items-center justify-between">
-                  <span>Mains 15M / 10M Evaluator</span>
-                  <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
-                </h3>
-                <p className="text-xs text-neutral-400 leading-relaxed">
-                  Anchor-calibrated Rubric Evaluator for handwritten answers. Provides structural, analytical, and factual breakdown in 30 seconds.
-                </p>
+            <div className="p-5 bg-neutral-900/60 border border-neutral-800 rounded-2xl space-y-2">
+              <div className="flex items-center gap-2 text-purple-400 font-bold text-sm">
+                <BrainCircuit className="w-4 h-4 text-purple-400" />
+                Cognitive Option Tracing
               </div>
-              <div className="pt-3 border-t border-neutral-850 flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                <span className="text-blue-400">5-Rubric Grading</span>
-                <span>OCR + Camera Upload</span>
-              </div>
-            </Link>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Competitors paste Wikipedia text. We diagnose <em>why</em> you got tricked (e.g. falling for "Only/Never" absolute qualifier baits) and pinpoint the exact textbook chapter to read.
+              </p>
+            </div>
 
-            {/* Module 3: 360° Current Affairs Bridge */}
-            <Link
-              href="/current-affairs"
-              className="p-6 bg-[#121212] border border-neutral-800 hover:border-emerald-500/50 rounded-3xl space-y-4 group transition-all shadow-xl flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                  <Globe2 className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-black text-white group-hover:text-emerald-400 transition-colors flex items-center justify-between">
-                  <span>360° Current Affairs Hub</span>
-                  <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
-                </h3>
-                <p className="text-xs text-neutral-400 leading-relaxed">
-                  Aggregates top daily developments from 50+ sources with deep 360° GS Paper linkages, key concepts, and standard textbook cross-references.
-                </p>
+            <div className="p-5 bg-neutral-900/60 border border-neutral-800 rounded-2xl space-y-2">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                Instant 30s Mains AES
               </div>
-              <div className="pt-3 border-t border-neutral-850 flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                <span className="text-emerald-400">Live GS 1-4 Tagging</span>
-                <span>Copy Revision Notes</span>
-              </div>
-            </Link>
-
-            {/* Module 4: Standard Textbook Library */}
-            <Link
-              href="/library"
-              className="p-6 bg-[#121212] border border-neutral-800 hover:border-amber-500/50 rounded-3xl space-y-4 group transition-all shadow-xl flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-black text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
-                  <span>Standard Textbook Library</span>
-                  <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
-                </h3>
-                <p className="text-xs text-neutral-400 leading-relaxed">
-                  Chapter-by-chapter drills from canonical reference books: *Laxmikanth, NCERT Class 6-12, Spectrum Modern India, and Shankar IAS*.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-neutral-850 flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                <span className="text-amber-400">15,720+ Questions</span>
-                <span>AI Socratic Tutor</span>
-              </div>
-            </Link>
-
-            {/* Module 5: Cognitive Strategist */}
-            <Link
-              href="/strategist"
-              className="p-6 bg-[#121212] border border-neutral-800 hover:border-purple-500/50 rounded-3xl space-y-4 group transition-all shadow-xl flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center">
-                  <Compass className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-black text-white group-hover:text-purple-400 transition-colors flex items-center justify-between">
-                  <span>Cognitive Strategist</span>
-                  <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
-                </h3>
-                <p className="text-xs text-neutral-400 leading-relaxed">
-                  Detects subconscious test-taking fallacies, elimination failure points, and guesswork biases before real exam day.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-neutral-850 flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                <span className="text-purple-400">Cognitive Bias Radar</span>
-                <span>Elimination Doctor</span>
-              </div>
-            </Link>
-
-            {/* Module 6: Psychometric Growth & Trajectory */}
-            <Link
-              href="/growth"
-              className="p-6 bg-[#121212] border border-neutral-800 hover:border-emerald-500/50 rounded-3xl space-y-4 group transition-all shadow-xl flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-black text-white group-hover:text-emerald-400 transition-colors flex items-center justify-between">
-                  <span>Growth & Trajectory</span>
-                  <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
-                </h3>
-                <p className="text-xs text-neutral-400 leading-relaxed">
-                  Real-time ability curve ($\theta$), SEM (Standard Error of Measurement), syllabus mastery heatmaps, and cutoff probability forecasting.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-neutral-850 flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                <span className="text-emerald-400">Predicted Cutoff Score</span>
-                <span>Subject Mastery Bar</span>
-              </div>
-            </Link>
-
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Stop waiting 15 days and paying ₹30,000 for coaching test series. Snap a photo of your handwritten paper and receive anchor-calibrated rubric scores in under 30 seconds.
+              </p>
+            </div>
           </div>
         </div>
 
