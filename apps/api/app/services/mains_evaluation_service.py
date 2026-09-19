@@ -246,37 +246,45 @@ EVALUATE AND OUTPUT STRICT VALID JSON ONLY (no markdown fences, no conversationa
 
         # Asynchronous Non-Blocking HTTP with httpx.AsyncClient
         async with httpx.AsyncClient(timeout=25.0) as client:
-            if groq_key:
-                try:
-                    headers = {"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"}
-                    payload = {
-                        "model": "llama-3.3-70b-versatile",
-                        "messages": [{"role": "user", "content": prompt}],
-                        "temperature": 0.2,
-                        "response_format": {"type": "json_object"}
-                    }
-                    r = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
-                    if r.status_code == 200:
-                        raw_content = r.json()["choices"][0]["message"]["content"]
-                        evaluation_json = json.loads(raw_content)
-                except Exception:
-                    pass
+            # 1. Try Gemini (gemini-2.5-flash / gemini-flash-latest)
+            if gemini_key:
+                for g_model in ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-pro"]:
+                    try:
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{g_model}:generateContent?key={gemini_key}"
+                        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+                        r = await client.post(url, json=payload)
+                        if r.status_code == 200:
+                            text_resp = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                            clean_json = text_resp.strip()
+                            if "```json" in clean_json:
+                                clean_json = clean_json.split("```json")[1].split("```")[0].strip()
+                            elif "```" in clean_json:
+                                clean_json = clean_json.split("```")[1].split("```")[0].strip()
+                            evaluation_json = json.loads(clean_json)
+                            if evaluation_json:
+                                break
+                    except Exception:
+                        pass
 
-            if not evaluation_json and gemini_key:
-                try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-                    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-                    r = await client.post(url, json=payload)
-                    if r.status_code == 200:
-                        text_resp = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-                        clean_json = text_resp.strip()
-                        if "```json" in clean_json:
-                            clean_json = clean_json.split("```json")[1].split("```")[0].strip()
-                        elif "```" in clean_json:
-                            clean_json = clean_json.split("```")[1].split("```")[0].strip()
-                        evaluation_json = json.loads(clean_json)
-                except Exception:
-                    pass
+            # 2. Try Groq fallback
+            if not evaluation_json and groq_key:
+                for groq_model in ["qwen/qwen3.8-27b", "llama-3.1-8b-instant"]:
+                    try:
+                        headers = {"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"}
+                        payload = {
+                            "model": groq_model,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.2,
+                            "response_format": {"type": "json_object"}
+                        }
+                        r = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+                        if r.status_code == 200:
+                            raw_content = r.json()["choices"][0]["message"]["content"]
+                            evaluation_json = json.loads(raw_content)
+                            if evaluation_json:
+                                break
+                    except Exception:
+                        pass
 
         # Robust Heuristic Fallback if LLM times out or rate limits
         if not evaluation_json:

@@ -67,6 +67,39 @@ class SubmitBatchResult(BaseModel):
 from fastapi.responses import FileResponse
 from app.models.database import QuestionImages
 
+def normalize_question_options(raw_opts: Any) -> Dict[str, Any]:
+    if not raw_opts:
+        return {}
+    if isinstance(raw_opts, dict):
+        res = {}
+        for k, v in raw_opts.items():
+            if isinstance(v, dict):
+                res[str(k)] = v.get("en") or v.get("hi") or str(v)
+            else:
+                res[str(k)] = str(v)
+        return res
+    if isinstance(raw_opts, list):
+        res = {}
+        for item in raw_opts:
+            if isinstance(item, dict):
+                opt_id = item.get("id") or item.get("letter") or item.get("key")
+                opt_text = item.get("text") or item.get("value") or ""
+                if isinstance(opt_text, dict):
+                    opt_text = opt_text.get("en") or opt_text.get("hi") or str(opt_text)
+                if opt_id:
+                    res[str(opt_id)] = str(opt_text)
+            elif isinstance(item, str):
+                parts = item.split(".", 1)
+                if len(parts) == 2:
+                    res[parts[0].strip()] = parts[1].strip()
+        return res
+    return {}
+
+def normalize_question_text(raw_text: Any) -> str:
+    if isinstance(raw_text, dict):
+        return raw_text.get("en") or raw_text.get("hi") or str(raw_text)
+    return str(raw_text or "")
+
 class NextQuestionResponse(BaseModel):
     id: uuid.UUID
     text: str
@@ -105,7 +138,7 @@ class SessionReportResponse(BaseModel):
 )
 async def next_question(
     user_id: str = Query(..., description="Student identifier"),
-    exam_type: str = Query(..., description="UPSC or CDS"),
+    exam_type: str = Query("UPSC", description="UPSC or CDS"),
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -209,8 +242,8 @@ async def next_question(
 
         return NextQuestionResponse(
             id=selected_q.id,
-            text=selected_q.text,
-            options=selected_q.options,
+            text=normalize_question_text(selected_q.text),
+            options=normalize_question_options(selected_q.options),
             correct_answer=selected_q.correct_answer,
             explanation=selected_q.explanation,
             images=image_list,
@@ -972,8 +1005,8 @@ async def get_questions(
             result_list.append(
                 NextQuestionResponse(
                     id=q.id,
-                    text=q.text,
-                    options=q.options,
+                    text=normalize_question_text(q.text),
+                    options=normalize_question_options(q.options),
                     correct_answer=q.correct_answer,
                     explanation=q.explanation,
                     images=image_list,

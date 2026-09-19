@@ -50,13 +50,25 @@ This document details the architectural evolution and scaling strategy to transi
 
 ---
 
+### Phase 4: OmniGraph & ChronoFact Knowledge Engine (Future Innovation)
+
+#### Focus Areas & Conceptual Blueprint
+*   **Database-Driven Knowledge Graph & Chronological Fact Engine**: Convert 25,236+ verified exam questions and 38 canonical textbooks into a linked semantic graph and chronological timeline stream.
+*   **Core Capabilities**:
+    1.  **Chronological Temporal Stream (`/timeline`)**: Interactive, zoomable timelines for Modern Indian History, Constitutional Acts (1773 Regulating Act to 2026 Amendments), International Treaties, and Landmark Judicial Verdicts. Every point on the timeline aggregates all related UPSC/CDS PYQs and verified textbook citations.
+    2.  **Force-Directed Conceptual Knowledge Graph (`/graph`)**: Interactive node-link visualization connecting entities, constitutional articles, PESTLE dimensions, and syllabus topics with bidirectional question links.
+    3.  **Atomic Fact Deconstruction Bank**: Statement-level verified fact cards extracted from multi-statement questions (*"Consider the following statements..."*), categorized with truth values, recurring exam frequencies, and common distractor trap flags.
+    4.  **1-Click "Graph-to-Arena" Adaptive Bridge**: Direct handoff from any concept/timeline node into an adaptive practice set filtered to that exact topic node.
+
+---
+
 ### Infrastructure Timeline
 
-| Metric / Objective | Phase 1 (1k users) | Phase 2 (10k users) | Phase 3 (100k users) |
-| :--- | :--- | :--- | :--- |
-| **Primary Database** | Managed PostgreSQL | Managed PG + Read Replicas | Distributed PG + Analytical Lake |
-| **Vector DB** | pgvector (Flat Index) | pgvector (HNSW Index) | Dedicated Pinecone / Milvus Cluster |
-| **Caching Layer** | Local memory | Redis (Single node) | Redis Cluster (Geographically dispersed) |
-| **Task Runner** | BackgroundTasks | Celery + Redis | Apache Airflow + RabbitMQ |
-| **LLM Spend Shield** | Basic rate-limiting | Semantic cache + IP quotas | Per-user credit system / monthly tier |
-| **Target P95 Latency** | $<250\text{ms}$ | $<150\text{ms}$ | $<80\text{ms}$ |
+| Metric / Objective | Phase 1 (1k users) | Phase 2 (10k users) | Phase 3 (100k users) | Phase 4 (OmniGraph) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Primary Database** | Managed PostgreSQL | Managed PG + Read Replicas | Distributed PG + Analytical Lake | Graph Store / Hybrid PG+Apache AGE |
+| **Vector DB** | pgvector (Flat Index) | pgvector (HNSW Index) | Dedicated Pinecone / Milvus Cluster | Graph-RAG Vector Entity Index |
+| **Caching Layer** | Local memory | Redis (Single node) | Redis Cluster (Geographically dispersed) | Redis Graph Edge Cache |
+| **Task Runner** | BackgroundTasks | Celery + Redis | Apache Airflow + RabbitMQ | Graph Extraction & Alignment Workers |
+| **LLM Spend Shield** | Basic rate-limiting | Semantic cache + IP quotas | Per-user credit system / monthly tier | Local Entity Extraction Cache |
+| **Target P95 Latency** | $<250\text{ms}$ | $<150\text{ms}$ | $<80\text{ms}$ | $<60\text{ms}$ (Graph Walk) |

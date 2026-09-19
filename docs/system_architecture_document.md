@@ -92,8 +92,13 @@ graph TD
     Estimations of $\theta$ are performed using Expected A Posteriori (EAP) updates over Quadrature Nodes.
 
 #### D. Storage and Database Layer
-*   **Relational Model**: Implemented using SQLModel (SQLAlchemy wrapper) mapping entities like `StudentAttempt`, `StudentMastery`, `Syllabus`, and `Questions`.
-*   **Vector Search**: pgvector integration with cosine distance metric ($1 - \text{similarity}$). If cosine distance $> 0.3$, the system prevents halluncinations by outputting a fallback guardrail string.
+*   **Relational Model**: Implemented using SQLModel (SQLAlchemy async wrapper) mapping entities like `StudentState`, `PerformanceLog`, `TopicMastery`, `SRSMetadata`, `Syllabus`, `Book`, `BookPage`, `Questions`, and `QuestionImages` over 25,236+ verified exam questions.
+*   **Vector Search**: Supabase PostgreSQL with `pgvector` HNSW indexes over 1536-dimensional textbook embeddings with fallback guardrails.
+
+#### E. OmniGraph & ChronoFact Knowledge Engine (Next-Gen Architecture)
+*   **Concept Entity Indexing**: Extracts atomic historical entities, constitutional articles, statutory acts, economic frameworks, and geographical landmarks from questions and textbooks into a connected semantic graph.
+*   **Bi-directional Graph Handoff**: Connects any node in the graph directly to corresponding UPSC/CDS PYQs, showing exam recurrence, difficulty parameter $b$, and option distractor patterns.
+*   **Chronological Stream Engine**: Computes temporal sequences (e.g. 1773 to 2026 for Polity/History) providing an interactive timeline learning stream with 1-click drill launching into the Adaptive Arena.
 
 ---
 
@@ -101,6 +106,7 @@ graph TD
 
 | Decision | Alternative Considered | Chosen Rationale / Trade-Off |
 | :--- | :--- | :--- |
-| **SQLModel (SQLite + aiosqlite)** | PostgreSQL / Prisma | High-velocity local testing, zero-configuration local database seeding, and clean SQLite memory instances for isolated test suites. |
+| **Supabase PostgreSQL + pgvector** | Pure NoSQL / SQLite | Production scalability, ACID relational integrity, native 1536d vector cosine distance operations with HNSW acceleration. |
 | **EAP Quadrature Integration** | MCMC (Markov Chain Monte Carlo) | EAP updates are deterministic, highly performant, and run inside the request loop without introducing blocking I/O latency. |
-| **Grounded LLM Guardrails** | Fine-tuned custom models | RAG-grounded system instructions using Gemini API are cheaper, modularly updateable, and guarantee zero-drift responses. |
+| **Grounded LLM Guardrails** | Fine-tuned custom models | RAG-grounded system instructions using Gemini 2.5 Flash / Groq are modularly updateable, cost-effective, and guarantee zero-drift responses. |
+| **OmniGraph Linked Schema** | Static Flashcard Systems | Connects atomic question facts directly to standard authority books and syllabus taxonomy nodes, transforming passive question banks into an active knowledge exploration graph. |

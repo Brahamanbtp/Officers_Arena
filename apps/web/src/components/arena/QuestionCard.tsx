@@ -160,7 +160,47 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
     );
   }
 
-  const optionsMap = currentQuestion.options || {};
+  const normalizeOptions = (raw: any): Record<string, string> => {
+    if (!raw) return {};
+    if (Array.isArray(raw)) {
+      const res: Record<string, string> = {};
+      const letters = ["A", "B", "C", "D", "E", "F"];
+      raw.forEach((item, idx) => {
+        if (item && typeof item === "object") {
+          const key = item.id || item.letter || item.key || letters[idx] || String(idx);
+          let val = item.text !== undefined ? item.text : item.value !== undefined ? item.value : item;
+          if (val && typeof val === "object") {
+            val = val.en || val.hi || JSON.stringify(val);
+          }
+          res[String(key)] = String(val);
+        } else if (typeof item === "string") {
+          const parts = item.split(".", 2);
+          if (parts.length === 2 && ["A", "B", "C", "D"].includes(parts[0].trim().toUpperCase())) {
+            res[parts[0].trim().toUpperCase()] = parts[1].trim();
+          } else {
+            res[letters[idx] || String(idx)] = item;
+          }
+        } else {
+          res[letters[idx] || String(idx)] = String(item);
+        }
+      });
+      return res;
+    }
+    if (typeof raw === "object") {
+      const res: Record<string, string> = {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (v && typeof v === "object") {
+          res[k] = (v as any).en || (v as any).hi || JSON.stringify(v);
+        } else {
+          res[k] = String(v ?? "");
+        }
+      }
+      return res;
+    }
+    return {};
+  };
+
+  const optionsMap = normalizeOptions(currentQuestion.options);
   const isMockMode = testMode === "mock";
 
   // Active answer in Mock Mode
@@ -515,7 +555,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
         )}
 
         {/* Navigation & Frictionless Submission Controls */}
-        <div className="pt-3 border-t border-neutral-850 flex items-center justify-between">
+        <div className="pt-3 border-t border-neutral-850 flex flex-col gap-3">
           {isMockMode ? (
             <div className="flex items-center justify-between w-full gap-3">
               <button
@@ -557,7 +597,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
               </button>
             </div>
           ) : (
-            <>
+            <div className="flex flex-col gap-3 w-full">
               {!showFeedback ? (
                 <button
                   type="button"
@@ -580,11 +620,58 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ onSubmit, onNext, is
                   className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-neutral-950 font-black uppercase text-xs tracking-wider rounded-2xl transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer"
                   style={{ boxShadow: "0 0 25px rgba(217,119,6,0.3)" }}
                 >
-                  <span>Next Adaptive Question</span>
+                  <span>
+                    {mockQuestions.length > 0 && activeQuestionIndex < mockQuestions.length - 1
+                      ? `Next Question (${activeQuestionIndex + 2}/${mockQuestions.length})`
+                      : "Next Adaptive Question"}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}
-            </>
+
+              {/* Multi-item Navigation Toolbar for Practice Sessions */}
+              {mockQuestions.length > 1 && (
+                <div className="flex items-center justify-between w-full pt-2 border-t border-neutral-850">
+                  <button
+                    type="button"
+                    disabled={activeQuestionIndex === 0}
+                    onClick={() => {
+                      if (currentQuestion) recordQuestionTime(currentQuestion.id, itemTimeSeconds);
+                      setActiveQuestionIndex(activeQuestionIndex - 1);
+                    }}
+                    className={`py-2 px-4 rounded-xl font-bold uppercase text-xs tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                      activeQuestionIndex > 0
+                        ? "bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-200"
+                        : "bg-neutral-950 border border-neutral-900 text-neutral-600 cursor-not-allowed"
+                    }`}
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Prev</span>
+                  </button>
+
+                  <span className="text-xs font-mono text-neutral-400 font-bold">
+                    Item {activeQuestionIndex + 1} of {mockQuestions.length}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={activeQuestionIndex === mockQuestions.length - 1}
+                    onClick={() => {
+                      if (currentQuestion) recordQuestionTime(currentQuestion.id, itemTimeSeconds);
+                      setActiveQuestionIndex(activeQuestionIndex + 1);
+                    }}
+                    className={`py-2 px-4 rounded-xl font-bold uppercase text-xs tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                      activeQuestionIndex < mockQuestions.length - 1
+                        ? "bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-200"
+                        : "bg-neutral-950 border border-neutral-900 text-neutral-600 cursor-not-allowed"
+                    }`}
+                  >
+                    <span>Next</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </motion.div>

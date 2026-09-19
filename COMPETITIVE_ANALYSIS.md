@@ -58,6 +58,26 @@
    - **Option Tracing**: Instead of treating incorrect answers as a binary `0`, the model diagnoses the exact cognitive trap based on *which specific distractor* ($A, B, C,$ or $D$) was chosen.
    - **Temporal Attention**: Weights student actions based on elapsed response time and interval between attempts.
 
+### 2.5 Knowledge Graphs & Concept Exploration Engines (Memoneet, Amboss, Obsidian Graph, Knewton)
+1. **What they offer**:
+   - **Memoneet (NEET/Medical)**: Line-by-line NCERT line deconstruction into flashcards, but lacks relational graphs and temporal timelines.
+   - **Amboss (USMLE/Medical)**: Cross-linked clinical knowledge engine with high-yield popups, but built for medical pathology rather than high-stakes civil services.
+   - **Obsidian / Roam Research (Personal Knowledge Management)**: Bi-directional link graph visualizations, but completely ungrounded in formal exam questions, syllabus taxonomies, or psychometric testing engines.
+   - **Knewton Alta**: Prerequisite skill DAGs, but used purely for backend routing rather than an interactive student-facing concept & timeline explorer.
+2. **The Huge Market Void in UPSC/CDS Civil Services**:
+   - Every existing Indian platform (Unacademy, VisionIAS, ForumIAS, SuperKalam) stores questions as **dead isolated items in flat test lists**.
+   - Aspirants are forced to manually build physical timelines or memorize thousands of scattered historical dates, constitutional articles, and economic committees.
+   - Nobody has ever connected **25,000+ authentic exam questions into an interactive bi-directional Chronological Timeline & Entity Knowledge Graph**.
+
+---
+
+### 2.6 The Officers Arena "OmniGraph & ChronoFact" Advantage
+Officers Arena's proposed **OmniGraph & ChronoFact Engine** takes inspiration from Amboss and Obsidian but introduces 4 unique competitive innovations:
+1. **Bi-directional Question $\leftrightarrow$ Concept Grounding**: Every node in the graph (e.g., *73rd Constitutional Amendment Act*, *Monetary Policy Committee*, *Treaty of Salbai*) is directly wired to every UPSC/CDS question that tested it, displaying difficulty $b$, year, and common distractor traps.
+2. **Chronological Temporal Stream Engine (`/timeline`)**: Interactive zoomable timelines for Modern History, Polity acts (1773 Regulating Act to 2026 Amendments), and International Treaties. Clicking any year reveals the historical context, tested facts, and official PYQs.
+3. **Atomic Statement & Fact Deconstruction**: Automatically parses complex multi-statement UPSC questions into verified atomic fact cards tagged with truth values and textbook citations (*Laxmikanth, Spectrum, NCERT*).
+4. **"Graph-to-Arena" 1-Click Adaptive Drill**: Instant handoff from reading any concept or timeline node into an adaptive practice session filtered to that exact node.
+
 ---
 
 ## 3. Comprehensive Gap Matrix

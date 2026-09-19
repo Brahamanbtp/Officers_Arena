@@ -260,12 +260,21 @@ export const useArenaStore = create<ArenaState>()(
         });
       },
 
-      setActiveQuestionIndex: (activeQuestionIndex) => set((state) => ({
-        activeQuestionIndex,
-        currentQuestion: state.mockQuestions[activeQuestionIndex] || null,
-        selectedOption: state.userAnswers[activeQuestionIndex]?.selectedOption || null,
-        confidence: state.userAnswers[activeQuestionIndex]?.confidence || null
-      })),
+      setActiveQuestionIndex: (activeQuestionIndex) => set((state) => {
+        const targetQ = state.mockQuestions[activeQuestionIndex] || null;
+        const targetAns = state.userAnswers[activeQuestionIndex];
+        const hasAnswered = targetAns?.selectedOption !== null && targetAns?.selectedOption !== undefined;
+        return {
+          activeQuestionIndex,
+          currentQuestion: targetQ,
+          selectedOption: targetAns?.selectedOption || null,
+          confidence: targetAns?.confidence || null,
+          showFeedback: state.testMode === "practice" && hasAnswered,
+          feedbackExplanation: state.testMode === "practice" && hasAnswered ? (targetQ?.explanation || null) : null,
+          isCorrectResult: state.testMode === "practice" && hasAnswered ? (targetAns?.selectedOption === targetQ?.correct_answer) : null,
+          timer: 0
+        };
+      }),
 
       recordMockAnswer: (index, option, confidence, timeSpent = 0) => set((state) => {
         const currentAns = state.userAnswers[index] || {
@@ -323,6 +332,11 @@ export const useArenaStore = create<ArenaState>()(
           response_time: ans.timeSpentSeconds || 45.0
         }));
 
+        const totalCalculatedTime = Object.values(state.userAnswers).reduce(
+          (acc, ans) => acc + (ans.timeSpentSeconds || 0),
+          0
+        );
+
         try {
           const res = await fetch(`${apiEndpoint}/api/v1/arena/submit-batch`, {
             method: "POST",
@@ -332,7 +346,7 @@ export const useArenaStore = create<ArenaState>()(
               exam_type: state.mode,
               paper_name: `${state.mode} Full Mock Test`,
               answers: answersList,
-              total_time_seconds: 0.0
+              total_time_seconds: totalCalculatedTime > 0 ? totalCalculatedTime : 60.0
             })
           });
           if (res.ok) {

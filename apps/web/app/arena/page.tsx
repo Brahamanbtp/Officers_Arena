@@ -84,12 +84,19 @@ function ArenaContent() {
     const chosenOption = opt || selectedOption;
     const chosenConfidence = conf !== undefined ? conf : (confidence !== null ? confidence : 3);
     if (chosenOption) {
+      if (mockQuestions.length > 0) {
+        recordMockAnswer(activeQuestionIndex, chosenOption, chosenConfidence, timer);
+      }
       submitResponse(chosenOption, chosenConfidence, timer);
     }
   };
 
   const handleNextPractice = () => {
-    loadNextQuestion();
+    if (mockQuestions.length > 0 && activeQuestionIndex < mockQuestions.length - 1) {
+      setActiveQuestionIndex(activeQuestionIndex + 1);
+    } else {
+      loadNextQuestion();
+    }
   };
 
   const isMock = testMode === "mock";
@@ -173,9 +180,9 @@ function ArenaContent() {
           ) : (
             /* ACTIVE TEST ARENA */
             <ArenaLayout
-              progressPercent={isMock ? ((activeQuestionIndex + 1) / Math.max(1, mockQuestions.length)) * 100 : 50}
-              questionIndex={isMock ? activeQuestionIndex + 1 : 1}
-              totalQuestions={isMock ? mockQuestions.length : 10}
+              progressPercent={mockQuestions.length > 0 ? ((activeQuestionIndex + 1) / mockQuestions.length) * 100 : 50}
+              questionIndex={activeQuestionIndex + 1}
+              totalQuestions={mockQuestions.length > 0 ? mockQuestions.length : 1}
             >
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 
@@ -207,13 +214,12 @@ function ArenaContent() {
                 )}
               </div>
 
-                {/* Right Column: OMR Grid in Mock Mode or Mastery Map in Practice Mode */}
+                {/* Right Column: Question Palette + Mastery Map */}
                 <div className="flex flex-col gap-6 lg:col-span-1 lg:sticky lg:top-24">
-                  {isMock ? (
+                  {mockQuestions.length > 0 && (
                     <QuestionPalette onSubmitTest={submitMockTest} />
-                  ) : (
-                    <MasteryMap />
                   )}
+                  {!isMock && <MasteryMap />}
                 </div>
 
               </div>

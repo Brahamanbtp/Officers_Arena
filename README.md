@@ -5,21 +5,22 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python)](https://python.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL & Supabase](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com/)
-[![Gemini 3.5 Flash](https://img.shields.io/badge/LLM-Gemini%203.5%20Flash%20Lite-4285F4?style=flat-square&logo=google)](https://ai.google.dev/)
+[![Gemini 2.5 Flash](https://img.shields.io/badge/LLM-Gemini%202.5%20Flash%20%2F%20Groq-4285F4?style=flat-square&logo=google)](https://ai.google.dev/)
 [![pgvector](https://img.shields.io/badge/Vectors-pgvector%20HNSW-336791?style=flat-square)](https://github.com/pgvector/pgvector)
 
-**Officers Arena** is an enterprise-grade, empirical psychometric platform engineered for high-stakes competitive examinations in India (**UPSC Civil Services Prelims & Mains**, **UPSC CDS**, **NDA**, **AFCAT**). It integrates **3-Parameter Logistic (3PL) Item Response Theory (IRT)**, **5-Parameter Bayesian Knowledge Tracing (BKT)**, **Spaced Repetition Systems (SM-2 / HLR)**, **GraphRAG-grounded Socratic Tutoring**, **Multi-Modal Vision AI Document Extraction**, and an **Automated Essay Evaluation System (Mains AES)** into a unified real-time architecture.
+**Officers Arena** is an enterprise-grade, empirical psychometric platform engineered for high-stakes competitive examinations in India (**UPSC Civil Services Prelims & Mains**, **UPSC CDS**, **NDA**, **AFCAT**). It integrates **3-Parameter Logistic (3PL) Item Response Theory (IRT)**, **5-Parameter Bayesian Knowledge Tracing (BKT)**, **Spaced Repetition Systems (SM-2 / HLR)**, **GraphRAG-grounded Socratic Tutoring**, **Multi-Modal Vision AI Document Extraction**, and an **Automated Essay & Descriptive Evaluation System (Mains AES)** into a unified real-time architecture backed by a database of **25,236+ verified exam questions and 38 canonical textbooks**.
 
 ---
 
 ## 🌟 Core Modules & Capabilities
 
 ### 1. ⚔️ The Adaptive Arena (`/arena`)
-- **Dual Evaluation Track**: Seamlessly switch between **UPSC Civil Services** (Paper-I GS & Paper-II CSAT) and **UPSC CDS** (English, General Knowledge, Elementary Mathematics) with accurate penalty metrics (+2.00 / -0.66 for UPSC GS; +0.83 / -0.27 for CDS).
-- **Frictionless Adaptive Practice**: Single-click answer selection with automatic Socratic conceptual explanations, KaTeX formula rendering, and standard textbook citations (*M. Laxmikanth, Spectrum, NCERT*).
+- **Dual Evaluation Track**: Seamlessly switch between **UPSC Civil Services** (Paper-I GS & Paper-II CSAT) and **UPSC CDS** (English, General Knowledge, Elementary Mathematics) with exact UPSC/CDS marking rules (+2.00 / -0.66 for UPSC GS; +2.50 / -0.83 for CSAT; +0.833 / -0.277 for CDS).
+- **Multi-Question Adaptive Practice Sets**: Launch custom sessions from 10 to 100+ questions across any syllabus subject with instant Socratic feedback, Prev/Next navigation, and dynamic **OMR Question Palette** jump controls.
+- **Frictionless Adaptive Practice**: Single-click answer selection with automatic Socratic conceptual explanations, KaTeX formula rendering, option strikethrough elimination tool, and standard textbook citations (*M. Laxmikanth, Spectrum, Ramesh Singh, NCERT*).
 - **"Analyze My Mistake" Diagnostic**: Deep-dive cognitive error categorization (Conceptual Gap, Trap Distractor, Formula Slip) with targeted remediation advice.
-- **Timed OMR Mock Simulation**: 10 to 340-question mock exams featuring an interactive OMR Question Palette, "Mark for Review" state management, wall-clock anti-throttling timers, and post-exam **Command Diagnostic Reports**.
-- **Atomic Batch Submission**: Mock exams persist via `/api/v1/arena/submit-batch` to atomically log performance logs, update BKT mastery, adjust latent ability ($\theta$), and schedule spaced repetition queues.
+- **Timed Full-Length Mock Simulation**: 10 to 340-question mock exams featuring an interactive OMR Question Palette, "Mark for Review" state management, wall-clock anti-throttling timers, and post-exam **Command Diagnostic Reports**.
+- **Atomic Batch Submission**: Mock exams persist via `/api/v1/arena/submit-batch` to atomically record performance logs, update BKT mastery, adjust latent ability ($\theta$), and schedule spaced repetition queues.
 
 ### 2. 📈 Growth Command Center (`/growth`)
 - **Bayesian Knowledge Tracing (BKT) Mastery Radar**: Real-time 5-parameter model tracking student mastery across 287 canonical syllabus taxonomy nodes ($P(L_0), P(T), P(G), P(S)$).
@@ -113,8 +114,8 @@ $$R = 2^{-\frac{\Delta t}{S}}, \quad S_{new} = S_{old} \cdot e^{\alpha \cdot \te
 | **State Management** | Zustand (with persistent localStorage middleware) | Dynamic user auth resolution, OMR answers, chronometrics |
 | **Math & Rendering** | KaTeX, React-Markdown, Remark-Math, Rehype-Katex | Formula rendering in question stems and explanations |
 | **Backend Framework** | Python 3.11+, FastAPI, SQLModel, Pydantic v2 | High-throughput async REST endpoints & psychometrics |
-| **Database & Vectors** | Supabase PostgreSQL, `pgvector`, HNSW indexes | 15,787 questions, 287 syllabus nodes, 1536d embeddings |
-| **AI / LLM Layer** | Google Gemini 3.5 Flash Lite, PyMuPDF | Multimodal vision paper ingestion, GraphRAG Socratic tutor |
+| **Database & Vectors** | Supabase PostgreSQL, `pgvector`, HNSW indexes | 25,236 questions, 38 textbooks, 287 syllabus nodes, 1536d embeddings |
+| **AI / LLM Layer** | Google Gemini 2.5 Flash / Groq (Qwen & LLaMA) | Multimodal vision paper ingestion, GraphRAG tutor, Mains AES |
 | **Testing & QA** | Automated Browser Subagent, `npx tsc`, Pyright | 100% type-checked, full end-to-end verified |
 
 ---
@@ -132,6 +133,7 @@ Create `apps/api/.env`:
 ```env
 DATABASE_URL=postgresql+asyncpg://postgres:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
 GEMINI_API_KEY=[YOUR-GEMINI-API-KEY]
+GROQ_API_KEY=[YOUR-GROQ-API-KEY]
 CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 
@@ -176,7 +178,7 @@ The platform has undergone a comprehensive end-to-end automated browser QA audit
 
 - ✅ **TypeScript**: Zero compile errors (`npx tsc --noEmit` exited code `0`).
 - ✅ **Python**: Clean module import verification across all API routes and services.
-- ✅ **Database Linkage**: 100% (15,787/15,787) of questions linked to syllabus taxonomy nodes.
+- ✅ **Database Linkage**: 100% (25,236/25,236) of questions linked to syllabus taxonomy nodes.
 - ✅ **Batch Mock Submission**: Persistent atomic multi-item recording and diagnostic reporting.
 - ✅ **Anti-Throttling Timers**: Wall-clock timestamps preventing browser background tab throttling.
 - ✅ **Audit Artifacts**: Full documentation in [PROJECT_QA_AUDIT_REPORT.md](file:///c:/Users/braha/officers-arena/PROJECT_QA_AUDIT_REPORT.md).

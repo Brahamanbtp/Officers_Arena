@@ -18,9 +18,49 @@ export const CommandDiagnosticReport: React.FC = () => {
 
   const [activeFilter, setActiveFilter] = useState<"all" | "overconfident" | "neutral" | "incorrect" | "unattempted" | "slow">("all");
 
+  const normalizeOptions = (raw: any): Record<string, string> => {
+    if (!raw) return {};
+    if (Array.isArray(raw)) {
+      const res: Record<string, string> = {};
+      const letters = ["A", "B", "C", "D", "E", "F"];
+      raw.forEach((item, idx) => {
+        if (item && typeof item === "object") {
+          const key = item.id || item.letter || item.key || letters[idx] || String(idx);
+          let val = item.text !== undefined ? item.text : item.value !== undefined ? item.value : item;
+          if (val && typeof val === "object") {
+            val = val.en || val.hi || JSON.stringify(val);
+          }
+          res[String(key)] = String(val);
+        } else if (typeof item === "string") {
+          const parts = item.split(".", 2);
+          if (parts.length === 2 && ["A", "B", "C", "D"].includes(parts[0].trim().toUpperCase())) {
+            res[parts[0].trim().toUpperCase()] = parts[1].trim();
+          } else {
+            res[letters[idx] || String(idx)] = item;
+          }
+        } else {
+          res[letters[idx] || String(idx)] = String(item);
+        }
+      });
+      return res;
+    }
+    if (typeof raw === "object") {
+      const res: Record<string, string> = {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (v && typeof v === "object") {
+          res[k] = (v as any).en || (v as any).hi || JSON.stringify(v);
+        } else {
+          res[k] = String(v ?? "");
+        }
+      }
+      return res;
+    }
+    return {};
+  };
+
   // Marking Rules
-  const markPerCorrect = mode === "UPSC" ? 2.0 : 0.83;
-  const penaltyPerIncorrect = mode === "UPSC" ? 0.66 : 0.27;
+  const markPerCorrect = mode === "UPSC" ? 2.0 : 0.833;
+  const penaltyPerIncorrect = mode === "UPSC" ? 0.666 : 0.277;
 
   // Cut-off Thresholds (50% for UPSC, 42% for CDS)
   const cutoffPercentage = mode === "UPSC" ? 50.0 : 42.0;
@@ -406,7 +446,7 @@ export const CommandDiagnosticReport: React.FC = () => {
 
                   {/* Option Matrix Review */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
-                    {Object.entries(q.options).map(([optKey, optVal]) => {
+                    {Object.entries(normalizeOptions(q.options)).map(([optKey, optVal]) => {
                       const isSelectedOpt = selected === optKey;
                       const isCorrectOpt = q.correct_answer === optKey;
 

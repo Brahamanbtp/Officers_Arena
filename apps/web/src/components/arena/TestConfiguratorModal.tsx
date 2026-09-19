@@ -166,12 +166,31 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
     } else {
       setTestMode(selectedTestMode);
       setSelectedSubjectStore(selectedSubject);
+      
+      const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      try {
+        const subjectParam = selectedSubject === "All" ? "" : `&subject=${encodeURIComponent(selectedSubject)}`;
+        const url = `${apiEndpoint}/api/v1/arena/questions?exam_type=${mode}${subjectParam}&limit=${questionCount}`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const actualQuestions = await response.json();
+          if (actualQuestions && actualQuestions.length > 0) {
+            setMockQuestions(actualQuestions);
+            if (selectedTestMode === "mock") {
+              setMockTimerLeft(Math.max(300, Math.round(actualQuestions.length * 72)));
+            }
+            onClose();
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch adaptive questions from DB, falling back to mock generator:", err);
+      }
+
       const adaptiveQuestions = generateQuestionBank(mode, selectedSubject, questionCount);
+      setMockQuestions(adaptiveQuestions);
       if (selectedTestMode === "mock") {
         setMockTimerLeft(Math.max(300, Math.round(adaptiveQuestions.length * 72)));
-        setMockQuestions(adaptiveQuestions);
-      } else {
-        setQuestion(adaptiveQuestions[0] || null);
       }
     }
     onClose();
