@@ -78,14 +78,38 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
   }, [isOpen, mode]);
 
   const subjects = mode === "UPSC" 
-    ? ["All", "Indian Polity", "Modern History", "Geography", "Economy", "General Science"]
-    : ["All", "English", "General Knowledge", "Mathematics"];
+    ? [
+        "All", 
+        "Indian Polity", 
+        "Modern History", 
+        "Ancient History", 
+        "Medieval History", 
+        "Art & Culture", 
+        "Geography", 
+        "Economy", 
+        "General Science", 
+        "Environment & Ecology", 
+        "CSAT / Quantitative Aptitude",
+        "CSAT / Reasoning",
+        "CSAT / English"
+      ]
+    : [
+        "All", 
+        "English", 
+        "General Knowledge", 
+        "Mathematics",
+        "Polity",
+        "History",
+        "Geography",
+        "Science",
+        "Economy"
+      ];
 
   const counts = [10, 25, 50, 100];
 
   const availableYears = mode === "UPSC"
     ? [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011]
-    : [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016];
+    : [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009];
 
   const paperTypes = mode === "UPSC"
     ? ["Whole Paper", "Paper-I (General Studies)", "Paper-II (CSAT)"]
@@ -288,19 +312,31 @@ export const TestConfiguratorModal: React.FC<TestConfiguratorModalProps> = ({ is
                     <p className="text-[11px] text-neutral-300 leading-relaxed font-semibold">
                       {mode === "CDS" ? (
                         <>
-                          {selectedSubject === "All" && "Includes all subtopics across Mathematics, General Knowledge, and English."}
-                          {selectedSubject === "Mathematics" && "Includes: Elementary Mathematics, Trigonometry, Geometry, Arithmetic, and Algebra."}
-                          {selectedSubject === "General Knowledge" && "Includes: Indian Polity, Modern History, Geography, Defense Studies, and General Science."}
-                          {selectedSubject === "English" && "Includes: English Grammar, Vocabulary, Antonyms & Synonyms, and Reading Comprehension."}
+                          {selectedSubject === "All" && "Includes all subtopics across Mathematics, General Knowledge, English, Polity, History, Geography, and Science."}
+                          {selectedSubject === "Mathematics" && "Includes: Elementary Mathematics, Trigonometry, Geometry, Arithmetic, Number Systems, and Algebra."}
+                          {selectedSubject === "General Knowledge" && "Includes: Comprehensive GK, Indian Polity, Modern History, Geography, Defense Studies, and General Science."}
+                          {selectedSubject === "English" && "Includes: English Grammar, Vocabulary, Antonyms & Synonyms, Spotting Errors, and Reading Comprehension."}
+                          {selectedSubject === "Polity" && "Includes: Indian Constitution, Executive, Union Parliament, and Constitutional Bodies."}
+                          {selectedSubject === "History" && "Includes: Modern Freedom Movement, Ancient Dynasties, Medieval Era, and Military History."}
+                          {selectedSubject === "Geography" && "Includes: Physical Geography, Indian Rivers & Mountains, Climate, and Resource Mapping."}
+                          {selectedSubject === "Science" && "Includes: Physics Mechanics, Chemical Reactions, Biological Systems, and Defense Technologies."}
+                          {selectedSubject === "Economy" && "Includes: Indian Financial System, Budgeting, Trade, and Macroeconomic Indicators."}
                         </>
                       ) : (
                         <>
-                          {selectedSubject === "All" && "Includes all syllabus subjects for UPSC CSE Prelims."}
-                          {selectedSubject === "Indian Polity" && "Includes: Indian Constitution, Fundamental Rights, Parliament, and Judiciary."}
-                          {selectedSubject === "Modern History" && "Includes: Modern Indian History, Freedom Struggle, and National Movements."}
-                          {selectedSubject === "Geography" && "Includes: Physical Geography, Indian & World Geography."}
-                          {selectedSubject === "Economy" && "Includes: Macroeconomics, Economic Growth, and Budgeting."}
-                          {selectedSubject === "General Science" && "Includes: Physics, Chemistry, Biology, and Tech Trends."}
+                          {selectedSubject === "All" && "Includes all syllabus subjects for UPSC CSE General Studies (Paper-I) & CSAT (Paper-II)."}
+                          {selectedSubject === "Indian Polity" && "Includes: Indian Constitution, Fundamental Rights, Federalism, Parliament, Governance, and Judiciary."}
+                          {selectedSubject === "Modern History" && "Includes: Modern Indian History, Freedom Struggle (1857-1947), Socio-Religious Reforms, and National Movements."}
+                          {selectedSubject === "Ancient History" && "Includes: Indus Valley Civilization, Vedic Period, Mauryan Empire, Gupta Age, and Sangam Literature."}
+                          {selectedSubject === "Medieval History" && "Includes: Delhi Sultanate, Mughal Empire, Vijayanagara Empire, Maratha Confederacy, and Bhakti-Sufi Movements."}
+                          {selectedSubject === "Art & Culture" && "Includes: Architecture, Temple Sculpture, Classical Dances, Music, Paintings, and UNESCO Heritage Sites."}
+                          {selectedSubject === "Geography" && "Includes: Geomorphology, Oceanography, Climatology, Indian Physical & Human Geography, and Mapping."}
+                          {selectedSubject === "Economy" && "Includes: Macroeconomics, Fiscal & Monetary Policy, Banking, Inflation, External Sector, and Agriculture."}
+                          {selectedSubject === "General Science" && "Includes: Fundamental Physics, Chemistry, Biology, Emerging Technologies, Space, and Biotechnology."}
+                          {selectedSubject === "Environment & Ecology" && "Includes: Biodiversity, Climate Change, National Parks & Sanctuaries, Environmental Treaties, and Conservation."}
+                          {selectedSubject === "CSAT / Quantitative Aptitude" && "Includes: Number Systems, Percentages, Ratios, Speed-Time-Distance, Permutations, and Data Interpretation."}
+                          {selectedSubject === "CSAT / Reasoning" && "Includes: Logical Deductions, Syllogisms, Direction Sense, Blood Relations, and Analytical Puzzles."}
+                          {selectedSubject === "CSAT / English" && "Includes: Reading Comprehension, Critical Reasoning, Assumptions, Inferences, and Summary Conclusions."}
                         </>
                       )}
                     </p>

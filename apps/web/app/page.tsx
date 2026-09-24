@@ -50,11 +50,33 @@ export default function HomePage() {
     }
   }, []);
 
-  // Compute live days countdown to upcoming exam cycle
+  // Compute live days countdown to upcoming exam cycle dynamically
   useEffect(() => {
-    // Target UPSC CSE Prelims target date ~ May 24, 2026 or CDS target date
-    const targetDate = mode === "UPSC" ? new Date("2026-05-24T09:30:00") : new Date("2026-09-06T09:00:00");
     const today = new Date();
+    const currentYear = today.getFullYear();
+    let targetDate: Date;
+
+    if (mode === "UPSC") {
+      // UPSC CSE Prelims is held in late May annually (e.g. May 24)
+      const thisYearPrelims = new Date(currentYear, 4, 24, 9, 30);
+      if (today < thisYearPrelims) {
+        targetDate = thisYearPrelims;
+      } else {
+        targetDate = new Date(currentYear + 1, 4, 23, 9, 30);
+      }
+    } else {
+      // CDS is held twice a year: CDS-I (mid-April) & CDS-II (early-September)
+      const cds1 = new Date(currentYear, 3, 18, 9, 0);
+      const cds2 = new Date(currentYear, 8, 6, 9, 0);
+      if (today < cds1) {
+        targetDate = cds1;
+      } else if (today < cds2) {
+        targetDate = cds2;
+      } else {
+        targetDate = new Date(currentYear + 1, 3, 18, 9, 0);
+      }
+    }
+
     const diffTime = targetDate.getTime() - today.getTime();
     const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
     setCountdownDays(diffDays);
@@ -111,7 +133,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3 font-mono text-xs">
             <div className="px-3.5 py-1.5 bg-neutral-900/90 border border-neutral-800 rounded-xl text-neutral-300 flex items-center gap-2">
               <Clock className="w-3.5 h-3.5 text-amber-400" />
-              <span>Target: <strong className="text-amber-400 font-bold">{countdownDays} Days</strong> Remaining</span>
+              <span>Target: <strong className="text-amber-400 font-bold">{countdownDays} {countdownDays === 1 ? "Day" : "Days"}</strong> Remaining</span>
             </div>
             <button
               type="button"

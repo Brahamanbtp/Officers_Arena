@@ -139,6 +139,7 @@ class SessionReportResponse(BaseModel):
 async def next_question(
     user_id: str = Query(..., description="Student identifier"),
     exam_type: str = Query("UPSC", description="UPSC or CDS"),
+    subject: Optional[str] = Query(None, description="Optional subject focus filter"),
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -161,6 +162,8 @@ async def next_question(
 
         # 3. Query candidates with SQL-level filtering & limit
         q_stmt = select(Questions).where(Questions.exam_type == exam_type)
+        if subject and subject.strip() and subject.strip() not in ("All", "All Subjects", "Whole Paper"):
+            q_stmt = q_stmt.where(col(Questions.subject).ilike(f"%{subject.strip()}%"))
         if answered_ids:
             q_stmt = q_stmt.where(col(Questions.id).notin_(list(answered_ids)))
         if student_state.is_adaptive and student_state.total_answered >= 5:
@@ -172,11 +175,18 @@ async def next_question(
         candidates: List[Questions] = list(q_res.scalars().all())
 
         if not candidates:
-            fallback_stmt = select(Questions).where(Questions.exam_type == exam_type).limit(100)
+            fallback_stmt = select(Questions).where(Questions.exam_type == exam_type)
+            if subject and subject.strip() and subject.strip() not in ("All", "All Subjects", "Whole Paper"):
+                fallback_stmt = fallback_stmt.where(col(Questions.subject).ilike(f"%{subject.strip()}%"))
+            fallback_stmt = fallback_stmt.limit(100)
             q_res = await db.execute(fallback_stmt)
             candidates = list(q_res.scalars().all())
             if not candidates:
-                raise HTTPException(status_code=404, detail="No questions available for this exam type.")
+                # Ultimate fallback without subject filter
+                q_res = await db.execute(select(Questions).where(Questions.exam_type == exam_type).limit(100))
+                candidates = list(q_res.scalars().all())
+                if not candidates:
+                    raise HTTPException(status_code=404, detail="No questions available for this exam type.")
 
         # 4. Calibration vs Flow State vs Control (Non-adaptive) group
         selected_q = None

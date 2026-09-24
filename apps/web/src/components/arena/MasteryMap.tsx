@@ -31,26 +31,26 @@ export const MasteryMap: React.FC<MasteryMapProps> = ({ userId, onStartDiagnosti
               setHasAttempts(true);
               if (mode === "CDS") {
                 setData({
-                  "English": raw["English"] ?? 0,
+                  "English": raw["English"] ?? raw["CDS English"] ?? 0,
                   "General Knowledge": Math.round(
                     ((raw["Defense Studies"] ?? 0) +
                      (raw["Geography"] ?? 0) +
-                     (raw["General Science"] ?? 0) +
-                     (raw["Indian Polity"] ?? 0) +
-                     (raw["Modern History"] ?? 0)) / 5
+                     (raw["General Science"] ?? raw["Science"] ?? 0) +
+                     (raw["Indian Polity"] ?? raw["Polity"] ?? 0) +
+                     (raw["Modern History"] ?? raw["History"] ?? 0)) / 5
                   ),
                   "Mathematics": Math.round(
-                    ((raw["Elementary Mathematics"] ?? 0) +
+                    ((raw["Elementary Mathematics"] ?? raw["Mathematics"] ?? 0) +
                      (raw["Trigonometry"] ?? 0)) / 2
                   )
                 });
               } else {
                 setData({
-                  "Indian Polity": raw["Indian Polity"] ?? 0,
-                  "Modern History": raw["Modern History"] ?? 0,
-                  "Geography": raw["Geography"] ?? 0,
-                  "Economy": raw["Economy"] ?? 0,
-                  "General Science": raw["General Science"] ?? 0
+                  "Polity": raw["Indian Polity & Governance"] ?? raw["Indian Polity"] ?? raw["Polity"] ?? 0,
+                  "History": raw["Modern History"] ?? raw["Ancient History"] ?? raw["History"] ?? 0,
+                  "Geography": raw["Geography"] ?? raw["Physical Geography"] ?? 0,
+                  "Economy": raw["Economy"] ?? raw["Indian Economy"] ?? 0,
+                  "Science": raw["Science"] ?? raw["General Science"] ?? 0
                 });
               }
               setLoading(false);

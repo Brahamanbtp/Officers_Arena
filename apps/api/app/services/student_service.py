@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from sqlmodel import select, col
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils import resolve_user_uuid
 from app.models.student_stats import StudentAttempt, StudentMastery, MetacognitiveStats
 from app.models.database import Syllabus
 from ml.knowledge_tracing.bkt_engine import BKTProcessor
@@ -47,6 +48,7 @@ class StudentService:
         If confidence_level is omitted, implicitly infers confidence from response-time velocity.
         """
         now = datetime.now(timezone.utc)
+        user_uuid = resolve_user_uuid(user_id)
 
         # Infer implicit confidence from chronometric velocity if not explicitly reported
         if confidence_level is None:
@@ -65,7 +67,7 @@ class StudentService:
 
         # 1. Fetch current StudentMastery
         mastery_stmt = select(StudentMastery).where(
-            StudentMastery.user_id == user_id,
+            StudentMastery.user_id == user_uuid,
             StudentMastery.subtopic_id == subtopic_id,
             StudentMastery.exam_type == exam_type
         )
@@ -89,7 +91,7 @@ class StudentService:
                 # Dynamic Prerequisite Graph Traversal via parent_id or explicit dependency map
                 if parent_id_to_check:
                     parent_stmt = select(StudentMastery).where(
-                        StudentMastery.user_id == user_id,
+                        StudentMastery.user_id == user_uuid,
                         StudentMastery.subtopic_id == parent_id_to_check,
                         StudentMastery.exam_type == exam_type
                     )
@@ -103,7 +105,7 @@ class StudentService:
                     parent_stmt = select(StudentMastery).join(
                         Syllabus, col(StudentMastery.subtopic_id) == col(Syllabus.id)
                     ).where(
-                        StudentMastery.user_id == user_id,
+                        StudentMastery.user_id == user_uuid,
                         Syllabus.name == parent_name,
                         StudentMastery.exam_type == exam_type
                     )
@@ -115,7 +117,7 @@ class StudentService:
                         logger.info(f"Dependency Boost Applied (+0.05) to subtopic={subtopic_node.name} because parent={parent_name} has mastery={parent_mastery.mastery_score:.2f}")
 
             mastery = StudentMastery(
-                user_id=user_id,
+                user_id=user_uuid,
                 subtopic_id=subtopic_id,
                 exam_type=exam_type,
                 mastery_score=self.bkt.p_init + p_init_boost,
@@ -248,8 +250,9 @@ class StudentService:
         """
         Aggregates mastery scores by subject for the digital twin dashboard.
         """
+        user_uuid = resolve_user_uuid(user_id)
         mastery_stmt = select(StudentMastery).where(
-            StudentMastery.user_id == user_id,
+            StudentMastery.user_id == user_uuid,
             StudentMastery.exam_type == exam_type
         )
         mastery_result = await self.db.execute(mastery_stmt)
@@ -323,9 +326,10 @@ class StudentService:
         Uses mathematical simplification: 2^(-delta_t / h) < 0.5  <=>  delta_t > h
         """
         now = datetime.now(timezone.utc)
+        user_uuid = resolve_user_uuid(user_id)
         
         mastery_stmt = select(StudentMastery).where(
-            StudentMastery.user_id == user_id,
+            StudentMastery.user_id == user_uuid,
             StudentMastery.exam_type == exam_type
         )
         mastery_result = await self.db.execute(mastery_stmt)
@@ -351,8 +355,9 @@ class StudentService:
         """
         Returns spatial nodes and dependency edges for the 'Mastery Galaxy' visualization.
         """
+        user_uuid = resolve_user_uuid(user_id)
         mastery_stmt = select(StudentMastery).where(
-            StudentMastery.user_id == user_id,
+            StudentMastery.user_id == user_uuid,
             StudentMastery.exam_type == exam_type
         )
         mastery_result = await self.db.execute(mastery_stmt)
@@ -436,8 +441,9 @@ class StudentService:
         """
         Retrieves a list of subtopics flagged with fragile learning patterns (is_fragile = True).
         """
+        user_uuid = resolve_user_uuid(user_id)
         stmt = select(StudentMastery).where(
-            StudentMastery.user_id == user_id,
+            StudentMastery.user_id == user_uuid,
             StudentMastery.exam_type == exam_type,
             StudentMastery.is_fragile == True
         )

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from app.core.database import get_async_session
+from app.core.utils import resolve_user_uuid
 from app.models.database import Syllabus
 from app.models.student_stats import TopicMastery, StudentState
 from app.models.intelligence import TopicTrends
@@ -56,13 +57,14 @@ async def get_daily_plan(
     db: AsyncSession = Depends(get_async_session)
 ):
     try:
+        user_uuid = resolve_user_uuid(user_id)
         # 1. Fetch Student State
-        state_stmt = select(StudentState).where(StudentState.user_id == user_id)
+        state_stmt = select(StudentState).where(StudentState.user_id == user_uuid)
         state_res = await db.execute(state_stmt)
         student_state = state_res.scalars().first()
         if not student_state:
             # Create a student state if it doesn't exist
-            student_state = StudentState(user_id=user_id, theta=0.0, total_answered=0, is_adaptive=True)
+            student_state = StudentState(user_id=user_uuid, theta=0.0, total_answered=0, is_adaptive=True)
             db.add(student_state)
             await db.flush()
 
