@@ -32,3 +32,23 @@ docs/officers_arena_research_proposal.md
 
 scratch/
 scripts/
+
+# Reports & Documentation artifacts
+*.docx
+*report*
+*REPORT*
+docs/*REPORT*
+docs/OFFICERS_ARENA_FINAL_MTECH_PROJECT_REPORT.docx
+docs/OFFICERS_ARENA_FINAL_PROJECT_REPORT_60_PAGES.md
+
+# Templates
+*template*
+*Template*
+MIS Project Template.docx
+
+# VIT Logo & Emblems
+*vit_logo*
+*vit_emblem*
+*emblem*
+docs/vit_logo.png
+docs/vit_emblem.png
