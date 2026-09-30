@@ -224,7 +224,7 @@ export default function ResearchSandboxPage() {
                 M.Tech Research Suite & Dissertation Sandbox
               </span>
               <span className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold rounded-lg">
-                15,723 PYQs • 38 Textbooks (26,439 Pgs)
+                25,236 PYQs • 38 Textbooks (26,439 Pgs)
               </span>
               <span className={`px-2.5 py-1 text-xs font-mono font-bold rounded-lg flex items-center gap-1.5 ${
                 isApiConnected

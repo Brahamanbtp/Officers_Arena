@@ -33,7 +33,7 @@ export const AppFooter: React.FC = () => {
             className="hover:text-amber-400 transition-colors flex items-center gap-1 text-neutral-400"
           >
             <BookOpen className="w-3 h-3 text-blue-400" />
-            <span>15,720+ Question Vault</span>
+            <span>25,236+ Question Vault</span>
           </Link>
         </div>
 

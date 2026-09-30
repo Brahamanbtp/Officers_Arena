@@ -7,6 +7,7 @@ export interface IRTMetadata {
   discrimination?: number;
   guessing?: number;
   subject?: string;
+  topic?: string;
   year?: number;
   session?: string;
   paper?: string;

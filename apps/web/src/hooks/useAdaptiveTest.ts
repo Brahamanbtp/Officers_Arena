@@ -78,27 +78,38 @@ export const useAdaptiveTest = () => {
 
   const testMode = useArenaStore((state) => state.testMode);
 
+  const mockQuestions = useArenaStore((state) => state.mockQuestions);
+  const activeQuestionIndex = useArenaStore((state) => state.activeQuestionIndex);
+  const setActiveQuestionIndex = useArenaStore((state) => state.setActiveQuestionIndex);
+
   const getFallbackQuestion = useCallback((examMode: string, sub: string = "All") => {
     const pool = generateQuestionBank(examMode as any, sub, 1);
-    return pool[0] || MOCK_CDS_QUESTIONS[0];
+    return pool[0] || (examMode === "CDS" ? MOCK_CDS_QUESTIONS[0] : MOCK_UPSC_QUESTIONS[0]);
   }, []);
 
   const startTest = useCallback(async () => {
+    if (mockQuestions.length > 0) {
+      setQuestion(mockQuestions[0]);
+      resetTimer();
+      return;
+    }
+
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
     const userId = (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
     try {
-      const response = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=${userId}&exam_type=${mode}&subject=${selectedSubject}`);
+      const response = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=${userId}&exam_type=${mode}&subject=${encodeURIComponent(selectedSubject)}`);
       if (response.ok) {
         const qData = await response.json();
         setQuestion(qData);
       } else {
         setQuestion(getFallbackQuestion(mode, selectedSubject));
       }
-    } catch (e) {
+    } catch {
       setQuestion(getFallbackQuestion(mode, selectedSubject));
     }
     resetTimer();
-  }, [setQuestion, resetTimer, mode, selectedSubject, getFallbackQuestion]);
+  }, [setQuestion, resetTimer, mode, selectedSubject, getFallbackQuestion, mockQuestions]);
+
   useEffect(() => {
     if (testMode === "mock") return;
 
@@ -119,22 +130,32 @@ export const useAdaptiveTest = () => {
 
   const loadNextQuestion = useCallback(async () => {
     setTransitioning(true);
+
+    if (mockQuestions.length > 0 && activeQuestionIndex < mockQuestions.length - 1) {
+      const nextIdx = activeQuestionIndex + 1;
+      setActiveQuestionIndex(nextIdx);
+      setQuestion(mockQuestions[nextIdx]);
+      resetTimer();
+      setTransitioning(false);
+      return;
+    }
+
     const apiEndpoint = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
     const userId = (typeof window !== "undefined" && (localStorage.getItem("oa_user_id") || localStorage.getItem("oa_guest_id"))) || "guest_student";
     try {
-      const nextRes = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=${userId}&exam_type=${mode}&subject=${selectedSubject}`);
+      const nextRes = await fetch(`${apiEndpoint}/api/v1/arena/next-question?user_id=${userId}&exam_type=${mode}&subject=${encodeURIComponent(selectedSubject)}`);
       if (nextRes.ok) {
         const nextQ = await nextRes.json();
         setQuestion(nextQ);
       } else {
         setQuestion(getFallbackQuestion(mode, selectedSubject));
       }
-    } catch (e) {
+    } catch {
       setQuestion(getFallbackQuestion(mode, selectedSubject));
     }
     resetTimer();
     setTransitioning(false);
-  }, [mode, selectedSubject, setQuestion, setTransitioning, resetTimer, getFallbackQuestion]);
+  }, [mode, selectedSubject, setQuestion, setTransitioning, resetTimer, getFallbackQuestion, mockQuestions, activeQuestionIndex, setActiveQuestionIndex]);
 
   // Telemetry Submission to FastAPI Backend
   const submitResponse = useCallback(async (

@@ -392,7 +392,7 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
                 </h3>
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  3PL Item Response Theory test engine that adapts question difficulty in real time to calculate your true psychometric ability ($\theta$).
+                  3PL Item Response Theory test engine that adapts question difficulty in real time to calculate your true psychometric latent trait (θ / Ability).
                 </p>
               </div>
               <div className="pt-3 border-t border-neutral-850 flex items-center justify-between text-[11px] font-mono text-neutral-400">
@@ -461,11 +461,11 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
                 </h3>
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  Chapter-by-chapter drills from canonical reference books: *Laxmikanth, NCERT Class 6-12, Spectrum Modern India, and Shankar IAS*.
+                  Chapter-by-chapter drills from canonical reference books: <em>M. Laxmikanth, NCERT Class 6–12, Spectrum Modern India, and Ramesh Singh</em>.
                 </p>
               </div>
               <div className="pt-3 border-t border-neutral-850 flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                <span className="text-amber-400">15,720+ Questions</span>
+                <span className="text-amber-400">25,236+ Questions</span>
                 <span>AI Socratic Tutor</span>
               </div>
             </Link>
@@ -507,7 +507,7 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
                 </h3>
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  Real-time ability curve ($\theta$), SEM (Standard Error of Measurement), syllabus mastery heatmaps, and cutoff probability forecasting.
+                  Real-time ability curve (θ / Trait), SEM (Standard Error of Measurement), syllabus mastery heatmaps, and cutoff probability forecasting.
                 </p>
               </div>
               <div className="pt-3 border-t border-neutral-850 flex items-center justify-between text-[11px] font-mono text-neutral-400">
