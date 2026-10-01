@@ -17,10 +17,16 @@ import {
   AlertTriangle,
   ArrowRight,
   ShieldCheck,
-  Zap
+  Zap,
+  Activity,
+  Orbit,
+  Stethoscope
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { MathMarkdown } from "@/src/components/shared/MathMarkdown";
+import { MasteryGalaxy3D } from "@/src/components/galaxy/MasteryGalaxy3D";
+import { SpacedDecayScheduler } from "@/src/components/srs/SpacedDecayScheduler";
+import { EliminationDoctorModal } from "@/src/components/mirt/EliminationDoctorModal";
 
 interface StudyDay {
   dayNumber: number;
@@ -157,6 +163,8 @@ export default function StrategistPage() {
   const [plan, setPlan] = useState<StudyDay[]>(mode === "CDS" ? CDS_7_DAY_PLAN : UPSC_7_DAY_PLAN);
   const [isGenerating, setIsGenerating] = useState(false);
   const [query, setQuery] = useState("");
+  const [doctorOpen, setDoctorOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"roadmap" | "galaxy" | "decay">("roadmap");
   
   const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "advisor"; text: string }>>([
     {
@@ -231,7 +239,6 @@ export default function StrategistPage() {
       });
 
       if (res.ok && res.body) {
-        // Append an empty message for the advisor that we will stream text into
         setChatMessages((prev) => [...prev, { role: "advisor", text: "" }]);
         
         const reader = res.body.getReader();
@@ -245,7 +252,6 @@ export default function StrategistPage() {
           if (value) {
             const chunk = decoder.decode(value, { stream: !done });
             accumText += chunk;
-            // Update the last advisor message in real-time
             setChatMessages((prev) => {
               const updated = [...prev];
               if (updated.length > 0) {
@@ -283,32 +289,108 @@ export default function StrategistPage() {
       <GuestWarningBanner />
       <AppHeader />
 
-      <main className="flex-grow max-w-6xl w-full mx-auto p-6 flex flex-col gap-8">
+      <main className="flex-grow max-w-6xl w-full mx-auto p-6 flex flex-col gap-6">
         
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-800 pb-6">
+        {/* Header Hero */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-800 pb-5">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
               <Sparkles className="w-4 h-4" />
-              Autonomous Exam Strategist & AI Advisor
+              Autonomous Cognitive Command Studio
             </div>
             <h1 className="text-2xl font-black uppercase tracking-wider text-white mt-1">
-              7-Day Tactical Study Plan Generator ({mode} Track)
+              Cognitive Strategist &amp; Knowledge Twin ({mode} Track)
             </h1>
-            <p className="text-sm text-neutral-300 mt-1">
-              Personalized roadmap derived from real-time BKT weak points and exam frequency trends.
+            <p className="text-xs md:text-sm text-neutral-300 mt-1">
+              Real-time BKT latent states, tri-vector MIRT diagnostics, and spaced memory decay schedules.
             </p>
           </div>
 
-          <button
-            onClick={handleGeneratePlan}
-            disabled={isGenerating}
-            className="self-start md:self-auto px-5 py-3 bg-amber-600 hover:bg-amber-500 text-neutral-950 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isGenerating ? "animate-spin" : ""}`} />
-            {isGenerating ? "Synthesizing Plan..." : "Regenerate 7-Day Plan"}
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setDoctorOpen(true)}
+              className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg"
+            >
+              <Stethoscope className="w-4 h-4" />
+              Elimination Doctor
+            </button>
+
+            {activeTab === "roadmap" && (
+              <button
+                onClick={handleGeneratePlan}
+                disabled={isGenerating}
+                className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`} />
+                {isGenerating ? "Synthesizing..." : "Regenerate Plan"}
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Master 3-Way Segmented Studio Tab Switcher */}
+        <div className="flex items-center justify-between gap-2 p-1.5 bg-[#121212] border border-neutral-800 rounded-2xl">
+          <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+            <button
+              type="button"
+              onClick={() => setActiveTab("roadmap")}
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "roadmap"
+                  ? "bg-amber-500 text-neutral-950 font-black shadow-md"
+                  : "bg-neutral-900 text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Tactical Roadmap &amp; Advisor</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("galaxy")}
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "galaxy"
+                  ? "bg-amber-500 text-neutral-950 font-black shadow-md"
+                  : "bg-neutral-900 text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Orbit className="w-3.5 h-3.5" />
+              <span>3D Mastery Galaxy</span>
+              <span className="px-1.5 py-0.2 bg-neutral-950/40 text-[10px] rounded font-mono">114</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("decay")}
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "decay"
+                  ? "bg-amber-500 text-neutral-950 font-black shadow-md"
+                  : "bg-neutral-900 text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Spaced Memory Decay</span>
+              <span className="px-1.5 py-0.2 bg-red-500/20 text-red-400 text-[10px] rounded font-mono">SRS</span>
+            </button>
+          </div>
+        </div>
+
+        {/* TAB 1: 3D GALAXY VIEW */}
+        {activeTab === "galaxy" && (
+          <section className="space-y-3">
+            <MasteryGalaxy3D />
+          </section>
+        )}
+
+        {/* TAB 2: SPACED REPETITION DECAY TRACKER VIEW */}
+        {activeTab === "decay" && (
+          <section className="space-y-3">
+            <SpacedDecayScheduler />
+          </section>
+        )}
+
+        {/* TAB 3: TACTICAL ROADMAP & AI ADVISOR VIEW */}
+        {activeTab === "roadmap" && (
+          <div className="space-y-6">
 
         {/* TOP 3 PRIORITY LEAKS TO PLUG THIS WEEK */}
         <div className="bg-[#121212] border border-neutral-800 rounded-3xl p-6 space-y-4 shadow-xl">
@@ -530,8 +612,17 @@ export default function StrategistPage() {
           </div>
 
         </div>
+        </div>
+        )}
 
       </main>
+
+      {/* Cognitive Trap Elimination Doctor Modal */}
+      <EliminationDoctorModal
+        isOpen={doctorOpen}
+        onClose={() => setDoctorOpen(false)}
+        examMode={mode}
+      />
 
       <AppFooter />
     </div>

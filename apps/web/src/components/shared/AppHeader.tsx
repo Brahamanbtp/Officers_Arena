@@ -30,10 +30,12 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useArenaStore } from "@/src/store/useArenaStore";
 import { useAuthStore } from "@/src/store/useAuthStore";
+import { useLanguageStore } from "@/src/store/useLanguageStore";
 import { ProfileSettingsModal } from "./ProfileSettingsModal";
 import { HelpFeedbackModal } from "./HelpFeedbackModal";
 import { CommandPalette } from "./CommandPalette";
 import { toast } from "sonner";
+import { Languages } from "lucide-react";
 
 export const AppHeader: React.FC = () => {
   const pathname = usePathname();
@@ -44,6 +46,7 @@ export const AppHeader: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const isGuest = useAuthStore((state) => state.isGuest);
   const logout = useAuthStore((state) => state.logout);
+  const { language, toggleLanguage } = useLanguageStore();
 
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [showExamDropdown, setShowExamDropdown] = useState(false);
@@ -260,6 +263,23 @@ export const AppHeader: React.FC = () => {
               title="Academic Support & Help"
             >
               <HelpCircle className="w-4 h-4 text-purple-400" />
+            </button>
+
+            {/* Bilingual (EN / हिन्दी) Toggle */}
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+                language === "HI"
+                  ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+                  : isLight 
+                    ? "bg-neutral-100 border-neutral-200 text-neutral-800 hover:bg-neutral-200" 
+                    : "bg-neutral-900 border-neutral-800 text-neutral-300 hover:text-white"
+              }`}
+              title="Toggle Bilingual Medium (English / हिन्दी)"
+            >
+              <Languages className="w-3.5 h-3.5 text-amber-400" />
+              <span className="font-mono text-[11px]">{language === "HI" ? "हिन्दी" : "EN"}</span>
             </button>
 
             {/* Theme Toggle (Dark / Light) */}

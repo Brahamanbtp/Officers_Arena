@@ -43,7 +43,47 @@ export const BASE_UPSC_QUESTIONS: Question[] = [
     metadata: { difficulty: 0.50, subject: "Indian Polity", topic: "Fundamental Rights" }
   },
 
-  // --- MODERN & ANCIENT HISTORY ---
+  // --- MODERN & ANCIENT HISTORY & STATUTORY EVOLUTION ---
+  {
+    id: "upsc-hist-1773",
+    text: "Consider the following statements regarding the Regulating Act of 1773:\n1. It designated the Governor of Bengal as the 'Governor-General of Bengal' and created an Executive Council of four members to assist him.\n2. It made provision for the establishment of a Supreme Court at Calcutta (1774) comprising one Chief Justice and three other judges.\n3. It prohibited the servants of the East India Company from engaging in any private trade or accepting presents or bribes from the natives.\n\nWhich of the statements given above are correct?",
+    options: { "A": "1 and 2 only", "B": "2 and 3 only", "C": "1 and 3 only", "D": "1, 2 and 3" },
+    correct_answer: "D",
+    explanation: "The Regulating Act of 1773 was the first step by the British Parliament to control EIC affairs. Lord Warren Hastings became the first Governor-General of Bengal, a Supreme Court was established at Calcutta in 1774 (Sir Elijah Impey as CJ), and private trade/bribes were strictly prohibited.",
+    metadata: { difficulty: 0.60, subject: "Modern History", topic: "Regulating Act of 1773" }
+  },
+  {
+    id: "upsc-hist-1833",
+    text: "With reference to the Charter Act of 1833, consider the following statements:\n1. It made the Governor-General of Bengal as the 'Governor-General of India' and vested in him all civil and military powers.\n2. Lord William Bentinck was the first Governor-General of India.\n3. It ended the commercial activities of the East India Company as a purely commercial body, making it a purely administrative body.\n\nWhich of the statements given above are correct?",
+    options: { "A": "1 and 2 only", "B": "2 and 3 only", "C": "1 and 3 only", "D": "1, 2 and 3" },
+    correct_answer: "D",
+    explanation: "The Charter Act of 1833 was the final step towards centralization in British India. Lord William Bentinck became the first Governor-General of India, commercial monopoly was abolished, and a Law Member (Lord Macaulay) was added to the Council.",
+    metadata: { difficulty: 0.55, subject: "Modern History", topic: "Charter Act of 1833" }
+  },
+  {
+    id: "upsc-hist-1858",
+    text: "Regarding the Government of India Act 1858 ('Act for the Better Government of India'), consider the following statements:\n1. It abolished the East India Company and transferred powers of government, territories, and revenues to the British Crown.\n2. It abolished the dual government system by ending the Board of Control and Court of Directors.\n3. It created a new office of Secretary of State for India, who was a member of the British Cabinet and assisted by a 15-member Council of India.\n\nWhich of the statements given above are correct?",
+    options: { "A": "1 and 2 only", "B": "2 and 3 only", "C": "1, 2 and 3", "D": "1 and 3 only" },
+    correct_answer: "C",
+    explanation: "Enacted after the 1857 Revolt, the 1858 Act liquidated company rule, introduced the Crown Rule, created the Secretary of State for India (assisted by a 15-member advisory Council of India), and designated the Governor-General as the Viceroy (Lord Canning as first Viceroy).",
+    metadata: { difficulty: 0.50, subject: "Modern History", topic: "Government of India Act 1858" }
+  },
+  {
+    id: "upsc-hist-1919",
+    text: "With reference to the Government of India Act 1919 (Montagu-Chelmsford Reforms), consider the following statements:\n1. It introduced 'Dyarchy' in provincial governments by dividing provincial subjects into 'Transferred' and 'Reserved' subjects.\n2. It introduced, for the first time, bicameralism and direct elections in the country at the Central Legislature.\n3. It provided for the establishment of a Public Service Commission, which led to the setting up of the Central Public Service Commission in 1926.\n\nWhich of the statements given above are correct?",
+    options: { "A": "1 and 2 only", "B": "2 and 3 only", "C": "1, 2 and 3", "D": "1 and 3 only" },
+    correct_answer: "C",
+    explanation: "The 1919 Act introduced Dyarchy in provinces (Reserved subjects administered by Governor without responsibility to council; Transferred subjects by ministers), central bicameralism (Council of State and Legislative Assembly), and paved the way for the Central Public Service Commission in 1926 under Lee Commission recommendations.",
+    metadata: { difficulty: 0.65, subject: "Modern History", topic: "Government of India Act 1919" }
+  },
+  {
+    id: "upsc-hist-1935",
+    text: "The Government of India Act 1935 provided for which of the following institutional frameworks?\n1. Establishment of an All-India Federation comprising Provinces and Princely States.\n2. Abolition of Dyarchy in the provinces and introduction of 'Provincial Autonomy'.\n3. Establishment of a Federal Court (1937) and the Reserve Bank of India (1935).\n4. Division of legislative powers into Federal, Provincial, and Concurrent lists.\n\nSelect the correct answer using the code given below:",
+    options: { "A": "1, 2 and 3 only", "B": "2, 3 and 4 only", "C": "1, 3 and 4 only", "D": "1, 2, 3 and 4" },
+    correct_answer: "D",
+    explanation: "The 1935 Act had 321 sections and 10 schedules. It introduced provincial autonomy, three legislative lists (Federal: 59, Provincial: 54, Concurrent: 36), established the Federal Court in 1937, and enabled the creation of the Reserve Bank of India.",
+    metadata: { difficulty: 0.60, subject: "Modern History", topic: "Government of India Act 1935" }
+  },
   {
     id: "upsc-hist-1",
     text: "With reference to the Indian freedom struggle, arrange the following historical events in correct chronological order:\n1. First Round Table Conference\n2. Gandhi-Irwin Pact\n3. Poona Pact\n4. Cripps Mission\n\nSelect the correct answer using the code given below:",
@@ -217,49 +257,98 @@ export function generateQuestionBank(
   subject: string = "All", 
   count: number = 25,
   year?: number,
-  paper?: string,
-  session?: string
+  topic?: string,
+  session?: string,
+  paper?: string
 ): Question[] {
   const basePool = examType === "CDS" ? BASE_CDS_QUESTIONS : BASE_UPSC_QUESTIONS;
   
   const subLower = (subject || "").trim().toLowerCase();
+  const topicLower = (topic || "").trim().toLowerCase();
 
   let filtered: Question[] = [];
 
-  if (!subLower || subLower === "all" || subLower === "all subjects" || subLower === "whole paper") {
-    filtered = basePool;
-  } else {
-    filtered = basePool.filter(q => {
-      const qSub = (q.metadata?.subject || "").toLowerCase();
+  // Priority 1: Direct Topic Matching (e.g. "Regulating Act of 1773", "Charter Act of 1833", "Inradius", "EBLR")
+  if (topicLower && topicLower !== "all" && topicLower !== "undefined") {
+    const topicMatches = basePool.filter(q => {
       const qTopic = (q.metadata?.topic || "").toLowerCase();
       const qText = q.text.toLowerCase();
+      const qExp = (q.explanation || "").toLowerCase();
 
-      if (subLower.includes("polity")) {
-        return qSub.includes("polity") || qTopic.includes("polity") || qTopic.includes("governor") || qTopic.includes("preamble");
+      // Check specific historical keywords
+      if (topicLower.includes("1773") || topicLower.includes("regulating")) {
+        return qTopic.includes("1773") || qText.includes("1773") || qExp.includes("1773");
       }
-      if (subLower.includes("hist")) {
-        return qSub.includes("hist") || qTopic.includes("chronology") || qTopic.includes("reforms") || qTopic.includes("round table");
+      if (topicLower.includes("1833") || topicLower.includes("charter")) {
+        return qTopic.includes("1833") || qText.includes("1833") || qExp.includes("1833");
       }
-      if (subLower.includes("econ")) {
-        return qSub.includes("econ") || qTopic.includes("monetary") || qTopic.includes("repo") || qTopic.includes("deficit");
+      if (topicLower.includes("1858") || topicLower.includes("better government")) {
+        return qTopic.includes("1858") || qText.includes("1858") || qExp.includes("1858");
       }
-      if (subLower.includes("geo") || subLower.includes("env")) {
-        return qSub.includes("geo") || qSub.includes("env") || qTopic.includes("western ghats") || qTopic.includes("monsoon");
+      if (topicLower.includes("1919") || topicLower.includes("montagu") || topicLower.includes("chelmsford") || topicLower.includes("dyarchy")) {
+        return qTopic.includes("1919") || qText.includes("1919") || qExp.includes("1919");
       }
-      if (subLower.includes("math") || subLower.includes("quant") || subLower.includes("trig")) {
-        return qSub.includes("math") || qTopic.includes("geometry") || qTopic.includes("speed") || qTopic.includes("trigonometric");
+      if (topicLower.includes("1935") || topicLower.includes("provincial autonomy") || topicLower.includes("all-india federation")) {
+        return qTopic.includes("1935") || qText.includes("1935") || qExp.includes("1935");
       }
-      if (subLower.includes("def") || subLower.includes("security") || subLower.includes("military")) {
-        return qSub.includes("def") || qTopic.includes("defense") || qTopic.includes("naval") || qTopic.includes("operation");
+      if (topicLower.includes("1950") || topicLower.includes("constitution of india") || topicLower.includes("basic structure")) {
+        return qTopic.includes("basic structure") || qTopic.includes("preamble") || qText.includes("constitution");
       }
-      if (subLower.includes("eng") || subLower.includes("gram")) {
-        return qSub.includes("eng") || qTopic.includes("vocab") || qTopic.includes("preposition");
+      if (topicLower.includes("governor") || topicLower.includes("163")) {
+        return qTopic.includes("governor") || qText.includes("governor");
       }
-      if (subLower.includes("gk") || subLower.includes("general knowledge")) {
-        return qSub.includes("gk") || qSub.includes("general knowledge") || qSub.includes("geography");
+      if (topicLower.includes("inradius") || topicLower.includes("triangle")) {
+        return qTopic.includes("inradius") || qTopic.includes("geometry") || qText.includes("inradius");
       }
-      return qSub.includes(subLower) || qTopic.includes(subLower) || qText.includes(subLower);
+      if (topicLower.includes("eblr") || topicLower.includes("monetary") || topicLower.includes("repo")) {
+        return qTopic.includes("eblr") || qTopic.includes("monetary") || qText.includes("eblr");
+      }
+
+      return qTopic.includes(topicLower) || qText.includes(topicLower) || qExp.includes(topicLower);
     });
+
+    if (topicMatches.length > 0) {
+      filtered = topicMatches;
+    }
+  }
+
+  // Priority 2: Subject-Level Matching if no direct topic matches were found
+  if (filtered.length === 0) {
+    if (!subLower || subLower === "all" || subLower === "all subjects" || subLower === "whole paper") {
+      filtered = basePool;
+    } else {
+      filtered = basePool.filter(q => {
+        const qSub = (q.metadata?.subject || "").toLowerCase();
+        const qTopic = (q.metadata?.topic || "").toLowerCase();
+        const qText = q.text.toLowerCase();
+
+        if (subLower.includes("polity")) {
+          return qSub.includes("polity") || qTopic.includes("polity") || qTopic.includes("governor") || qTopic.includes("preamble");
+        }
+        if (subLower.includes("hist")) {
+          return qSub.includes("hist") || qTopic.includes("chronology") || qTopic.includes("reforms") || qTopic.includes("round table") || qTopic.includes("act");
+        }
+        if (subLower.includes("econ")) {
+          return qSub.includes("econ") || qTopic.includes("monetary") || qTopic.includes("repo") || qTopic.includes("deficit");
+        }
+        if (subLower.includes("geo") || subLower.includes("env")) {
+          return qSub.includes("geo") || qSub.includes("env") || qTopic.includes("western ghats") || qTopic.includes("monsoon");
+        }
+        if (subLower.includes("math") || subLower.includes("quant") || subLower.includes("trig")) {
+          return qSub.includes("math") || qTopic.includes("geometry") || qTopic.includes("speed") || qTopic.includes("trigonometric");
+        }
+        if (subLower.includes("def") || subLower.includes("security") || subLower.includes("military")) {
+          return qSub.includes("def") || qTopic.includes("defense") || qTopic.includes("naval") || qTopic.includes("operation");
+        }
+        if (subLower.includes("eng") || subLower.includes("gram")) {
+          return qSub.includes("eng") || qTopic.includes("vocab") || qTopic.includes("preposition");
+        }
+        if (subLower.includes("gk") || subLower.includes("general knowledge")) {
+          return qSub.includes("gk") || qSub.includes("general knowledge") || qSub.includes("geography");
+        }
+        return qSub.includes(subLower) || qTopic.includes(subLower) || qText.includes(subLower);
+      });
+    }
   }
 
   const pool = filtered.length > 0 ? filtered : basePool;

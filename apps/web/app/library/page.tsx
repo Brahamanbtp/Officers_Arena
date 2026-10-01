@@ -29,6 +29,8 @@ import { generateQuestionBank } from "@/src/utils/mockQuestionBank";
 import { toast } from "sonner";
 import { BookReaderModal, BookItem } from "@/src/components/library/BookReaderModal";
 import { getEffectiveUserId } from "@/src/lib/authUtils";
+import { ChronoFactTimeline } from "@/src/components/chronofact/ChronoFactTimeline";
+import { InteractivePdfHighlighter } from "@/src/components/library/InteractivePdfHighlighter";
 
 interface LibraryItem {
   id: string;
@@ -58,6 +60,7 @@ function LibraryContent() {
 
   const [activeReadingBook, setActiveReadingBook] = useState<BookItem | null>(null);
   const [selectedAnswerKey, setSelectedAnswerKey] = useState<LibraryItem | null>(null);
+  const [studioTab, setStudioTab] = useState<"vault" | "timeline" | "citations">("vault");
   const [activeFilter, setActiveFilter] = useState<"ALL" | "PYQ" | "BOOKS">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
@@ -420,57 +423,111 @@ function LibraryContent() {
           </div>
 
           <div className="flex items-center gap-2 z-10">
+            {studioTab === "vault" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter("ALL")}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeFilter === "ALL" ? "bg-amber-600 text-neutral-950 font-black shadow-lg" : "bg-neutral-900 text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  All ({allItems.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter("PYQ")}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeFilter === "PYQ" ? "bg-amber-600 text-neutral-950 font-black shadow-lg" : "bg-neutral-900 text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  PYQs ({dynamicPapers.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter("BOOKS")}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeFilter === "BOOKS" ? "bg-amber-600 text-neutral-950 font-black shadow-lg" : "bg-neutral-900 text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  Books ({dynamicBooks.length})
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Master Studio Tab Switcher */}
+        <div className="flex items-center justify-between gap-2 p-1.5 bg-[#121212] border border-neutral-800 rounded-2xl">
+          <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
             <button
               type="button"
-              onClick={() => setActiveFilter("ALL")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeFilter === "ALL" ? "bg-amber-600 text-neutral-950 font-black shadow-lg" : "bg-neutral-900 text-neutral-400 hover:text-white"
+              onClick={() => setStudioTab("vault")}
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                studioTab === "vault"
+                  ? "bg-amber-500 text-neutral-950 font-black shadow-md"
+                  : "bg-neutral-900 text-neutral-400 hover:text-white"
               }`}
             >
-              All Assets ({allItems.length})
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Standard Books &amp; PYQs</span>
+              <span className="px-1.5 py-0.2 bg-neutral-950/40 text-[10px] rounded font-mono">{allItems.length}</span>
             </button>
+
             <button
               type="button"
-              onClick={() => setActiveFilter("PYQ")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeFilter === "PYQ" ? "bg-amber-600 text-neutral-950 font-black shadow-lg" : "bg-neutral-900 text-neutral-400 hover:text-white"
+              onClick={() => setStudioTab("timeline")}
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                studioTab === "timeline"
+                  ? "bg-amber-500 text-neutral-950 font-black shadow-md"
+                  : "bg-neutral-900 text-neutral-400 hover:text-white"
               }`}
             >
-              Year-Wise PYQs ({dynamicPapers.length})
+              <Clock className="w-3.5 h-3.5" />
+              <span>ChronoFact Statutory Timeline</span>
+              <span className="px-1.5 py-0.2 bg-neutral-950/40 text-[10px] rounded font-mono">1773–2026</span>
             </button>
+
             <button
               type="button"
-              onClick={() => setActiveFilter("BOOKS")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeFilter === "BOOKS" ? "bg-amber-600 text-neutral-950 font-black shadow-lg" : "bg-neutral-900 text-neutral-400 hover:text-white"
+              onClick={() => setStudioTab("citations")}
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                studioTab === "citations"
+                  ? "bg-amber-500 text-neutral-950 font-black shadow-md"
+                  : "bg-neutral-900 text-neutral-400 hover:text-white"
               }`}
             >
-              Standard Books ({dynamicBooks.length})
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Citation Highlighter</span>
+              <span className="px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 text-[10px] rounded font-mono">Verified</span>
             </button>
           </div>
         </div>
 
-        {/* Semantic AI Search Bar */}
-        <form onSubmit={handleSemanticSearch} className="relative">
-          <div className="relative flex items-center">
-            <Search className="w-5 h-5 text-neutral-500 absolute left-4 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search across 26,439 textbook pages (e.g. 'Governor Discretionary Powers Article 163', 'Round Table Chronology', 'Inradius right triangle')..."
-              className="w-full bg-[#121212] border border-neutral-800 rounded-2xl pl-12 pr-32 py-4 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500 transition-all font-sans shadow-lg"
-            />
-            <button
-              type="submit"
-              disabled={isSearching}
-              className="absolute right-2.5 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow"
-            >
-              {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              <span>Ask Tutor</span>
-            </button>
-          </div>
-        </form>
+        {/* TAB 1: BOOKS & PYQ VAULT */}
+        {studioTab === "vault" && (
+          <div className="space-y-6">
+            {/* Semantic AI Search Bar */}
+            <form onSubmit={handleSemanticSearch} className="relative">
+              <div className="relative flex items-center">
+                <Search className="w-5 h-5 text-neutral-500 absolute left-4 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search across 26,439 textbook pages (e.g. 'Governor Discretionary Powers Article 163', 'Round Table Chronology', 'Inradius right triangle')..."
+                  className="w-full bg-[#121212] border border-neutral-800 rounded-2xl pl-12 pr-32 py-4 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500 transition-all font-sans shadow-lg"
+                />
+                <button
+                  type="submit"
+                  disabled={isSearching}
+                  className="absolute right-2.5 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow"
+                >
+                  {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  <span>Ask Tutor</span>
+                </button>
+              </div>
+            </form>
 
         {/* NO MATCH FEEDBACK WITH SUGGESTED CHIPS */}
         {noMatchQuery && (
@@ -677,6 +734,23 @@ function LibraryContent() {
             );
           })}
         </div>
+        </div>
+        )}
+
+        {/* TAB 2: CHRONOFACT 1773–2026 INTERACTIVE STATUTORY TIMELINE */}
+        {studioTab === "timeline" && (
+          <section className="space-y-3">
+            <ChronoFactTimeline />
+          </section>
+        )}
+
+        {/* TAB 3: ZERO-HALLUCINATION TEXTBOOK SENTENCE-LEVEL HIGHLIGHTER */}
+        {studioTab === "citations" && (
+          <section className="space-y-3">
+            <InteractivePdfHighlighter />
+          </section>
+        )}
+
       </main>
 
       {/* Embedded High-Fidelity PDF Reader & Senior Mentor Drawer Modal */}
